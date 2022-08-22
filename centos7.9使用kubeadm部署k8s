@@ -1,0 +1,121 @@
+
+主机名   操作系统版本     ip           docker version   kubeadm/kubelet/kubectl version
+master    7.9.2009  192.168.189.200                        1.23.9
+node1     7.9.2009  192.168.189.201                        1.23.9
+node2     7.9.2009  192.168.189.202                        1.23.9
+一、基础环境准备
+1、修改主机名
+[root@localhost ~]# hostnamectl set-hostname master
+[root@localhost ~]# su
+[root@master ~]#
+
+2、关闭防火墙
+[root@master ~]# setenforce 0
+[root@master ~]# sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
+[root@master ~]# systemctl disable --now firewalld
+
+3、禁用swap
+[root@master ~]# swapoff -a
+[root@master ~]# sed -i.bak '/swap/s/^/#/g' /etc/fstab
+
+4、配置dns
+[root@master ~]# echo "nameserver 223.5.5.5" >> /etc/resolv.conf
+
+5、配置yun源
+[root@master ~]# cd /etc/yum.repos.d/
+[root@master yum.repos.d]# curl -O   https://mirrors.aliyun.com/repo/Centos-7.repo
+[root@master yum.repos.d]# curl -O https://mirrors.aliyun.com/repo/epel-7.repo
+[root@master yum.repos.d]# curl -O https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+[root@master yum.repos.d]# cat > kubernetes.repo  <<EOF
+[kubernetes]
+name=Kubernetes
+baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64/
+enabled=1
+gpgcheck=1
+repo_gpgcheck=0
+gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
+EOF
+[root@master yum.repos.d]# yum clean all && yum makecache
+初次yum makecache时在生成centos源缓存时报错
+base/7/x86_64/filelists_db     FAILED                                          
+http://mirrors.aliyuncs.com/centos/7/os/x86_64/repodata/d6d94c7d406fe7ad4902a97104b39a0d8299451832a97f31d71653ba982c955b-filelists.sqlite.bz2:
+ [Errno 14] curl#7 - "Failed connect to mirrors.aliyuncs.com:80; Connection refused"Trying other mirror.
+查看Centos-7.repo文件为http，修改为https后再次执行makecahce正常
+[root@master yum.repos.d]# sed -i.bak 's/http/https/g' Centos-7.repo
+[root@master yum.repos.d]# yum clean all && yum makecache
+
+6、下载常见安装包
+[root@master ~]# yum install -y yum-utils device-mapper-persistent-data lvm2 wegt net-tools vim sshpass
+
+7、配置ssh互信
+[root@master ~]# ssh-keygen 按两下空格
+[root@master ~]# cat believe.sh
+#!/bin/bash
+pass=root.2020
+awk 'NR>2{print $2}' /etc/hosts  |while read line
+do
+	sshpass -p $pass ssh-copy-id -o stricthostkeychecking=no $line
+done
+[root@master ~]# chmod +x believe.sh 
+[root@master ~]# ./believe.sh 
+
+8、配置时间同步
+修改时区
+[root@master ~]# ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime 
+[root@master ~]# timedatectl set-timezone 'Asia/Shanghai'
+修改chrony.conf文件
+[root@master ~]# grep -Ev "^#|^$" /etc/chrony.conf
+server cn.pool.ntp.org 
+driftfile /var/lib/chrony/drift
+makestep 1.0 3
+rtcsync
+allow 192.168.189.0/24
+local stratum 10
+logdir /var/log/chrony
+拷贝给node节点
+[root@master ~]# scp -rp /etc/chrony.conf node1:/etc/
+chrony.conf                                                                                                 100% 1183   356.1KB/s   00:00    
+[root@master ~]# scp -rp /etc/chrony.conf node2:/etc/
+chrony.conf                                                                                                 100% 1183   373.9KB/s   00:00  
+设置开机自启并启动chronyd服务，查看Time zone和NTP synchronized
+[root@master ~]# systemctl enable --now chronyd
+查看时区和时间同步
+[root@master ~]# timedatectl 
+      Local time: Mon 2022-08-22 10:05:27 CST
+  Universal time: Mon 2022-08-22 02:05:27 UTC
+        RTC time: Mon 2022-08-22 02:05:27
+       Time zone: Asia/Shanghai (CST, +0800)
+     NTP enabled: yes
+NTP synchronized: yes
+ RTC in local TZ: no
+      DST active: n/a
+[root@master ~]# hwclock -w
+
+9、修改hosts文件
+[root@master ~]# cat /etc/hosts
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+192.168.189.201 node1
+192.168.189.202 node2
+[root@master ~]# scp -rp /etc/hosts node1:/etc/                                                                                                    100%  203    59.0KB/s   00:00    
+[root@master ~]# scp -rp /etc/hosts node2:/etc/
+
+10、配置内核参数
+[root@master ~]# cat >>/etc/sysctl.conf <<EOF
+net.bridge.bridge-nf-call-iptables = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward = 1
+EOF
+[root@master ~]# sysctl -p
+sysctl: cannot stat /proc/sys/net/bridge/bridge-nf-call-iptables: No such file or directory
+sysctl: cannot stat /proc/sys/net/bridge/bridge-nf-call-ip6tables: No such file or directory
+使用modprobe加载br_netfilter模块
+[root@master ~]# modprobe br_netfilter
+[root@master ~]# sysctl -p
+net.bridge.bridge-nf-call-iptables = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward = 1
+
+11、安装docker-ce
+使用如下命令查看docker版本，本次选择
+[root@master ~]# yum list docker-ce --showduplicates
