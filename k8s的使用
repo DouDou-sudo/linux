@@ -1,0 +1,43 @@
+1、k8s集群搭建好以后，master默认会打上taints
+查看master的taints
+[root@k8smaster opt]# kubectl describe node k8smaster | grep Taint
+Taints:             node-role.kubernetes.io/master:NoSchedule
+如何删除这个tainits呢
+删除所有节点上的taints
+[root@k8smaster opt]# kubectl taint nodes --all node-role.kubernetes.io/master-
+node/k8smaster untainted
+删除指定节点上的taints
+[root@k8smaster opt]# kubectl taint nodes k8smaster node-role.kubernetes.io/master-
+node/k8smaster untainted
+
+删除pod
+[root@k8smaster build-yaml]# kubectl get pods
+NAME                                READY   STATUS    RESTARTS   AGE
+nginx-deployment-6f859b4555-s26gr   1/1     Running   0          47m
+nginx-deployment-6f859b4555-zcj9t   1/1     Running   0          47m
+two-containers                      1/2     Running   0          9m5s
+[root@k8smaster build-yaml]# kubectl delete pod two-containers
+pod "two-containers" deleted
+[root@k8smaster build-yaml]# kubectl get pods
+NAME                                READY   STATUS    RESTARTS   AGE
+nginx-deployment-6f859b4555-s26gr   1/1     Running   0          47m
+nginx-deployment-6f859b4555-zcj9t   1/1     Running   0          47m
+
+k8s查看pod日志
+#查看pod最后200行日志
+kubectl logs --tail 200 -f <podname> -n <namesapce> | more
+
+查看namespace
+[root@k8smaster build-yaml]# kubectl get namespaces
+NAME              STATUS   AGE
+default           Active   173m
+kube-node-lease   Active   173m
+kube-public       Active   173m
+kube-system       Active   173m
+
+查看指定namespace下的所有pods
+[root@k8smaster build-yaml]# kubectl get pods -n default
+NAME                                READY   STATUS                  RESTARTS   AGE
+javaweb-2                           0/1     Init:ImagePullBackOff   0          12m
+nginx-deployment-6f859b4555-s26gr   1/1     Running                 0          61m
+nginx-deployment-6f859b4555-zcj9t   1/1     Running                 0          61m

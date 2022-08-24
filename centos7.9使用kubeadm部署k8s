@@ -47,7 +47,17 @@ http://mirrors.aliyuncs.com/centos/7/os/x86_64/repodata/d6d94c7d406fe7ad4902a971
 6、下载常见安装包
 [root@master ~]# yum install -y yum-utils device-mapper-persistent-data lvm2 wegt net-tools vim sshpass
 
-7、配置ssh互信
+7、修改hosts文件
+[root@master ~]# cat /etc/hosts
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+192.168.189.200 master
+192.168.189.201 node1
+192.168.189.202 node2
+[root@master ~]# scp -rp /etc/hosts node1:/etc/                                                                                                    100%  203    59.0KB/s   00:00    
+[root@master ~]# scp -rp /etc/hosts node2:/etc/
+
+8、配置ssh互信
 [root@master ~]# ssh-keygen 按两下空格
 [root@master ~]# cat believe.sh
 #!/bin/bash
@@ -59,7 +69,7 @@ done
 [root@master ~]# chmod +x believe.sh 
 [root@master ~]# ./believe.sh 
 
-8、配置时间同步
+9、配置时间同步
 修改时区
 [root@master ~]# ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime 
 [root@master ~]# timedatectl set-timezone 'Asia/Shanghai'
@@ -89,16 +99,8 @@ chrony.conf                                                                     
 NTP synchronized: yes
  RTC in local TZ: no
       DST active: n/a
+同步到硬件时间
 [root@master ~]# hwclock -w
-
-9、修改hosts文件
-[root@master ~]# cat /etc/hosts
-127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
-::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
-192.168.189.201 node1
-192.168.189.202 node2
-[root@master ~]# scp -rp /etc/hosts node1:/etc/                                                                                                    100%  203    59.0KB/s   00:00    
-[root@master ~]# scp -rp /etc/hosts node2:/etc/
 
 10、配置内核参数
 [root@master ~]# cat >>/etc/sysctl.conf <<EOF
@@ -116,12 +118,14 @@ sysctl: cannot stat /proc/sys/net/bridge/bridge-nf-call-ip6tables: No such file 
 net.bridge.bridge-nf-call-iptables = 1
 net.bridge.bridge-nf-call-ip6tables = 1
 net.ipv4.ip_forward = 1
+vm.swappiness=0
 
 11、安装docker-ce
-使用如下命令查看docker版本，本次选择
+使用如下命令查看docker版本，本次选择20.10.10版
 [root@master ~]# yum list docker-ce --showduplicates
 [root@master ~]# yum install -y docker-ce-20.10.10
 [root@master ~]# systemctl enable --now docker
+镜像加速，修改cgroup为systemd
 [root@master ~]# cat >>/etc/docker/daemon.json <<EOF
 {
   "registry-mirrors": ["https://v16stybc.mirror.aliyuncs.com"],
@@ -151,10 +155,10 @@ EOF
 [root@master ~]# yum list kubelet --showduplicates
 [root@master ~]# yum install -y kubeadm-1.17.12 kubectl-1.17.12 kubelet-1.17.12
 [root@master ~]# systemctl enable --now kubelet
-[root@master ~]# systemctl status kubelet ##此时查看kubelet没有启动属于正常现象，kubeadm init后就会启动
+[root@master ~]# systemctl status kubelet ##此时查看kubelet频繁重启属于正常现象，kubeadm init后就会启动
 [root@master ~]# ss -tunlp | grep kubelet ##端口没有放开也属于正常现象，kubeadm init后端口会放开
 
-13、kubelet命令补全
+13、kubectl命令补全
 [root@master ~]# yum install -y bash-completion
 [root@master ~]# source /etc/profile.d/bash_completion.sh 
 [root@master ~]# echo "source <(kubectl completion bash)" >>~/.bash_profile 
@@ -169,7 +173,7 @@ images=(`kubeadm config images list --kubernetes-version=$version|awk -F '/' '{p
 for imagename in ${images[@]} ; do
   docker pull $url/$imagename
   docker tag $url/$imagename k8s.gcr.io/$imagename
-  docker rmi -f $url/$imagename     #此处有问题，$url/$imagename后面必须跟上版本号才可以删除
+  docker rmi -f $url/$imagename     
 done
 [root@master ~]# chmod +x images.sh
 [root@master ~]# ./images.sh 
@@ -248,20 +252,44 @@ tcp    LISTEN     0      128    [::]:10250              [::]:*                  
 
 17、安装pod网络，本次使用的是flannel
 [root@master ~]# kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+[root@master ~]# kubectl apply -f  kube-flannel.yml
 namespace/kube-flannel created
+clusterrole.rbac.authorization.k8s.io/flannel created
+clusterrolebinding.rbac.authorization.k8s.io/flannel created
+serviceaccount/flannel created
+configmap/kube-flannel-cfg created
+daemonset.apps/kube-flannel-ds created
 安装完pod网络后要等到几分钟，执行这个命令查看直到都为running状态
 [root@master ~]# kubectl get pods -n kube-system
+NAME                             READY   STATUS    RESTARTS   AGE
+coredns-6955765f44-7z8cc         1/1     Running   0          11m
+coredns-6955765f44-dfxsc         1/1     Running   0          11m
+etcd-master                      1/1     Running   0          11m
+kube-apiserver-master            1/1     Running   0          11m
+kube-controller-manager-master   1/1     Running   0          11m
+kube-proxy-9ht4l                 1/1     Running   0          11m
+kube-scheduler-master            1/1     Running   0          11m
 
+如果需要重新安装先删除所创建的网络配置
+kubectl delete -f  kube-flannel.yml
+All
 18、work节点加入集群
 [root@node2 yum.repos.d]# yum install -y kubeadm-1.17.12 kubectl-1.17.12 kubelet-1.17.12
 [root@node2 yum.repos.d]# yum install -y bash-completion
 [root@node2 yum.repos.d]# source /etc/profile.d/bash_completion.sh 
 [root@node2 yum.repos.d]# echo "source <(kubectl completion bash)" >>~/.bash_profile 
-[root@node2 yum.repos.d]# systemctl enable --now kubelet ##此时查看kubelet没有启动属于正常现象，kubeadm join后就会启动
+[root@node2 yum.repos.d]# systemctl enable --now kubelet ##此时查看kubelet频繁重启属于正常现象，kubeadm join后就会启动
 [root@node1 ~]# kubeadm join 192.168.189.200:6443 --token yquoub.htqg9ff5za70wxa4 \
 >     --discovery-token-ca-cert-hash sha256:1897ee409743739e39d713e9da8ea99571eb578bbd163046fbf2b882f99f6e0d 
 
-19、健康检查发现controller-manager、scheduler状态Unhealthy，查看master组件状态时出现错误
+19、查看node
+[root@master manifests]# kubectl get nodes
+NAME     STATUS   ROLES    AGE   VERSION
+master   Ready    master   24h   v1.17.12
+node1    Ready    <none>   23h   v1.17.12
+node2    Ready    <none>   23h   v1.17.12
+
+20、健康检查发现controller-manager、scheduler状态Unhealthy，查看master组件状态时出现错误
 [root@master ~]# kubectl get cs
 NAME                 STATUS      MESSAGE                                                                                     ERROR
 scheduler            Unhealthy   Get http://127.0.0.1:10251/healthz: dial tcp 127.0.0.1:10251: connect: connection refused   
@@ -272,10 +300,10 @@ etcd-0               Healthy     {"health":"true"}
 [root@master manifests]# ls
 etcd.yaml  kube-apiserver.yaml  kube-controller-manager.yaml  kube-scheduler.yaml
 [root@master manifests]# cat kube-controller-manager.yaml | grep port
-#    - --port=0
+    - --port=10252
         port: 10257
 [root@master manifests]# cat kube-scheduler.yaml | grep port
-#    - --port=0
+    - --port=10251
         port: 10259
 修改完成后，重新apply即可，再次检查健康状态
 [root@master manifests]# kubectl apply -f kube-scheduler.yaml 
@@ -373,21 +401,6 @@ kubernetes-dashboard-778ff9499c-2dhj2   0/1     ContainerCreating   0          1
 [root@master manifests]# cat kube-controller-manager.yaml | grep leader
     - --leader-elect=false
 
-明天试验
-1、增大master节点的内存，使用top命令查看master内存只剩余100多m，但是配置文件中原本为200m，改为100m仍然不行，增加内存再试
-[root@master manifests]# cat kube-controller-manager.yaml | grep -i cpu
-        cpu: 100m
-[root@master manifests]# cat kube-scheduler.yaml| grep -i cpu
-        cpu: 100m
-2、controller-manager和scheduler都为pod，将pod绑定在master节点，master需要增加内存
-此处port=0注释掉，忘记为什么注释明天查一下
-[root@master manifests]# cat kube-controller-manager.yaml | grep port
-#    - --port=0
-        port: 10257
-[root@master manifests]# cat kube-scheduler.yaml | grep port
-#    - --port=0
-        port: 10259
-
 [root@master manifests]# kubectl logs kube-controller-manager -n kube-system
 Flag --address has been deprecated, see --bind-address instead.
 I0822 11:50:40.362080       1 serving.go:312] Generated self-signed cert in-memory
@@ -395,3 +408,160 @@ unable to create request header authentication config: open /etc/kubernetes/pki/
 
 查看kubelet的cgroup
 [root@master kubelet.service.d]# systemctl show --property=Enviroment kubelet | grep -i cgroup
+
+
+22、重新kubeadm init
+master节点
+使用kubeadm reset命令输入y
+The reset process does not clean CNI configuration. To do so, you must remove /etc/cni/net.d
+
+The reset process does not reset or clean up iptables rules or IPVS tables.
+If you wish to reset iptables, you must do so manually by using the "iptables" command.
+
+If your cluster was setup to utilize IPVS, run ipvsadm --clear (or similar)
+to reset your system's IPVS tables.
+
+The reset process does not clean your kubeconfig files and you must remove them manually.
+Please, check the contents of the $HOME/.kube/config file.
+提示/etc/cni/net.d/、iptables、ipvs、$HOME/.kube/config file需要手动清理，
+[root@master ~]# rm -rf .kube/
+[root@master ~]# rm -rf /etc/cni/net.d/
+[root@master ~]# iptables -F
+
+node节点加入
+[root@node1 manifests]# kubeadm join 192.168.189.200:6443 --token j1omv1.zsechs2qoyawqkgy \
+>     --discovery-token-ca-cert-hash sha256:5c205b9adf74cb147494ceb56fefaba24749a1827d6d9e9360184b91568fd553 
+-bash: rpkubeadm: command not found
+[root@node1 manifests]# kubeadm join 192.168.189.200:6443 --token j1omv1.zsechs2qoyawqkgy --discovery-token-ca-cert-hash sha256:5c205b9adf74cb147494ceb56fefaba24749a1827d6
+d9e9360184b91568fd553W0823 16:45:27.941697    8953 join.go:346] [preflight] WARNING: JoinControlPane.controlPlane settings will be ignored when control-plane flag is not set.
+[preflight] Running pre-flight checks
+	[WARNING SystemVerification]: this Docker version is not on the list of validated versions: 20.10.10. Latest validated version: 19.03
+error execution phase preflight: [preflight] Some fatal errors occurred:
+	[ERROR FileAvailable--etc-kubernetes-kubelet.conf]: /etc/kubernetes/kubelet.conf already exists
+	[ERROR Port-10250]: Port 10250 is in use
+	[ERROR FileAvailable--etc-kubernetes-pki-ca.crt]: /etc/kubernetes/pki/ca.crt already exists
+[preflight] If you know what you are doing, you can make a check non-fatal with `--ignore-preflight-errors=...`
+To see the stack trace of this error execute with --v=5 or higher
+[root@node1 ~]# kubeadm  reset  提示输入：y
+The reset process does not clean CNI configuration. To do so, you must remove /etc/cni/net.d
+
+The reset process does not reset or clean up iptables rules or IPVS tables.
+If you wish to reset iptables, you must do so manually by using the "iptables" command.
+
+If your cluster was setup to utilize IPVS, run ipvsadm --clear (or similar)
+to reset your system's IPVS tables.
+
+The reset process does not clean your kubeconfig files and you must remove them manually.
+Please, check the contents of the $HOME/.kube/config file.
+
+[root@node1 ~]# rm -rf  /etc/cni/net.d/
+[root@node1 ~]# iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X
+[root@node1 ~]# kubeadm join 192.168.189.200:6443 --token j1omv1.zsechs2qoyawqkgy --discovery-token-ca-cert-hash sha256:5c205b9adf74cb147494ceb56fefaba24749a1827d6d9e93601
+84b91568fd553W0823 17:16:51.319915   19190 join.go:346] [preflight] WARNING: JoinControlPane.controlPlane settings will be ignored when control-plane flag is not set.
+[preflight] Running pre-flight checks
+	[WARNING SystemVerification]: this Docker version is not on the list of validated versions: 20.10.10. Latest validated version: 19.03
+[preflight] Reading configuration from the cluster...
+[preflight] FYI: You can look at this config file with 'kubectl -n kube-system get cm kubeadm-config -oyaml'
+[kubelet-start] Downloading configuration for the kubelet from the "kubelet-config-1.17" ConfigMap in the kube-system namespace
+[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.yaml"
+[kubelet-start] Writing kubelet environment file with flags to file "/var/lib/kubelet/kubeadm-flags.env"
+[kubelet-start] Starting the kubelet
+[kubelet-start] Waiting for the kubelet to perform the TLS Bootstrap...
+
+This node has joined the cluster:
+* Certificate signing request was sent to apiserver and a response was received.
+* The Kubelet was informed of the new secure connection details.
+
+Run 'kubectl get nodes' on the control-plane to see this node join the cluster.
+
+#[root@node2 ~]# rm -rf  /etc/kubernetes/kubelet.conf
+#[root@node2 ~]# rm -rf /etc/kubernetes/pki/ca.crt
+#[root@node2 ~]# rm -rf /etc/kubernetes/bootstrap-kubelet.conf
+#[root@node2 ~]# iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X
+主节点上查看
+[root@master ~]# kubectl get nodes
+NAME     STATUS     ROLES    AGE    VERSION
+master   Ready      master   58m    v1.17.12
+node1    NotReady   <none>   9m6s   v1.17.12
+node2    NotReady   <none>   92s    v1.17.12
+
+23、开启kube-proxy开启ipvs的前置条件
+[root@master ~]# cat > /etc/sysconfig/modules/ipvs.modules <<EOF
+#!/bin/bash
+modprobe -- ip_vs
+modprobe -- ip_vs_rr
+modprobe -- ip_vs_wrr
+modprobe -- ip_vs_sh
+modprobe -- nf_conntrack_ipv4
+EOF
+
+加载模块
+[root@master ~]# chmod 755 /etc/sysconfig/modules/ipvs.modules && bash /etc/sysconfig/modules/ipvs.modules && lsmod | grep -e ip_vs -e nf_conntrack_ipv4
+
+安装了ipset软件包
+[root@master ~]# yum install ipset -y
+
+安装管理工具ipvsadm
+[root@master ~]# yum install ipvsadm -y
+
+docker批量删除images
+docker rmi `docker images | awk 'NR>1{print $1":"$2'}`
+
+24、k8s升级
+在 master 节点执行
+kubeadm config view
+创建kubeadm-config-upgrade.yaml配置文件，文件内容如下，根据前面 kubeadm config view 的执行结果，修改了如下字段：
+imageRepository 的值修改为：registry.aliyuncs.com/google_containers
+#kubernetesVersion 的值修改为： v1.20.7
+
+apiServer:
+  extraArgs:
+    authorization-mode: Node,RBAC
+  timeoutForControlPlane: 4m0s
+apiVersion: kubeadm.k8s.io/v1beta2
+certificatesDir: /etc/kubernetes/pki
+clusterName: kubernetes
+controllerManager: {}
+dns:
+  type: CoreDNS
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+imageRepository: registry.aliyuncs.com/google_containers
+kind: ClusterConfiguration
+kubernetesVersion: v1.20.7
+networking:
+  dnsDomain: cluster.local
+  podSubnet: 10.44.0.0/16
+  serviceSubnet: 10.22.0.0/16
+scheduler: {}
+
+# 查看配置文件差异
+kubeadm upgrade diff --config kubeadm-config-upgrade.yaml
+     
+# 执行升级前试运行
+kubeadm upgrade apply --config kubeadm-config-upgrade.yaml --dry-run
+     
+# 执行升级动作
+kubeadm upgrade apply --config kubeadm-config-upgrade.yaml
+
+加载ipvs模块
+kubernete 开启ipvs 模式，主要修改kube-proxy 配置
+modprobe -- ip_vs
+modprobe -- ip_vs_rr
+modprobe -- ip_vs_wrr
+modprobe -- ip_vs_sh
+modprobe -- nf_conntrack_ipv4
+lsmod | grep ip_vs
+lsmod | grep nf_conntrack_ipv4
+yum install -y ipvsadm ipset
+# 开启IPVS，修改ConfigMap的kube-system/kube-proxy中的模式为ipvs
+kubectl edit cm kube-proxy -n kube-system 
+# 将空的data -> ipvs -> mode中替换如下
+mode: "ipvs"
+
+使用[root@master ~]# kubectl get pods --all-namespaces查看所有pod
+
+拉去阿里云镜像
+docker pull registry.cn-beijing.aliyuncs.com/yunweijia/flannel:v0.12.0-arm64 
+docker tag registry.cn-beijing.aliyuncs.com/yunweijia/flannel:v0.12.0-arm64   quay.io/coreos/flannel:v0.12.0-arm64 
