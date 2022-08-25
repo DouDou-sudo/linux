@@ -64,3 +64,14 @@ spec:
 删除pod
 [root@k8smaster build-yaml]# kubectl delete pod nginx
 pod "nginx" deleted
+
+查看控制器的pod
+[root@k8smaster build-yaml]# kubectl get deployments
+NAME               READY   UP-TO-DATE   AVAILABLE   AGE
+nginx-deployment   2/2     2            2           18h
+
+AVAILABLE ：当前可用的pod个数    描述的是用户期望的最终状态
+UP-TO-DATE ：当前处于最新版本的pod个数
+
+--record参数，记录你每次操作所执行的命令，方便以后查看
+$ kubectl create -f nginx-deployment.yaml --record
