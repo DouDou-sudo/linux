@@ -1,0 +1,5 @@
+rpm -qf 文件名 查看一个文件是由哪个包安装的
+rpm -ql 包名 查看一个包安装了哪些文件
+rpm -qa 查看系统安装了哪些包
+rpm -qf `which mkfs.ext4`
+

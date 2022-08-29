@@ -1,0 +1,74 @@
+centos 5:
+	/etc/inittab
+	id:3:initdefault:
+	在/etc/rc.d/目录下，rc0.d,rc1.d,.....rc6.d对应运行级别要启动和关闭的服务
+	K*：要停止的服务；优先级数字越小优先级越高，依赖的服务先关闭，再关闭被依赖的
+	S*：要启动的服务；数字月小优先级越高，被依赖的服务先启动
+查看：chkconfig --list
+添加：chkconfig --add name
+删除：chkconfig --del name
+修改：chkconfig --level LEVELS:要控制的启动级别，默认为2345；
+最好启动的一个服务S99local没有链接到/etc/init.d/下的某脚本，而是链接到/etc/rc.d/rc.local脚本
+虚拟终端	tty1:2345:respawn:/usr/sbin/mingetty tty1
+	...
+	tty6:2345:respawn:/usr/sbin/mingetty tty6	
+		(1)mingetty会调用login程序
+		(2)打开虚拟终端的程序除了mingetty之外，还有getty等
+系统初始化脚本：/etc/rc.d/rc.sysinit
+	(1)设置主机名
+	(2)设置欢迎信息
+	(3)激活udev和selinux
+	(4)挂载/etc/fstab文件中定义的所有文件系统
+	(5)检测根文件系统，并以读写方式重新挂载根文件系统
+	(6)设置系统时钟
+	(7)根据/etc/sysctl.conf文件来设置内核参数
+	(8)激活lvm及软raid设备
+	(9)激活swap设备
+	(10)加载额外设备的驱动程序
+	(11)清理操作
+总结（用户空间的启动流程）：/sbin/init(/etc/inittab)
+	设置默认允许级别-->运行系统初始化脚本，完成系统初始化-->关闭对应级别下要停止的服务，
+启动对应级别下要开启的服务-->设置登录终端-->【启动图形终端】
+centos 6：
+	init程序：upstart,但依然为/sbin/init,其配置文件：
+	/etc/init/*.conf,/etc/inittab(仅用于定义默认运行级别)
+	
+	注意：*.conf为upstart风格的配置文件
+	rsc.conf
+	rc.conf
+	start-ttys.conf
+启动流程：
+	POST（加电自检）-->Boot Sequence(BIOS)(选择启动设备)-->Boot Loader(MBR)(引导程序)-->Kernel(ramdisk)-->rootfs-->switchroot-->/sbin/init-->(/etc/inittab,/etc/init/*.conf)-->设定默认运行级别-->系统初始化脚本-->关闭或启动对应级别下的服务-->启动终端
+centos 7:
+	init程序：systemd,配置文件：/usr/lib/systemd/system/*,/etc/systemd/system/*
+	完全兼容SysV脚本机制，service命令依然可用
+	#systemctl {start|stop|restart|status} name[.service]
+	
+
+
+配置文件：/boot/grub/grub.conf
+default=0
+timeout=3
+splashimage=(hd0,0)/grub/splash.xpm.gz
+#hiddenmenu
+title Kylin 3 (2.6.32-754.23.1.ky3.kb1.pg.x86_64)
+	root (hd0,0)
+	kernel /vmlinuz-2.6.32-754.23.1.ky3.kb1.pg.x86_64 ro root=/dev/mapper/VolGroup-LogVol01 rd_NO_LUKS rd_NO_MD rd_LVM_LV=VolGroup/LogVol01 SYSFONT=latarcyrheb-sun16 LANG=zh_CN.UTF-8  KEYBOARDTYPE=pc KEYTABLE=us rd_LVM_LV=VolGroup/LogVol00 rd_NO_DM rhgb quiet
+	initrd /initramfs-2.6.32-754.23.1.ky3.kb1.pg.x86_64.img
+
+	配置项：
+	default=#：设定默认启动的菜单项，（title）编号默认从0开始
+	timeout=#：指定菜单项等待选项选择的时长
+	splashimage=(hd0,0)/grub/splash.xpm.gz：指明菜单背景图片文件路径；
+	hiddenmenu：隐藏菜单
+	title TITLE：定义菜单项标题
+		root (hd0,0)：grub查找stage2及kernel文件所在设备分区；为grub的“根”
+		kernel /PATH/TO/vmlinuz：启动的内核
+		initrd /PATH/TO/initramfs：要
+
+加密密码
+输入grub-md5-crypt，按回车，会输出加密后的密码
+[root@localhost grub]# grub-md5-crypt
+Password: 
+Retype password: 
+$1$3sbZE1$EhdLFFLvN.Yp1OQgddla1/

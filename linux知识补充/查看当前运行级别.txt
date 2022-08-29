@@ -1,0 +1,4 @@
+runlevel
+who -r
+系统的默认允许级别
+/etc/inittab

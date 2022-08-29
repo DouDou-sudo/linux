@@ -1,0 +1,27 @@
+#sda为HDD   sdb为SSD
+
+1、创建物理卷
+pvcreate /dev/sda
+pvcreate /dev/sdb
+
+2、创建卷组vg
+vgcreate vg /dev/sda
+vgextend vg /dev/sdb
+
+3、创建逻辑卷(data为存储卷，cache为缓存卷,meta为缓冲卷索引,其中cache:meta不能大于1000：1,meta最小为8M)
+lvcreate -L 500G -n data vg /dev/sda
+lvcreate -L 220G -n cache vg /dev/sdb
+lvcreate -L 220M -n meta vg /dev/sdb
+
+4、创建缓存池(注意cache和meta的顺序不能颠倒)
+lvconvert --type cache-pool --poolmetadata vg/meta vg/cache
+
+5、将存储卷加入到缓存池中（cachemode有writeback和writethrough两种模式，默认为writethrough）
+lvconvert --type cache --cachepool vg/cache --cachemode writeback vg/data
+注：writeback会在写入cache完成后，再写入date中
+    writethrough会在写入cache的同时，写入date（写入date慢于cache）
+    两种模式比较下writeback在使用过程中写入加速，但如果数据在缓存层中服务器掉电数据会丢失（现在已解决丢失问题，未研究）
+    writethrough写入较慢，但数据不易丢失
+
+
+ 创建完成

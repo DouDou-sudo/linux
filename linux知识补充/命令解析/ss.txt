@@ -1,0 +1,36 @@
+ss命令
+选项：
+	-t：TCP协议的相关连接
+	-u：udp协议的相关连接
+	-l：监听状态的连接
+	-a：所有状态的连接
+	-n：数字格式
+	-p：相关的程序及其PID
+	-e：扩展格式信息
+	-m：内存用量
+	-o：计时器信息
+	-w：raw socket相关的连接
+	
+dport=
+sport=
+	eg：‘{ dport =:22 or sport = :22 }’
+	
+[root@gluster1 ~]# ss -tan state ESTABLISHED '( dport = :22 or sport = :22 )'
+Recv-Q Send-Q                       Local Address:Port                                      Peer Address:Port              
+0      0                          192.168.189.102:22                                       192.168.189.1:62750              
+0      36                         192.168.189.102:22                                       192.168.189.1:62747              
+0      0                          192.168.189.102:22                
+[root@gluster1 ~]# ss -tan state ESTABLISHED
+Recv-Q Send-Q                       Local Address:Port                                      Peer Address:Port              
+0      0                          192.168.189.102:22                                       192.168.189.1:62750              
+0      0                                127.0.0.1:24007                                        127.0.0.1:49149              
+0      36                         192.168.189.102:22                                       192.168.189.1:62747              
+0      0                          192.168.189.102:22                                       192.168.189.1:56545              
+0      0                                127.0.0.1:49149                                        127.0.0.1:24007              
+[root@gluster1 ~]# ss -tan '( dport = :22 or sport = :22 )'
+State      Recv-Q Send-Q                  Local Address:Port                                 Peer Address:Port              
+LISTEN     0      128                                 *:22                                              *:*                  
+ESTAB      0      0                     192.168.189.102:22                                  192.168.189.1:62750              
+ESTAB      0      36                    192.168.189.102:22                                  192.168.189.1:62747              
+ESTAB      0      0                     192.168.189.102:22                                  192.168.189.1:56545              
+LISTEN     0      128                              [::]:22                                           [::]:*               

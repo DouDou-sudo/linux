@@ -1,0 +1,30 @@
+[Unit]
+Description:描述，
+After：在network.target,auditd.service启动后才启动
+ConditionPathExists: 执行条件
+
+[Service]
+EnvironmentFile:变量所在文件
+ExecStart: 执行启动脚本
+Restart: fail时重启
+
+[Install]
+Alias:服务别名
+WangtedBy: 多用户模式下需要的
+
+eg:
+Vim /lib/systemd/system/nginx.service
+[Unit]
+Description=nginx - high performance web server
+Documentation=http://nginx.org/en/docs/
+After=network.target remote-fs.target nss-lookup.target
+[Service]
+Type=forking
+PIDFile=/var/run/nginx.pid
+ExecStartPre=/opt/data/nginx/sbin/nginx -t -c /opt/data/nginx/conf/nginx.conf
+ExecStart=/opt/data/nginx/sbin/nginx -c /opt/data/nginx/conf/nginx.conf
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s QUIT $MAINPID
+PrivateTmp=true
+[Install]
+WantedBy=multi-user.target

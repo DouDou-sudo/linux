@@ -1,0 +1,6 @@
+yum remove mariadb
+rm -rf /etc/my.cnf
+rm -rf /var/lib/mysql
+yum install -y mariadb mariadb-server
+systemctl start mariadb
+mysql_secure_installation

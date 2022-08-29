@@ -1,0 +1,49 @@
+ip命令
+ip link：
+	ip link set  --change device attributes
+		dev NAME(default):指明要管理的设备，dev可省略
+	up 和down 
+		ip link set ens33  multicast on
+		ip link set ens33  multicast off
+	multicast on或multicast off:启用或禁用多播功能
+		ip link set multicast on
+		ip link set multicast off
+	name NAME：重命名接口
+		ip link set eth1 name ens33 将网卡设备改名，改名前必须down掉网卡设备，临时更改重启不会生效
+	ip link show --display device attributes
+	ip link set dev ens33 up/down 启停网卡
+	ip link set dev br0 up/down
+ip addr  临时添加开机后不生效
+	ip addr add 192.168.10.21/24 dev eth0 在原有ip的基础上再添加一个ip地址
+	ip addr ad 10.0.0.1/8 dev eth0 label eth0:1
+	#ifconfig eth0 192.168.10.21/24,将原有ip地址修改为此ip地址
+	#ifconfig eth0:1 192.168.10.21/24  
+	ip addr flush dev ens33 清空所有
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 00:0c:29:16:cf:a1 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.189.102/24 brd 192.168.189.255 scope global noprefixroute eth0
+       valid_lft forever preferred_lft forever
+    inet 10.0.0.1/8 scope global eth0:1
+       valid_lft forever preferred_lft forever
+	
+	global：全局可用
+	link：接口可用
+	host：仅本机可用
+ip route
+	ip route add 192.168.0.0/24 via 10.0.0.1 dev eth1 src 10.0.20.100
+	ip route add default via 192.168.0.1(gw)
+	ip route del 192.168.1.0/24
+
+
+
+brctl命令
+创建网桥
+	brctl addbr br0
+删除网桥
+	brctl delbr br0
+将eth0端口加入网桥br0
+	brctl addif br0 eth0
+将eth0从网桥中删除
+	brctl delif br0 eth0
+查询网桥信息
+	brctl show

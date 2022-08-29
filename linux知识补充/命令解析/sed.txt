@@ -1,0 +1,204 @@
+sed
+参数：
+	-r：支持使用正则表达式
+	-e： 多点编辑
+	-n：仅显示处理后的结果
+	-i：直接修改文件内容
+动作说明：
+	a：新增，当前的下一行
+	d：删除
+	c：把选定行改为新的文本
+	i：插入，当前的上一行
+	p：打印
+	s：取代
+
+sed '2a 123' a 在第2行下面插入123一行
+sed '2a\123' a 在第2行下面插入123一行
+sed '2i 123' a 在第2行上面插入123一行
+sed '2i\123' a 在第2行上面插入123一行
+sed '2c\123' a 将第2行内容替换为123
+sed 's/^#\(.*123.*\)/\1/' a  去掉匹配到123的行的注释
+删除空格及只有空格的行
+# cat a
+
+        a
+
+         2
+
+fdsfsdf
+fdfg
+# sed -e  's/[[:space:]]\+//g'  -e '/^[[:space:]]*$/d' a
+a
+2
+fdsfsdf
+fdfg
+#sed -i  's/[[:space:]]//g' a 此命令会删除掉所有空格，但是只有空格的行仍存在
+
+sed 'G' file 在原有的每一行后面添加一个空白行
+sed -n 'n;p' a 显示偶数行
+
+
+linux中sed在指定字符前后添加内容
+假设文档内容如下：
+	
+[root@localhost ~]# cat /tmp/input.txt
+null
+000011112222
+ 
+test
+
+要求：在1111之前添加AAA,方法如下：
+
+sed -i 's/指定的字符/要插入的字符&/'  文件
+	
+[root@localhost ~]# sed -i  's/1111/AAA&/' /tmp/input.txt                     
+[root@localhost ~]# cat /tmp/input.txt                   
+null
+0000AAA11112222
+ 
+test
+
+要求：在1111之后添加BBB，方法如下：
+
+sed -i 's/指定的字符/&要插入的字符/'  文件
+	
+[root@localhost ~]# sed -i  's/1111/&BBB/' /tmp/input.txt    
+[root@localhost ~]# cat /tmp/input.txt                   
+null
+0000AAA1111BBB2222
+ 
+test
+
+要求：(1) 删除所有空行；(2) 一行中，如果包含"1111"，则在"1111"前面插入"AAA"，在"11111"后面插入"BBB"
+	
+[root@localhost ~]# sed '/^$/d;s/1111/AAA&/;s/1111/&BBB/' /tmp/input.txt   
+null
+0000BBB1111AAA2222
+test
+
+要求：在每行的头添加字符，比如"HEAD"，命令如下：
+#########sed -i '/swap/s/^/#/' /etc/fstab######################## 
+[root@localhost ~]# sed -i 's/^/HEAD&/' /tmp/input.txt 
+[root@localhost ~]# cat /tmp/input.txt
+HEADnull
+HEAD000011112222
+HEAD
+HEADtest
+
+  要求：在每行的尾部添加字符，比如"tail"，命令如下：
+	
+[root@localhost ~]# sed -i 's/$/&tail/' /tmp/input.txt      
+[root@localhost ~]# cat /tmp/input.txt                
+HEADnulltail
+HEAD000011112222tail
+HEADtail
+HEADtesttail
+
+说明：
+1."^"代表行首，"$"代表行尾
+2.'s/$/&tail/g'中的
+
+　　字符s，表示查找替换；
+
+　　字符&，表示引用前面引用的字段；
+
+　　字符g代表每行出现的字符全部替换（也叫行内全局替换），如果想在特定字符处添加，g就有用了，否则只会替换每行第一个，而不继续往后找。
+
+3. 在命令中 /// 和 @@@ 和### 符号等价;
+
+如 sed -i ‘s/1/2/g’ == sed -i 's@1@2@g' == sed -i 's#1#2#g'
+
+删除前几个字符、后几个字符及特定字符前后字符
+1、测试数据
+
+[root@PC3 test]# cat a.txt
+1234567849
+1234567849
+1234567849
+1234567849
+
+ 
+
+2、删除前几个字符
+
+[root@PC3 test]# sed 's/..//' a.txt  ## 删除前两个字符
+34567849
+34567849
+34567849
+34567849
+[root@PC3 test]# sed 's/...//' a.txt ## 删除前三个字符
+4567849
+4567849
+4567849
+4567849
+[root@PC3 test]# sed 's/.\{3\}//' a.txt ## 删除前三个字符
+4567849
+4567849
+4567849
+4567849
+[root@PC3 test]# sed 's/.\{5\}//' a.txt  ## 删除前5个字符
+67849
+67849
+67849
+67849
+ 
+
+3、删除后几个字符
+
+[root@PC3 test]# sed 's/.$//' a.txt ## 删除最后一个字符
+123456784
+123456784
+123456784
+123456784
+[root@PC3 test]# sed 's/..$//' a.txt  ## 删除最后两个字符
+12345678
+12345678
+12345678
+12345678
+
+
+4、删除特定字符及其前的字符
+
+[root@PC3 test]# sed 's/.4//' a.txt
+12567849
+12567849
+12567849
+12567849
+[root@PC3 test]# sed 's/..4//' a.txt
+1567849
+1567849
+1567849
+1567849
+ 
+5、删除特定字符及其后的字符
+
+[root@PC3 test]# sed 's/4.//' a.txt
+12367849
+12367849
+12367849
+12367849
+[root@PC3 test]# sed 's/4..//' a.txt
+1237849
+1237849
+1237849
+1237849
+
+6、删除特定字符其后的字符
+[root@PC3 test]# sed 's/4./4/' a.txt
+123467849
+123467849
+123467849
+123467849
+
+7、删除特定字符其前的字符
+[root@PC3 test]# sed 's/.4//' a.txt
+124567849
+124567849
+124567849
+124567849
+
+8、注释掉/etc/fstab文件的swap行,并备份原有的/etc/fstab文件
+sed -i.bak  '/swap/s/^/\1/g' /etc/fstab
+
+9、去掉/etc/fstab文件的swap行的注释
+sed -i  '/swap/s/#\(.*\)$/\1/g' /etc/fstab

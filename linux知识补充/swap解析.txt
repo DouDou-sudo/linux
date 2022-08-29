@@ -1,0 +1,27 @@
+启用swap分区
+选项
+-a:激活所有的交换分区
+-p:指定优先级，也可以在/etc/fstab第4列指定：pri=value
+-s:查看swap分区情况
+
+禁用swap分区
+swapoff -a 禁用所有
+swapoff  /dev/mapper/centos-swap	禁用单个
+
+创建swap分区
+fdisk /dev/sdb	分区
+mkswap /dev/sdb1	格式化
+vim /etc/fstab	挂载
+swapon -a	启用
+free -h		查看
+
+swap优先级修改
+vim /etc/fstab
+defaults,pri=100
+swapon -a
+
+swap的使用策略
+/proc/sys/vm/swappiness的值决定了当内存占用达到一定的百分比时，会启动swap分区的空间
+[系统未激活][root@node1 ~]# cat /proc/sys/vm/swappiness 
+10
+100-10 当内存占用达到90%时启动swap分区的空间

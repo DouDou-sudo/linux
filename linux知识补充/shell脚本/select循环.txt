@@ -1,0 +1,27 @@
+sum=0
+PS3="请点菜（1-4）："
+select MENU in 北京烤鸭 佛跳墙 小龙虾 点菜结束;do
+##select会循环下面的case语句，直到break
+case $REPLY in
+1)
+echo $MENU 价格是 100
+let sum+=100
+;;
+2)
+echo $MENU 价格是 88
+let sum+=88
+;;
+3)
+echo $MENU 价格是 66
+let sum+=66
+;;
+4)
+echo "点菜结束，退出"
+break
+;;
+*)
+echo "点菜错误，重新选择"
+;;
+esac
+done
+echo "总价格是：$sum"

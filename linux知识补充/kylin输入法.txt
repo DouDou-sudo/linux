@@ -1,0 +1,10 @@
+1) ibus-setup
+2) vim /etc/profile
+export GTK_IM_MODULE=ibus
+export  XMODIFIERS=@im=ibus
+export  QT_IM_MODULE=ibus
+3)source /etc/profile
+
+
+im-chooser 
+切换输入法

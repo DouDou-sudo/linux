@@ -1,0 +1,35 @@
+lastlog 查看各用户的登录信息
+[root@gluster2 ~]# lastlog
+用户名           端口     来自             最后登陆时间
+root             pts/0    192.168.189.1    一 11月 29 09:19:35 +0800 2021
+bin                                        **从未登录过**
+daemon                                     **从未登录过**
+adm                                        **从未登录过**
+lp                                         **从未登录过**
+sync                                       **从未登录过**
+
+last命令详解
+last -R省略hostname的栏位，不显示登入系统的主机名称或ip
+
+-n num展示前几个
+[root@gluster2 ~]# last -n 5
+root     pts/0        192.168.189.1    Mon Nov 29 09:19   still logged in   
+root     tty1                          Mon Nov 29 09:18   still logged in   
+reboot   system boot  3.10.0-1160.el7. Mon Nov 29 09:18 - 10:44  (01:25)    
+root     tty1                          Tue Nov 23 17:29 - crash (5+15:48)   
+reboot   system boot  3.10.0-1160.el7. Tue Nov 23 17:29 - 10:44 (5+17:15)   
+
+username 展示username的登入信息
+eg:  last root 查看root用户的登入信息
+eg:  last reboot
+
+-a 将登录系统的主机名或ip，显示在最后一行
+[root@gluster2 ~]# last -n 5 -a
+root     pts/0        Mon Nov 29 09:19   still logged in    192.168.189.1
+root     tty1         Mon Nov 29 09:18   still logged in    
+reboot   system boot  Mon Nov 29 09:18 - 10:41  (01:22)     3.10.0-1160.el7.x86_64
+root     tty1         Tue Nov 23 17:29 - crash (5+15:48)    
+reboot   system boot  Tue Nov 23 17:29 - 10:41 (5+17:12)    3.10.0-1160.el7.x86_64
+
+-f 指定记录文件
+eg:  tail -f /var/log/wtmp

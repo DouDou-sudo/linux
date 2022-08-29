@@ -1,0 +1,37 @@
+lvm
+1、pvcreate /dev/sdc
+2、vgcreate vgd5000 /dev/sdc
+3、lvcreate -l +100%FREE -n lvd5000 vgd5000
+lvcreate -L 12g -n lvd5000 vgd5000
+mkfs.ext4 /dev/vgd5000/lvd5000
+mount /dev/vgd5000 /home/d5000
+扩容
+添加一块磁盘
+1、pvcreate /dev/sdd
+2、vgextend vgd5000 /dev/sdd
+3、vgdisplay vgd5000
+4、lvextend -L +5g /dev/vgd5000/lvd5000
+lvextend -l +100%FREE /dev/vgd5000/lvd5000
+5、刷新存储resize2fs /dev/vgd5000/lvd5000  #ext4格式
+	xfs_growfs /dev/vgd5000/lvd5000  #xfs格式
+缩容
+1、pvdisplay #找出要缩减的磁盘分区pe大小
+2、pvscan #计算扣除磁盘后剩余容量
+3、resize2fs /dev/vgd5000/lvd5000 4900M
+4、umount /dev/vgd5000/lvd5000
+5、resize2fs /dev/vgd5000/lvd5000 4900M
+6、mount /dev/vgd5000/lvd5000 /home/d5000/
+7、lvreduce -l -2559(要缩减的PE大小) /dev/vgd5000/lvd5000
+8、pvdisplay #查看/dev/sdc的Allocated PE是否为空
+
+pvs -o+pvs_used 查看pv使用情况
+9、pvmove /dev/sdc /dev/sdb #为空不用执行
+pvs -o+pvs_used 查看pv使用情况
+10、vgreduce vgd5000 /dev/sdc
+11、pvremove /dev/sdc
+
+lvremove /dev/mapper/vg_test-lv_TEST
+vgremove vg_test
+
+vgchange -ay myvg #将卷组激活
+vgchange -an myvg #将卷组去激活

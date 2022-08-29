@@ -1,0 +1,9 @@
+磁盘格式转换
+parted /dev/sdb
+mklabel
+gpt/msdos
+ignore
+yes
+quit
+
+parted /dev/sdb mklabel gpt

@@ -1,0 +1,10 @@
+su
+-c
+-s
+变更帐号为 root 并在执行 ls 指令后退出变回原使用者
+su -c ls root
+变更账号为d5000并执行ls指令后退出变回原使用者
+su - d5000 -c "ls"
+变更账号为d5000并执行脚本后退出变回原使用者
+su - d5000 -c "/bin/sh /home/d5000/zhongwei/bin/scp_send.sh"
+su - d5000 -c /bin/sh /home/d5000/zhongwei/bin/scp_send.sh

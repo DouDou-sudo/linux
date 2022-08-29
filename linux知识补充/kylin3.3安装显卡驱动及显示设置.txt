@@ -1,0 +1,35 @@
+1、安装gcc*,glibc*,libc*,glibc-devel*,elfutils-libelf-devel包elfutils*,libelf-dev,libelf-devel kernel-devel 
+2、vim /lib/modprobe.d/dist-blacklist.conf
+	#blacklist  nvidiafb
+	blacklist nouveau
+	options nouveau modeset=0
+执行后 运行命令 Dracut  --force 并Reboot服务器生效
+2.1、编辑 /etc/modprobe.d/blacklist.conf ，再加入
+blacklist nouveau 
+options nouveau modeset=0
+2.2、用文本编辑器打开 /etc/default/grub 文件，在其中的：
+GRUB_CMDLINE_LINUX=”rd.lvm.lv=vg_centos/lv_root rd.lvm.lv=vg_centos/lv_swap rhgb quiet”
+quiet后面加入rdblacklist=nouveau ，保存。（或者添加rd.driver.blacklist=nouveau nouveau.modeset=0）
+打开终端，执行：
+3、sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+4、reboot
+5、lsmod | grep nouveau 正常没有输出任何模块才对
+6、systemctl isolate multi-user.target
+安装显卡驱动
+##图形化界面按ctrl+alt+backspace可以重启X
+##重新生成即可。
+##在kernel版本后加 nouveau.modeset=0 rdblacklist=nouveau
+#3、mv /boot/initramfs-$(uname -r).img /boot/initramfs-$(uname -r).img.bak
+#4、dracut /boot/initramfs-$(uname -r).img $(uname -r)
+#	文本模式
+#	systemctl set-default multi-user.target
+#	reboot 重启就会进去文本模式
+#5、lsmod | grep nouveau查看显卡驱动有没有禁掉
+#6、安装显卡驱动
+#7、图像界面systemctl set-default graphical.target
+#	reboot
+
+-no-x-check	安装驱动时关闭X服务
+-no-nouveau-check	安装驱动时禁用nouveau
+-no-opengl-files	只安装驱动文件，不安装OpenGL文件
+./NVIDIA-Linux-x86_64-450.57.run --kernel-source-path=/usr/src/kernels/3.10.0-1160.2.2.el7.x86_64

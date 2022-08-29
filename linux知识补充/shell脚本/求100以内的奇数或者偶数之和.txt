@@ -1,0 +1,28 @@
+下面两个脚本的不同之处
+1.sh是 当除2为0时跳出循环，不为0时做加法
+test是 当除2为0时做加法，否则不做
+[root@gluster1 script]# cat 1.sh 
+#!/bin/bash
+i=0
+while [ $i -lt 100 ];
+do
+	let i++
+	if [ $[$i%2] -eq 0 ];
+		then
+			continue
+	fi
+	let evensum+=$i
+done
+echo "$evensum"
+[root@gluster1 script]# cat test 
+#!/bin/bash
+i=0
+while [ $i -lt 100 ];
+do
+	let i++
+	if [ $[$i%2] -eq 0 ];
+		then
+	let evensum+=$i
+	fi
+done
+echo "$evensum"

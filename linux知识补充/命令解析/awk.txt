@@ -1,0 +1,49 @@
+1、查找/etc/passwd文件第10个用户和第20个用户的id之和
+[root@gluster2 ~]# awk -F: 'NR==20{print $3};NR==10{print $3}' /etc/passwd | awk '{sum+=$1};END{print sum}'
+1011
+2、计算/etc/rc.d/init.d/functions和/etc/inittab文件的空白行之和
+[root@gluster2 ~]# a=`grep "^$" /etc/rc.d/init.d/functions | wc -l`;b=`grep "^$" /etc/inittab | wc -l`;let c=a+b;echo $c
+91
+3、匹配/etc/rc.d/init.d/functions文件
+空行
+[root@gluster2 ~]# grep "^$" /etc/rc.d/init.d/functions | wc -l
+90
+只有0个或多个空格的行
+[root@gluster2 ~]# grep "^[[:space:]]*$" /etc/rc.d/init.d/functions | wc -l
+91
+算数比较运算符
+-eq 等于
+-ne 不等于
+-gt 大于
+-ge 大于等于
+-lt 小于
+-le 小于等于
+-a 同时满足
+-o 只满足一个
+字符串比较运算符
+-z 是否为空 -z string如果string长度为0，则为真
+-n 不为空    -z string如果string长度不为0，则为真
+
+==
+文件比较运算符
+-a file或-e file  文件或目录是否存在，存在为真
+-b file 是否为块设备
+-c file	是否为字符设备
+-d file	是否为字符设备
+-f file	是否为普通文件
+-h file或-L file	是否为符号链接文件
+-p file	是否为命令管道文件
+-S file	是否为套接字文件
+文件权限测试
+-r
+-w
+-x
+-s file	是否有内容
+
+
+显示文件最后一行
+sed '$p' a
+awk 'END{print}' a
+tail -n 1 a
+
+

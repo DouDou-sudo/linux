@@ -1,0 +1,19 @@
+wget http://mirrors.163.com/.help/CentOS7-Base-163.repo
+ http://mirrors.aliyun.com/repo/Centos-7.repo
+yum clean all
+yum makecache
+yum repolist 查看
+
+
+rpm -qi 包名 //查看一个包的详细信息
+
+rpm -qf 文件名 //查看一个文件是由哪个包安装的
+
+如查看IP命令是由哪个rpm安装包提供，则：
+
+rpm -qf `which ip` //不是单引号，是左上角的`，esc键下方的那个
+
+rpm -ql 包名 //查看一个包安装了哪些文件
+
+rpm -qa //查看系统中安装了哪些包
+

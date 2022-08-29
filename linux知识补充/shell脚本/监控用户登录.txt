@@ -1,0 +1,11 @@
+#!/bin/bash
+while true
+do
+        if who | grep "^duankai" &>/dev/null
+        then
+                break
+        fi
+        sleep 10
+done
+echo "`date +"%F %T"` duankai loged on" >>/tmp/user.log
+                          

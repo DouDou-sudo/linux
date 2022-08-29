@@ -1,0 +1,3 @@
+setfattr
+setfattr -n name path   	新增标注
+setfattr -x name  path 	取消标注

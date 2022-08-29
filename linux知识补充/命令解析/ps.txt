@@ -1,0 +1,56 @@
+ps命令
+启动进程的方式:
+	系统启动过程中自动启动；与终端无关的进程
+	用户通过终端启动；与终端相关的进程；
+选项：
+	a：所有与终端相关的进程
+	x：所有与终端无关的进程
+	u：以用户为中心组织进程状态信息显示
+[root@gluster2 1]# ps aux
+USER      PID %CPU %MEM    VSZ   RSS    TTY    STAT START  TIME  COMMAND
+root          1    0.0       0.4    125768  4204   ?        Ss      09:07   0:03  /usr/lib/systemd/systemd --switched-ro
+root          2    0.0       0.0         0       0         ?         S       09:07   0:00  [kthreadd]
+root          4    0.0       0.0         0        0        ?         S<    09:07   0:00  [kworker/0:0H]
+
+常用组合之一：aux
+	VSZ：虚拟内存集
+	RSS：常驻内存集
+	STAT：
+		R: running
+		S: interruptable sleeping 可中断睡眠
+		D: uninterruptable sleeping 不可中断睡眠
+		T：stopped
+		Z：zombie
+		
+		+：前台进程
+		l：多线程进程
+		N：低优先级进程
+		<：高优先级进程
+		s：session leader
+	-e：所有进程
+	-f：显示完整格式的进程信息
+常用组合之二：-ef
+	-F：显示完整格式的进程信息
+		C：cpu占用的百分比
+		PSR：运行在那颗CPU之上
+	-H：以层级结构显示进程的相关信息；显示父子进程直接的关系
+常用组合之三：-efH
+	o：自定义要显示的字段列表，以逗号分隔；
+		pid，ni，ppid，command
+	eg：ps -eo user,pid,ppid,vsize,size,rss,nice,stat,cmd --sort rss
+常用组合之四：-eo，axo
+
+pidof命令：
+	根据进程名，取其pid
+	eg：pidof nginx
+[root@gluster2 ~]# pidof nginx
+1190 1188
+[root@gluster2 ~]# ps -ef | grep nginx
+root       1188      1  0 09:08 ?        00:00:00 nginx: master process /usr/local/nginx/sbin/nginx -c /usr/local/nginx/conf/nginx.conf
+nginx      1190   1188  0 09:08 ?        00:00:00 nginx: worker process
+root       6089   1598  0 16:37 pts/0    00:00:00 grep --color=auto nginx
+[root@gluster2 ~]# ps -efH | grep nginx
+root       6091   1598  0 16:37 pts/0    00:00:00         grep --color=auto nginx
+root       1188      1  0 09:08 ?        00:00:00   nginx: master process /usr/local/nginx/sbin/nginx -c /usr/local/nginx/conf/nginx.conf
+nginx      1190   1188  0 09:08 ?        00:00:00     nginx: worker process
+	

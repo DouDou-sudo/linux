@@ -1,0 +1,6 @@
+ vim /etc/lightdm/lightdm.conf添加如下两行
+[XDMCPServer]
+enabled=true
+port=177
+重启服务即可
+systemctl restart lightdm.service

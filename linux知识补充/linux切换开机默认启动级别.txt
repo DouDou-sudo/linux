@@ -1,0 +1,12 @@
+centos6
+vim /etc/inittab
+id:5:initdefault:
+id:3:initdefault:
+centos7
+[root@gluster2 ~]#  systemctl get-default
+multi-user.target
+查看当前运行级别
+systemctl set-default TARGET.target
+	 TARGET.target：
+		multi-user.target
+		graphical.target

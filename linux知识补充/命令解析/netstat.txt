@@ -1,0 +1,30 @@
+netsat命令
+显示路由表：-rn
+	-r:显示内核路由表
+	-n：数字格式
+显示网络连接：
+	netstat [-tcp|-t] [-udp|-u] [listening|-l] [-all|-a][program|-p]
+	-t：tcp协议的相关连接
+	-u：udp协议的相关连接
+	-n：以数字格式显示IP和port
+	-a：所有状态
+	-p：显示相关的进程和PID
+	-l：显示监听状态的连接 -l等待别人连接，不加-l已经建立连接
+	-w：raw socket相关连接
+	-e：扩展，可以显示进程是由哪个用户启动的，User和Inode
+
+	传输层协议：
+	tcp：面向连接的协议，通信开始之前。要建立一个虚链路，通信完成后还有拆除连接
+	udp：无连接的协议；直接发送数据报文；
+[root@gluster2 ansible]# netstat -tunp
+Active Internet connections (w/o servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 192.168.189.101:22      192.168.189.1:62837     ESTABLISHED 1600/sshd: root@not 
+tcp        0     36 192.168.189.101:22      192.168.189.1:62835     ESTABLISHED 1596/sshd: root@pts 
+tcp        0      0 127.0.0.1:49147         127.0.0.1:24007         ESTABLISHED 1188/glusterfs      
+[root@gluster2 ansible]# netstat -tunpe
+Active Internet connections (w/o servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       User       Inode      PID/Program name    
+tcp        0      0 192.168.189.101:22      192.168.189.1:62837     ESTABLISHED 0          42985      1600/sshd: root@not 
+tcp        0     36 192.168.189.101:22      192.168.189.1:62835     ESTABLISHED 0          42789      1596/sshd: root@pts 
+tcp        0      0 127.0.0.1:49147         127.0.0.1:24007         ESTABLISHED 0          39322      1188/glusterfs      

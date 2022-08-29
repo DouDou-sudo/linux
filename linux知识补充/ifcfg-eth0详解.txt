@@ -1,0 +1,24 @@
+TYPE=Ethernet	#接口类型，常见的有Ethernet，Bridge
+PROXY_METHOD=none
+BROWSER_ONLY=no
+BOOTPROTO=none	#激活此接口时使用什么协议来配置接口属性。常用的dhcp,none,static,bootp
+IPADDR=192.168.189.101
+NETMASK=255.255.255.0
+GATEWAY=192.168.189.2
+NM_CONTROLLED=yes	#是否使用NetworkManager服务来控制接口
+DEFROUTE=yes	#是否是默认路由的接口
+USERCTL=yes	#是否允许普通用户控制此设备
+PEERDNS=yes	#是否匹配DNS。如果使用DHCP协议，默认为yes，这样就会同步DHCP提供的DNS。如果不想同步就设置成no，也就是/etc/resolv.conf文件是否被DHCP控制，yes为控制，no为不控制
+		yes：修改/etc/resolv.conf中的DNS
+		no：不修改/etc/resolv.conf中的DNS
+IPV4_FAILURE_FATAL=no
+IPV6INIT=yes	#是否初始化IPV6
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+UUID="21410bf8-631d-4759-a426-7d4dd52e31b2"	#此设备的唯一标识
+NAME=ens33	#网络名称
+DEVICE=ens33	#配置文件对应的设备的名称和文件名必须保持一致
+ONBOOT=yes	#在系统引导过程中，是否激活此接口
+HWADDR=	#mac地址

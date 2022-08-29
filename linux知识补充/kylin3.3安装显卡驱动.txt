@@ -1,0 +1,21 @@
+1、vim打开文件，注释掉blacklist  nvidiafb行，添加如下两行，wq保存退出
+vim /lib/modprobe.d/dist-blacklist.conf
+	#blacklist  nvidiafb
+	blacklist nouveau
+	options nouveau modeset=0
+
+2、依次以下执行命令
+1）mv /boot/initramfs-$(uname -r).img /boot/initramfs-$(uname -r).img.bak
+2）dracut /boot/initramfs-$(uname -r).img $(uname -r)
+3）systemctl set-default multi-user.target
+4）reboot重启
+
+3、重启自动进入命令行界面，输入root用户名及密码
+
+4、执行命令  lsmod | grep nouveau 查看有无输出，正常没有任何输出
+
+5、cd到显卡驱动所在目录，执行命令 ./NVIDIA-Linux-x86_64-470.57.02 回车，选择提示全部选择ok
+
+6、安装完成后执行命令systemctl set-default graphical.target
+
+7、执行命令reboot重启即可

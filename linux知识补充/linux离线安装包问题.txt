@@ -1,0 +1,54 @@
+生产环境一般都不连接互联网，如何打包好指定的rpm包给生产环境使用呢？
+一、简单点的方法
+在联网环境中指定机器上，修改/etc/yum.conf，
+将 keepcache=0 修改为 keepcache=1，目的是使yum安装软件时保存数据包，默认会保存到/var/cache/yum
+在/var/cache/yum/下的仓库同名目录下缓存，下载时需要查看在哪个仓库下载的，然后去仓库同名目录下的package目录下去查找
+yum安装安装包，会缓存下来rpm包，然后打包给生产环境使用，
+二、安装yum-utils下载rpm包
+1、在联网环境中，yum inastall -y yum-utils
+	repotrack(全量下载一个软件的依赖包)
+	yumdownloader(下载软件的依赖包，如果本机已经安装不下载依赖包，但是还是会下载指定的包)
+	reposync(下载一个yum仓库中的所有包)
+安装createrepo
+这个软件可以利用目录中的rpm包生成repodata目录
+1、mkdir ansible
+cd absible
+repotrack ansible 会在当前目录下下载ansible所需的所有依赖包
+[root@sr2 ansible]# ls | wc -l
+88
+生成repodata元数据信息目录
+[root@sr2 ansible]# createrepo .
+在yum源中配置新的仓库
+[root@sr2 ansible]# cat /etc/yum.repos.d/ansible.repo 
+[ansible]
+name=ansible
+baseurl=file:///root/ansible
+gpgcheck=0
+使用yum repolist命令可以看到已生成ansible的yum源
+[root@sr2 ansible]# yum repolist
+Loaded plugins: fastestmirror
+Loading mirror speeds from cached hostfile
+ * base: mirrors.aliyun.com
+ * extras: mirrors.aliyun.com
+ * updates: mirrors.aliyun.com
+repo id                                            repo name                                                                status
+ansible                                            ansible                                                                      88
+base/7/x86_64                                      CentOS-7 - Base - mirrors.aliyun.com                                     10,072
+docker-ce-stable/7/x86_64                          Docker CE Stable - x86_64                                                   163
+epel/x86_64                                        Extra Packages for Enterprise Linux 7 - x86_64                           13,757
+extras/7/x86_64                                    CentOS-7 - Extras - mirrors.aliyun.com                                      512
+updates/7/x86_64                                   CentOS-7 - Updates - mirrors.aliyun.com                                   4,050
+repolist: 28,642
+2、[root@sr2 ~]# mkdir yumdownloader
+[root@sr2 ~]# cd yumdownloader
+[root@sr2 yumdownloader]# yumdownloader ansible
+依赖包我已经安装就不会再次安装，只会按照指定包
+[root@sr2 yumdownloader]# ls
+ansible-2.9.27-1.el7.noarch.rpm
+3、执行reposync ansible会安装ansible源的所有安装包
+[root@sr2 reposync]# reposync ansible
+[root@sr2 reposync]# ls
+ansible
+[root@sr2 ansible]# ls | wc -l
+88
+

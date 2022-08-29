@@ -1,0 +1,33 @@
+visudo
+使用vi打开/etc/sudoers文件，并且会检查语法
+1、给普通用户赋予root权限
+test ALL=(root) 
+ALL=(root) 第一个ALL表示所有主机，第二个ALL所有用户
+NOPASSWD不需要输入密码就能切换用户
+test01 ALL=(root)  NOPASSWD: ALL
+test ALL=(ALL) /usr/sbin/useradd 
+执行which useradd 命令查看路径
+2、多用户
+1、多个用户设置
+User_alias UUU=user1,user2,user3......定义用户名
+eg：
+User_Alias sudouser=user1,user2,user3,
+sudoer ALL=(root) /usr/sbin/useradd      #user1,user2,user3可以使用useradd命令
+2、多个命令设置
+Cmnd_alias NETWORKING= /sbin/route,/sbin/ifconfig,/bin/ping,/sbin/dhclient,/usr/bin/net,/sbin/iptables,/usr/sbin/rfcomm,/usr/bin/iwconfig,/sbin/mii-ttol
+sudouser ALL=(root) NETWORKING
+
+3、对于多主机的设置和多登陆角色的设置
+Host_Alias HHH=hosts,hosts2...
+定义主机别名
+Runnas_Alias RRR=role1,role2...
+定义runas别名，指定的是目的用户，即sudo允许转换至的用户
+
+4、多个用户的设置（同一群组用户）
+%wheel ALL=(ALL) ALL //用户列%+群组名
+wheel为用户组名
+eg：
+%users ALL=/sbin/mount,/mnt/cdrom,/sbin/umount /mnt/cdrom
+允许users用户组中的用户执行mount、umount、chrom命令
+%user localhost=/sbin/shutdown -h now
+允许users用户组中的用户使用shutdown命令

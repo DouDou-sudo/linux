@@ -1,0 +1,23 @@
+服务器一、ens33: 10.0.0.2
+服务器二、10.0.0.1，192.168.189.180
+服务器三、ens33: 192.168.189.181
+
+确认防火墙关闭
+服务器二 
+该服务器两个网卡均不能设置网关
+打开路由转发
+echo "1" >/proc/sys/net/ipv4/ip_forward
+永久生效的话，需要修改sysctl.conf：
+net.ipv4.ip_forward = 1
+
+服务器一
+临时添加路由
+route add -host 192.168.189.181 gw 10.0.0.1
+永久添加路由
+echo "192.168.189.181 via 10.0.0.1" > /etc/sysconfig/network-scripts/route-ens33
+
+服务器三
+临时添加路由
+route add -host 10.0.0.2 gw 192.168.189.180
+永久添加路由
+echo "10.0.0.2/32 via 192.168.189.180" > /etc/sysconfig/network-scripts/route-ens33
