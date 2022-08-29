@@ -1,0 +1,149 @@
+StatefulSet 这个控制器的主要作用之一，就是使用 Pod 模板创建 Pod 的时候，对它们进行编号，并且按照编号顺序逐一完成创建工作。而当 StatefulSet 的“控制循环”发现 Pod 的“实际状态”与“期望状态”不一致，需要新建或者删除 Pod 进行“调谐”的时候，它会严格按照这些 Pod 编号的顺序，逐一完成这些操作。
+1、拓扑状态。这种情况意味着，应用的多个实例之间不是完全对等的关系。这些应用实例，必须按照某些顺序启动，比如应用的主节点 A 要先于从节点 B 启动。而如果你把 A 和 B 两个 Pod 删除掉，它们再次被创建出来时也必须严格按照这个顺序才行。并且，新创建出来的 Pod，必须和原来 Pod 的网络标识一样，这样原先的访问者才能使用同样的方法，访问到这个新 Pod。
+2、存储状态。这种情况意味着，应用的多个实例分别绑定了不同的存储数据。对于这些应用实例来说，Pod A 第一次读取到的数据，和隔了十分钟之后再次读取到的数据，应该是同一份，哪怕在此期间 Pod A 被重新创建过。这种情况最典型的例子，就是一个数据库应用的多个存储实例。
+所以，StatefulSet 的核心功能，就是通过某种方式记录这些状态，然后在 Pod 被重新创建时，能够为新 Pod 恢复这些状态。
+
+拓扑状态
+service是k8s项目中用来将一组pod暴露给外界访问的一种机制，比如一种deployment有3个pod，那么就可以定义一个service，只有用户能访问到这个service，就能访问到某个具体的pod
+service是如何被访问的呢
+第一种
+以service的VIP方式，当我访问10.0.2.21时这个service的ip地址时，这个10.0.2.21就是vip，它会把请求转发到该service所代理的某一个pod上
+第二种
+以service的DNS方式，当我访问"web-0.nginx.default.svc.cluster.local"这条dns记录，就可以访问到名叫my-svc的service所代理的某一个pod
+
+而在第二种service DNS的方式下，具体还可以分为两种
+第一种处理方法，
+是 Normal Service。这种情况下，你访问“my-svc.my-namespace.svc.cluster.local”解析到的，正是 my-svc 这个 Service 的 VIP，后面的流程就跟 VIP 方式一致了。
+而第二种处理方法，
+正是 Headless Service。这种情况下，你访问“my-svc.my-namespace.svc.cluster.local”解析到的，直接就是 my-svc 代理的某一个 Pod 的 IP 地址。
+可以看到，这里的区别在于，Headless Service 不需要分配一个 VIP，而是可以直接以 DNS 记录的方式解析出被代理 Pod 的 IP 地址。
+这是一个标准的 Headless Service 对应的 YAML 文件：
+[root@k8smaster statefulset]# cat svc.yml 
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  ports:
+  - port: 80
+    name: web
+  clusterIP: None
+  selector:
+    app: nginx
+可以看到，所谓的 Headless Service，其实仍是一个标准 Service 的 YAML 文件。只不过，它的 clusterIP 字段的值是：None，即：这个 Service，没有一个 VIP 作为“头”。这也就是 Headless 的含义。所以，这个 Service 被创建后并不会被分配一个 VIP，而是会以 DNS 记录的方式暴露出它所代理的 Pod。
+这个sevice所代理的pod依然是Label selector机制选择出来的，即所有app=nginx标签的pod，都会被这个service代理起来
+你按照这样的方式创建了一个 Headless Service 之后，它所代理的所有 Pod 的 IP 地址，都会被绑定一个这样格式的 DNS 记录，如下所示：
+<pod-name>.<svc-name>.<namespace>.svc.cluster.local
+这个dns正是k8s为pod分配的唯一的”可解析身份“
+StatefulSet 又是如何使用这个 DNS 记录来维持 Pod 的拓扑状态的呢？
+编写一个yml文件：
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web
+spec:
+  serviceName: "nginx"
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.9.1
+        ports:
+        - containerPort: 80
+          name: web
+
+[root@k8smaster statefulset]# kubectl get svc
+NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.1.0.1     <none>        443/TCP   25h
+nginx        ClusterIP   None         <none>        80/TCP    95m
+[root@k8smaster statefulset]# kubectl get statefulset web
+NAME   READY   AGE
+web    2/2     97m
+[root@k8smaster statefulset]# kubectl get pod -o wide
+NAME       READY   STATUS    RESTARTS   AGE    IP            NODE       NOMINATED NODE   READINESS GATES
+dns-test   1/1     Running   0          42m    10.244.1.22   k8snode1   <none>           <none>
+web-0      1/1     Running   0          100m   10.244.1.20   k8snode1   <none>           <none>
+web-1      1/1     Running   0          100m   10.244.2.25   k8snode2   <none>           <none>
+
+创建一个一次性的pod，--rm意味pod退出就会被删除
+[root@k8smaster statefulset]# kubectl run -it --image centos:7 dns-test --restart=Never --rm /bin/bash
+使用nslookup解析就可以解析到对应pod的ip地址
+[root@dns-test yum.repos.d]# nslookup web-0.nginx.default.svc.cluster.local
+Server:		10.1.0.10
+Address:	10.1.0.10#53
+
+Name:	web-0.nginx.default.svc.cluster.local
+Address: 10.244.1.20
+
+[root@dns-test yum.repos.d]# nslookup web-1.nginx.default.svc.cluster.local
+Server:		10.1.0.10
+Address:	10.1.0.10#53
+
+Name:	web-1.nginx.default.svc.cluster.local
+Address: 10.244.2.25
+
+将app=nginx的2个pod删掉
+[root@k8smaster statefulset]# kubectl delete pod -l app=nginx
+pod "web-0" deleted
+pod "web-1" deleted
+查看新创建的两个pod，k8s为它们分配了和原来一样的网络身份”web-0.nginx"和”web-1.nginx“
+[root@k8smaster statefulset]# kubectl get pod -w -l app=nginx
+NAME    READY   STATUS    RESTARTS   AGE
+web-0   1/1     Running   0          65s
+web-1   1/1     Running   0          62s
+当只删掉web-0的pod
+[root@k8smaster statefulset]# kubectl delete pod web-0
+pod "web-0" deleted
+[root@k8smaster statefulset]# kubectl get pod -w -l app=nginx
+NAME    READY   STATUS    RESTARTS   AGE
+web-0   1/1     Running   0          3s
+web-1   1/1     Running   0          3m15s
+查看新创建的pod，k8s为它们分配了和原来一样的网络身份”web-0.nginx”
+
+存储状态
+创建一个pvc
+[root@k8smaster volume]# cat pvc.yml 
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pv-claim
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+在应用的pod中，声明使用这个pvc
+[root@k8smaster volume]# cat pv-pod.yml 
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pv-pod
+spec:
+  containers:
+    - name: pv-container
+      image: nginx
+      ports:
+        - containerPort: 80
+          name: "http-server"
+      volumeMounts:
+        - mountPath: "/usr/share/nginx/html"
+          name: pv-storage
+  volumes:
+    - name: pv-storage
+      persistentVolumeClaim:
+        claimName: pv-claim
+
+
