@@ -145,5 +145,111 @@ spec:
     - name: pv-storage
       persistentVolumeClaim:
         claimName: pv-claim
+实验环境使用hostpath代替ceph，所有节点都mkdir  /test-volume目录必须配置文件如下
+[root@k8smaster volume]# cat pv.yml 
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: pv-test
+  labels:
+    name: pv-test
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Recycle
+  hostPath:
+    path: /test-volume
+ # rbd:
+  #  monitors:
+    # 使用 kubectl get pods -n rook-ceph 查看 rook-ceph-mon- 开头的 POD IP 即可得下面的列表
+     #    - '10.16.154.78:6789'
+      #       - '10.16.154.82:6789'
+      #           - '10.16.154.83:6789'
+     #                pool: kube
+    #                     image: foo
+   #                          fsType: ext4
+  #                               readOnly: true
+ #                                    user: admin
+ #                                        keyring: /etc/ceph/keyring
+pvc配置如下
+[root@k8smaster volume]# cat pvc.yml 
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pv-claim
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+pod配置文件如下：
+[root@k8smaster volume]# cat sts.yml 
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web1
+spec:
+  serviceName: "nginx"
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.9
+        ports:
+        - containerPort: 80
+          name: web
+        volumeMounts:
+        - name: www
+          mountPath: /usr/share/nginx/html
+  volumeClaimTemplates:
+  - metadata:
+      name: www
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: manual
+      resources:
+        requests:
+          storage: 1Gi
+创建这个pv
+[root@k8smaster volume]# kubectl create -f pv.yml 
+persistentvolume/pv-test created
+[root@k8smaster volume]# kubectl get pv
+NAME      CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   REASON   AGE
+pv-test   1Gi        RWO            Recycle          Available           manual                  4s
+创建sts.yml配置的这个pod
+[root@k8smaster volume]# kubectl create -f sts.yml 
+statefulset.apps/web1 created
+查看pvc和pv的bound关系
+[root@k8smaster volume]# kubectl get pvc
+NAME         STATUS    VOLUME    CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+www-web1-0   Bound     pv-test   1Gi        RWO            manual         34m
+www-web1-1   Pending                                       manual         34m
+查看创建的pod的状态
+[root@k8smaster volume]# kubectl get pods -o wide
+NAME     READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+web1-0   1/1     Running   0          35m   10.244.1.31   k8snode1   <none>           <none>
+web1-1   0/1     Pending   0          35m   <none>        <none>     <none>           <none>
+exec到web1-0容器内
+[root@k8smaster volume]# kubectl exec -it  web1-0 -- /bin/bash
+root@web1-0:/# ls
+root@web1-0:/usr/share/nginx/html# echo "test" > index.html
+查看k8snode1节点下/test-volume目录下的文件
+[root@k8snode1 test-volume]# pwd
+/test-volume
+[root@k8snode1 test-volume]# cat index.html 
+test
+
 
 
