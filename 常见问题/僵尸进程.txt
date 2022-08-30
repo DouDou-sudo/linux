@@ -1,0 +1,12 @@
+解决过程：ps -ef | grep defunct命令查看僵尸进程为update_time.sh进程，
+find / -name "update_time.sh"命令查找到在/home/d5000/yanan/bin/目录下有该文件，检查该脚本无错误，
+查看update_time.sh的父进程为cron进程，crontab -l查看计划任务为*/1 * * * * /usr/sbin/update_time.sh,crontab -e 
+在计划任务后面追加>/dev/null 2>&1后，再次查看没有僵尸进程
+
+可能是由于僵死进程导致的。可以通过指令ps -axjf查看是否存在 D 状态进程。
+
+系统卡顿
+iostat -x 5查看io读写
+查看最后一列 %util	采用周期内用于IO操作的时间比率，即IO队列非空的时间比率
+如果 %util 接近 100%，说明产生的I/O请求太多，I/O系统已经满负荷，该磁盘可能存在瓶颈。
+

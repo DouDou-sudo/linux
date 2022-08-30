@@ -1,0 +1,10 @@
+centos7和centos8 /etc/rc.d/rc.local默认开机不执行
+需要更改/etc/rc.d/rc.local的权限
+chmod +x /etc/rc.d/rc.local
+再修改
+/usr/lib/systemd/system/rc-local.service文件，在文件末尾添加如下两行
+[Install]
+WantedBy=multi-user.target
+再将rc-local服务设置为开机自启
+systemctl enable rc-local
+重启系统验证rc-local是否可以开机自启

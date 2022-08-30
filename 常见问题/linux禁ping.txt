@@ -1,0 +1,9 @@
+[root@sr2 opt]# cat /proc/sys/net/ipv4/icmp_echo_ignore_all 	#0为允许，1为禁止
+0
+[root@sr2 opt]# echo 1 > /proc/sys/net/ipv4/icmp_echo_ignore_all 
+[root@sr2 opt]# cat /proc/sys/net/ipv4/icmp_echo_ignore_all 
+1
+[root@sr2 opt]# echo 0  > /proc/sys/net/ipv4/icmp_echo_ignore_all 
+[root@sr2 opt]# iptables -A INPUT -p icmp -s 0/0 -j DROP		#添加规则禁止ping
+[root@sr2 opt]# iptables -D INPUT -p icmp -s 0/0 -j DROP		#删除禁ping规则
+以上两项有一个禁止ping就会被禁止

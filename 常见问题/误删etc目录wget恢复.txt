@@ -1,0 +1,16 @@
+主机： a   b
+b:
+主机b误删/etc目录
+还有ssh没有断开连接，可以使用wget命令恢复
+a：
+在a服务器上安装启动ftp服务
+vim /etc/vsftp/vsftp.conf
+添加anon_root=/etc这一行
+开启匿名登录
+重启ftp服务
+/etc/init.d/vsftpd restart
+chmod +x ./*
+
+在b服务器上执行
+wget -r -nH -P /etc/ ftp://a的ip地址//*
+使用该方法恢复/etc下的文件和目录会有遗漏，链接文件无法恢复

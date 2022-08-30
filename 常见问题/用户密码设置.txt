@@ -1,0 +1,73 @@
+设置密码过期时间
+/etc/shadow
+/etc/login.defs
+/etc/shadow的优先级高于/etc/login.defs
+
+/etc/shadow详解
+
+echo 123456 | passwd --stdin user002
+echo "user003:123456" | chpasswd
+
+root: $6$9w5Td6lg
+$bgpsy3olsq9WwWvS5Sst2W3ZiJpuCGDY.4w4MRk3ob/i85fl38RH15wzVoom ff9isV1 PzdcXmixzhnMVhMxbvO:15775:0:99999:7:::
+bin:*:15513:0:99999:7:::
+
+第一列：用户名
+第二列：加密密码
+第三列：最后一次修改时间距离1970年1月1日过去了多少天
+第四列：密码最小修改时间间隔
+第五列：密码有效期
+第六列：密码需要变更前的警告天数
+第七列：密码过期后的宽限时间
+第八列：账号失效时间
+第九列：保留字段:
+
+/etc/login.defs详解
+
+MAIL_DIR /var/spool/mail
+#创建用户时，要在目录/var/spool/mail/中创建一个用户mail文件
+PASS_MAX_DAYS 99999
+#密码最大有效期
+PASS_MIN_DAYS 0
+#两次修改密码的最小时间间隔
+PASS_MIN_LEN  5
+#密码最小长度，对于root无效
+PASS_WARN_AGE 7
+#密码过期前多少天开始提示
+UID_MIN  500
+#用户ID的最小值
+UID_MAX  60000
+#用户ID的最大值
+GID_MIN  500
+#组ID的最小值
+GID_MAX  60000
+#组ID的最大值
+#USERDEL_CMD /usr/sbin/userdel_local
+#当删除用户的时候执行的脚本
+CREATE_HOME yes
+#使用useradd的时候是否创建用户目录
+
+chage命令
+chage
+-m 密码可更改的最小天数，为0表示任何时候都可以更改密码
+-M 密码保持有效的最大天数
+-W 用户密码到期前，提示收到警告信息的天数
+-E 账号到期的日期。过了这天，此账号将不可用
+-d 上一次更改的日期
+-i 停滞时期，如果一个密码已过期这些天，那么此账号将不可用
+-l 列出当前的设置
+
+查看密码配置文件
+vim /etc/login.defs
+
+chage -M 90 root
+chage -M 99999 root密码永不过期
+查看某个用户的密码设置情况
+chage -l root
+
+强制用户登陆时修改密码
+chage -d 0 username
+passwd -f username
+强制用户下次登陆时修改密码，并设置密码最低有效期为0最高有效期90，提前15分钟警报提示
+chage -d 0 -m 0 -M 90 -W 15 root
+passwd -f -n 0 -x 90 -w 15 root

@@ -1,0 +1,30 @@
+lsof | grep deleted | sort -h
+查看deleted进程占用
+
+du -h --max-depth=1  指定最大的目录层级
+du -sh /* 2>/dev/null | sort -hr | head -3
+查看/分区 将标准错误重定向/dev/null
+
+du:查看某目录总体空间实际占用状态
+选项
+-h 已可便于查看大小的单位显示
+-s  只显示当前文件夹或目录
+--max-depth=num  指定最大目录层级
+-x 忽略不在同一个文件系统的目录
+
+
+df:文件系统空间实际真正占用等信息的查看工具
+选项
+-h	已可便于查看大小的单位显示
+-i	inode使用情况
+-T	文件系统类型
+-P	以posix兼容的格式输出
+
+dd可从标准输入或文件中读取数据，根据指定的格式来转换数据，再输出到文件、设备或标准输出
+dd  if=/dev/zero of=/opt/a bs=1M count=10
+ibs=一次读size个byte
+obs=一次写size个byte
+bs=同时设置读入\输出的块大小为个字节
+count 复制n个bs
+
+

@@ -1,0 +1,8 @@
+kylin3.3
+cd到家目录下
+rm -rf .config
+ps -ef | grep mate-session找到mate程序
+kill pid号  注销
+重新登录
+
+mate-display-properties调整分辨率

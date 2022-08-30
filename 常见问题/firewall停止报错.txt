@@ -1,0 +1,7 @@
+[root@node1 ~]# systemctl stop firwalld 停止firewall服务报错
+Failed to stop firwalld.service: Unit firwalld.service not loaded.
+[root@node1 ~]# systemctl mask firwalld	执行如下命令再次停止
+Created symlink from /etc/systemd/system/firwalld.service to /dev/null.
+您在 /var/spool/mail/root 中有新邮件
+[root@node1 ~]# systemctl stop firwalld
+[root@node1 ~]# 

@@ -1,0 +1,2 @@
+执行这条命令删除内核，自动解决依赖关系
+yum remove kernel-2.6.28-371.4.1.2.ky3.skl_softmode.4（内核版本号）

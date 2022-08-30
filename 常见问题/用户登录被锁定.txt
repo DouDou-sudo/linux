@@ -1,0 +1,4 @@
+查找用户错误登录次数
+Pam_tally2 –u root
+清空用户错误登录次数
+pam_tally2 –u root --reset
