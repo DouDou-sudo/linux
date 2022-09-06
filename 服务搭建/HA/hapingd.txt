@@ -1,0 +1,10 @@
+ha日志分析
+pingd=0，网络出现问题
+pingd=100，网络正常
+
+
+pingd当pingd ping不通时，节点会释放资源
+心跳 当ping不通对端心跳时，不知道是对端出问题还是我端出问题，就会去ping vip，vip可以ping通，
+说明资源在对端启用，我端不会变化，当vip不能ping通时，说明现在资源都停掉了，我端去接管资源
+
+corosync [SERV  ] Unloading all Corosync service engines.   corosync[服务]卸载所有corosync服务引擎。停止corosync服务

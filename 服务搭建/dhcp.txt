@@ -1,0 +1,61 @@
+下载dhcp安装包
+yum install -y dhcp
+cp /usr/share/doc/dhcp-4.2.5/dhcpd.conf.example /etc/dhcp/dhcpd.conf
+修改完配置，启动服务systemctl start dhcpd
+如果有报错，查看掩码是否正确，ip地址段在主机上是否存在
+当前主机必须有一个ip地址在所分配的网段，如下，当前主机必须有一个192.168.189.0/24和10.0.0.0/24段的地址
+####netmask注意修改
+[root@gluster2 ~]# cat /etc/dhcp/dhcpd.conf
+#ddns-update-style none;
+#authoritative;
+log-facility local7;
+subnet 192.168.189.0 netmask 255.255.255.0 {
+  range 192.168.189.220 192.168.189.225;	#地址池
+  option domain-name-servers 192.168.189.2;	#DNS服务器地址
+#  option domain-name "dns.com";		#域名
+  option routers 192.168.189.2;			#默认路由
+  option broadcast-address 192.168.189.255;	#广播地址
+  default-lease-time 7200;			#默认租用时间
+  max-lease-time 12800;				#最大租用时间
+}
+subnet 10.0.0.0 netmask 255.255.255.0 {
+  range 10.0.0.220 10.0.0.225;	#地址池
+#  option domain-name-servers 192.168.189.101;	#DNS服务器地址
+  option domain-name "dhcp.com";		#域名
+  option routers 10.0.0.2;			#默认路由
+  option broadcast-address 10.0.0.255;		#广播地址
+  default-lease-time 7200;			#默认租用时间
+  max-lease-time 12800;				#最大租用时间
+}
+###指定某台主机的ip地址
+host passacaglia {
+  hardware ethernet 0:0:c0:5d:bd:95; 	#客户端主机网卡的mac地址
+#  option routers 192.168.189.2;	#可以单独指定该主机的网关
+  fixed-address 192.168.189.230;	#指定该mac地址的ip地址，该地址不能为上面ip地址池中的地址
+}
+#######pxe
+subnet 192.168.14.0 netmask 255.255.255.0{         # 这里写的ip地址为子网的地址，故为192.168.14.0
+    range 192.168.14.10 192.168.14.200;     # 子网的范围，之后主机请求获取的ip地址就是这其中的一个
+    next-server 192.168.14.201;     # 指明tftp服务器的地址
+    filename "pxelinux.0"           # 指明PXE文件位置，这个在申请ip的时候会发送给安装主机
+}
+dhcp的客户端
+使用dhclient -d可以查看是哪个dhcp服务端给本机提供的ip地址
+[root@localhost ~]# dhclient -d
+Internet Systems Consortium DHCP Client 4.2.5
+Copyright 2004-2013 Internet Systems Consortium.
+All rights reserved.
+For info, please visit https://www.isc.org/software/dhcp/
+
+Listening on LPF/ens33/00:0c:29:45:14:c8
+Sending on   LPF/ens33/00:0c:29:45:14:c8
+Sending on   Socket/fallback
+DHCPREQUEST on ens33 to 255.255.255.255 port 67 (xid=0x6c776bd4)
+DHCPREQUEST on ens33 to 255.255.255.255 port 67 (xid=0x6c776bd4)
+DHCPREQUEST on ens33 to 255.255.255.255 port 67 (xid=0x6c776bd4)
+DHCPDISCOVER on ens33 to 255.255.255.255 port 67 interval 6 (xid=0x5cf563b3)
+DHCPREQUEST on ens33 to 255.255.255.255 port 67 (xid=0x5cf563b3)
+DHCPOFFER from 192.168.189.101
+DHCPACK from 192.168.189.101 (xid=0x5cf563b3)
+
+只要dhcp客户端获取到ip，在租约到期之前，都可以使用，租约期间dhcp服务器关闭也无影响

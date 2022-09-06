@@ -1,0 +1,174 @@
+Gluster 常用命令
+1 服务器节点
+# gluster peer status //查看所有节点信息，显示时不包括本节点
+
+# gluster peer probe NODE-NAME //添加节点
+
+# gluster peer detach NODE-NAME //移除节点，需要提前将该节点上的brick移除
+
+ 
+
+2 glusterd服务
+/etc/init.d/glusterd start //启动glusterd服务
+/etc/init.d/glusterd stop //关闭glusterd服务
+/etc/init.d/glusterd status //查看glusterd服务
+
+ 
+
+3 卷管理
+3.1 创建卷
+<1>复制卷
+
+语法： gluster volume create NEW-VOLNAME [replica COUNT] [transport tcp | rdma | tcp, rdma] NEW-BRICK
+
+示例1：gluster volume create test-volume replica 2 transport tcp server1:/exp1/brick server2:/exp2/brick
+
+ 
+
+<2>条带卷
+
+语法：gluster volume create NEW-VOLNAME [stripe COUNT] [transport tcp | rdma | tcp, rdma] NEW-BRICK...
+
+示例：gluster volume create test-volume stripe 2 transport tcp server1:/exp1/brick server2:/exp2/brick
+
+ 
+
+<3>分布式卷
+
+语法： gluster volume create NEW-VOLNAME [transport tcp | rdma | tcp, rdma] NEW-BRICK
+
+示例1：gluster volume create test-volume server1:/exp1/brick server2:/exp2/brick
+示例2：gluster volume create test-volume transport rdma server1:/exp1/brick server2:/exp2/brick server3:/exp3/brick server4:/exp4/brick
+
+ 
+
+<4>分布式复制卷
+
+语法： gluster volume create NEW-VOLNAME [replica COUNT] [transport tcp | rdma | tcp, rdma] NEW-BRICK...
+示例： gluster volume create test-volume replica 2 transport tcp server1:/exp1/brick server2:/exp2/brick server3:/exp3/brick server4:/exp4/brick
+
+ 
+
+<5>分布式条带卷
+
+语法：gluster volume create NEW-VOLNAME [stripe COUNT] [transport tcp | rdma | tcp, rdma] NEW-BRICK...
+
+示例：gluster volume create test-volume stripe 2 transport tcp server1:/exp1/brick server2:/exp2/brick server3:/exp3/brick server4:/exp4/brick
+
+ 
+
+<6>条带复制卷
+
+语法：gluster volume create NEW-VOLNAME [stripe COUNT] [replica COUNT] [transport tcp | rdma | tcp, rdma] NEW-BRICK...
+
+示例：gluster volume create test-volume stripe 2 replica 2 transport tcp server1:/exp1/brick server2:/exp2/brick server3:/exp3/brick server4:/exp4/brick
+
+3.2 启动卷
+#gluster volume start test-volume
+
+ 
+
+3.3 停止卷
+#gluster volume stop test-volume
+
+ 
+
+3.4 删除卷
+#gluster volume delete test-volume //先停止卷后才能删除
+
+ 
+
+3.5 查看卷
+# gluster volume list /*列出集群中的所有卷*/
+# gluster volume info [all] /*查看集群中的卷信息*/
+# gluster volume status [all] /*查看集群中的卷状态*/
+
+# gluster volume status [detail| clients | mem | inode | fd]
+
+3.6 配置卷
+# gluster volume set <VOLNAME> <OPTION> <PARAMETER>
+
+ 
+
+3.7 扩展卷
+# gluster volume add-brick <VOLNAME> <NEW-BRICK>
+注意，如果是复制卷或者条带卷，则每次添加的Brick数必须是replica或者stripe的整数倍。
+
+ 
+
+3.8 收缩卷
+先将数据迁移到其它可用的Brick，迁移结束后才将该Brick移除：
+# gluster volume remove-brick start
+在执行了start之后，可以使用status命令查看移除进度：
+# gluster volume remove-brick status
+不进行数据迁移，直接删除该Brick：
+# gluster volume remove-brick commit
+注意，如果是复制卷或者条带卷，则每次移除的Brick数必须是replica或者stripe的整数倍。
+
+ 
+
+3.9 迁移卷
+使用start命令开始进行迁移：
+# gluster volume replace-brick start
+在数据迁移过程中，可以使用pause命令暂停迁移：
+# gluster volume replace-brick pause
+在数据迁移过程中，可以使用abort命令终止迁移：
+# gluster volume replace-brick abort
+在数据迁移过程中，可以使用status命令查看迁移进度：
+# gluster volume replace-brick status
+在数据迁移结束后，执行commit命令来进行Brick替换：
+# gluster volume replace-brick commit
+
+3.10 重新均衡卷
+不迁移数据：
+# gluster volume rebalance lay-outstart
+# gluster volume rebalance start
+# gluster volume rebalance startforce
+# gluster volume rebalance status
+# gluster volume rebalance stop
+
+4 Brick管理
+4.1 添加Brick
+# gluster volume add-brick test-volume 192.168.1.{151,152}:/mnt/brick2
+
+4.2 删除Brick
+若是副本卷，则移除的Bricks数是replica的整数倍
+#gluster volume remove-brick test-volume 192.168.1.{151,152}:/mnt/brick2 start
+在执行开始移除之后，可以使用status命令进行移除状态查看。
+#gluster volume remove-brick test-volume 192.168.1.{151,152}:/mnt/brick2 status
+
+使用commit命令执行Brick移除，则不会进行数据迁移而直接删除Brick，符合不需要数据迁移的用户需求。
+#gluster volume remove-brick test-volume 192.168.1.{151,152}:/mnt/brick2 commit
+
+4.3 替换Brick
+任务：把192.168.1.151:/mnt/brick0 替换为192.168.1.151:/mnt/brick2
+<1>开始替换
+#gluster volume replace-brick test-volume 192.168.1.:/mnt/brick0 ..152:/mnt/brick2 start
+异常信息：volume replace-brick: failed: /data/share2 or a prefix of it is already part of a volume
+
+说明 /mnt/brick2 曾经是一个Brick。具体解决方法
+# rm -rf /mnt/brick2/.glusterfs
+
+# setfattr -x trusted.glusterfs.volume-id /mnt/brick2
+# setfattr -x trusted.gfid /mnt/brick2
+
+//如上，执行replcace-brick卷替换启动命令，使用start启动命令后，开始将原始Brick的数据迁移到即将需要替换的Brick上。
+
+<2>查看是否替换完
+
+#gluster volume replace-brick test-volume 192.168.1.151:/mnt/brick0 ..152:/mnt/brick2 status
+<3>在数据迁移的过程中，可以执行abort命令终止Brick替换。
+#gluster volume replace-brick test-volume 192.168.1.151:/mnt/brick0 ..152:/mnt/brick2 abort
+
+<4>在数据迁移结束之后，执行commit命令结束任务，则进行Brick替换。使用volume info命令可以查看到Brick已经被替换。
+
+#gluster volume replace-brick test-volume 192.168.1.151:/mnt/brick0 .152:/mnt/brick2 commit
+# 此时我们再往 /sf/data/vs/gfs/rep2上添加数据的话，数据会同步到 192.168.1.152:/mnt/brick0和192.168.1.152:/mnt/brick2上。而不会同步到
+192.168.1.151:/mnt/brick0 上。
+
+5 文件系统扩展属性
+获取文件扩展属性
+
+getfattr -d -m . -e hex filename
+
+getfattr -d -m "trusted.afr.*" -e hex filename

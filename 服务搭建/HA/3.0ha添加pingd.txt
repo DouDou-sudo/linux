@@ -1,0 +1,16 @@
+<clone id="my_clone_pingd">
+<primitive class="ocf" id="my_pingd"/ provider="heartbeat" type="pingd">
+<instance_attributes id="my_pingd-instance_attributes">
+<attributes>
+<nvpair id="my_pingd-instance_attributes-name" name="name" value="pingd"/>
+<nvpair id="my_pingd-instance_attributes-host_list" name="host_list" value="10.10.197.117   10.10.197.1"/>
+</attributes>
+</instance_attributes>
+</primitive>
+</clone>
+
+<rsc_location id="loc_group_on_pingd" rsc="group_1">
+<rule id="loc_IP_Cluster_on_pingd_rule" score="-INFINITY">
+<expression attribute="pingd" id="loc_group_on_pingd-expression" operation="lte" type="number" value="0"/>
+</rule>
+</rsc_location>

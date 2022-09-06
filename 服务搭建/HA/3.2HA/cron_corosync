@@ -1,0 +1,4 @@
+#!/bin/sh
+
+/usr/sbin/logrotate -f /etc/logrotate.d/corosync
+exit 0

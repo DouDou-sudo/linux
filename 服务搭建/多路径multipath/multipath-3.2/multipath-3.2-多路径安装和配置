@@ -1,0 +1,63 @@
+﻿step1:安装多路径软件
+yum install -y device-mapper-multipath
+
+step2:加载multipath模块
+modprobe dm-multipath
+
+step3:设置开机自启动
+chkconfig multipathd on
+service multipathd start
+
+step4:生成多路径
+multipath 
+
+step5:查看多路径信息
+multipath -l
+就能查看到如下类似信息:：(在虚拟机上实验，发现无法看到信息，此时应该修改配置文件，屏蔽系统盘。将blacklist里面的内容修改成{devnode “^sda”},重启multipath。)
+create: 3600a0b80001327d80000006d43621677
+[size=12 GB][features="0"][hwhandler="0"]
+\_ round-robin 0
+\_ 2:0:0:0 sdb 8:16
+\_ 3:0:0:0 sdf 8:80
+其中create行就是WWID，记住这个WWID
+
+step6:复制配置文件模版，修改配置文件
+cp /usr/share/doc/device-mapper-multipath-0.4.9/multipath.conf.defaults /etc/multipath.conf
+vim /etc/multipath.conf
+在
+defaults {
+        user_friendly_names yes
+}
+后面添加如下内容：
+multipaths {
+       multipath {
+               wwid                    3600508b4000156d700012000000b0000
+               alias                   hubeidianjiao
+               path_grouping_policy    multibus
+               path_checker            readsector0
+               path_selector           "round-robin 0"
+               failback                manual
+               rr_weight               priorities
+               no_path_retry           5
+       }
+}
+其中wwid要修改成step4中看到的wwid.
+alias就是多路径名称，这个可以随便定义
+
+step7:如果存储映射到服务器有多块盘，那么就在/etc/multipath.conf配置文件添加多个step5步骤添加的内容；
+修改wwid和alias即可。
+
+step8:multipath -F	 清空之前的多路径
+
+step9:multipath	根据新的配置文件，创建新的多路径
+
+step10:multipath -l	查看新创建的多路径信息
+
+step11:service multipathd start
+
+step12:fdisk -l	就能看到/dev/mapper/....名字的磁盘
+
+step13:就可以进行分区和格式化了。
+
+vgchange –ay vg-db
+

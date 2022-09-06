@@ -1,0 +1,161 @@
+
+Linux环境oracle数据库安装
+
+
+检查操作系统版本：cat /redhat-release 
+
+检查系统内存大小：cat /proc/meminfo
+
+检查CPU：cat /proc/cpuinfo
+
+创建oracle用户和组：
+
+groupadd oinstall
+
+groupadd oper
+
+groupadd dba
+
+useradd -m -g oinstall -G oinstall,dba,oper oracle
+
+passwd oracle
+
+创建安装目录：
+
+mkdir -p /home/app/oracle/product/11.2.0/db
+
+chown -R oracle:oinstall /home/app
+
+chmod -R 775 /home/app
+
+设置orale用户环境变量：
+
+su - oracle
+
+vi .bash_profile
+
+export ORACLE_SID=oa
+
+export ORACLE_BASE=/home/app/oracle
+
+export ORACLE_HOME=/home/app/oracle/product/11.2.0/db
+
+export NLS_LANG=AMERICAN_AMERICA.AL32UTF8
+
+export.UTF8
+
+PATH=$PATH:$HOME/bin:$ORACLE_HOME/bin:/sbin:/usr/sbin
+
+
+使文件立马生效：source .bash_profile
+
+
+设置oracle账户资源限制（root用户下设置）：
+
+cd /etc/security/
+
+vi limits.conf
+
+oracle              soft    nproc   2047
+
+oracle              hard    nproc   16384
+
+oracle              soft    nofile  1024
+
+oracle              hard    nofile  65536
+
+oracle              soft    stack   10240
+
+oracle              hard    stack   32768
+
+
+安装包挂载(root用户)：mount /dev/cdrom /mnt
+
+
+安装rpm包
+
+
+利用yum list installed | grep "gcc"查看gcc包是否安装
+
+rpm -ivh --nodeps gcc-4.1.2-46.SEL5_4.2.i386.rpm 只安装对应的rpm包不安装依赖包
+
+
+设置系统内核参数（root用户）：
+
+
+cd /etc
+
+
+vi sysctl.conf
+
+
+fs.aio-max-nr = 2097152
+
+fs.file-max = 6815744
+
+kernel.shmall = 2097152
+
+kernel.shmmax = 8589934591
+
+kernel.shmmni = 4096
+
+kernel.sem = 250 32000 100 128
+
+net.ipv4.ip_local_port_range = 9000 65500
+
+net.core.rmem_default = 262144
+
+net.core.rmem_max = 4194304
+
+net.core.wmem_default = 262144
+
+net.core.wmem_max = 1048586
+
+net.ipv4.tcp_wmem = 262144 262144 262144
+
+net.ipv4.tcp_rmem = 4194304 4194304 4194304
+
+
+
+设置主机名和地址 
+
+
+查看主机名：hostname
+
+
+添加主机名：hostname test
+
+
+在hosts文件中添加主机名和主机地址：
+
+
+vi hosts
+
+
+ip 地址   主机名
+
+
+１.如果界面显示的文字全部是乱码，解决方法：把语言改成英文，在控制台界面输入export在重新运行
+
+２.如果提示使用虚拟机安装时提示颜色不够
+
+测试的先决条件如果不通过是不能忽略的
+
+解决方法：重新打开另一个终端，先运行/usr/bin/xdpyinfo，成功了再在这个窗口执行安装命令，如果不行注销用户，直接用Oracle登录
+
+
+oracle数据库安装步骤
+
+安装oracle第一步检测256colors不通过，通过export DISPLAY=IP：0.0（此处IP是客户端IP，而非服务器IP）
+
+/u01/app/oraInventory/orainstRoot.sh
+
+/u01/app/oracle/product/11.2.0/db/root.sh
+
+
+
+alter system set deferred_segment_creation=false;（导出空表）
+
+alter profile default limit PASSWORD_LIFE_TIME unlimited;（避免用户密码过期）
+
+ alter profile default limit FAILED_LOGIN_ATTEMPTS unlimited;（避免用户密码输错被锁定）

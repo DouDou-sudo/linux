@@ -1,0 +1,105 @@
+主配置文件：
+options {
+        directory "/var/named/";
+        pid-file "/var/run/named/named.pid";
+        dump-file "/var/named/dump.named";      // cache file
+        request-ixfr yes;                       // save bandwidth本地服务器是否作为辅域名服务器
+        recursion yes;                          // please restrict this递归查询
+        allow-transfer {none;};	//添加从服务器none改为从服务器ip
+        allow-query {any;};
+        listen-on { any; };                     // listen on all IPv4 interfaces
+        listen-on-v6 { any; };                  // listen on all IPv6 interfaces
+};
+
+//国调访问调控云
+view wan {
+         match-clients { 10.19.1.0/24; 10.19.12.0/24; 10.19.15.0/24; };  //允许这几个ip段进行递归查询
+zone "home.dcloud.qh.dc.sgcc.com.cn" IN {
+         type master;
+         file "qh.dc.sgcc.com.cn.zone.wan"; 
+};
+
+zone "dc.sgcc.com.cn" IN {
+        type forward;
+        forwarders { 10.10.23.2; 10.30.38.101; };
+};
+zone "sgcc.com.cn" IN {
+        type forward;
+        forwarders { 10.215.28.12; };  //这里配置本单位Ⅳ区DNS地址
+};
+zone "gf.dc" IN {
+        type forward;
+        forwarders {10.10.23.2; 10.30.38.101; };
+};
+};
+
+//省内访问调控云
+view lan {
+         match-clients {  any; };		//允许所有进行递归查询
+zone "home.dcloud.qh.dc.sgcc.com.cn" IN {
+         type master;
+         file "qh.dc.sgcc.com.cn.zone";
+};
+zone "dc.sgcc.com.cn" IN {
+        type forward;
+        forwarders { 10.10.23.2; 10.30.38.101; };
+};
+zone "sgcc.com.cn" IN {
+        type forward;
+        forwarders { 10.215.28.12; };  //这里配置本单位Ⅳ区DNS地址
+};
+zone "gf.dc" IN {
+        type forward;
+        forwarders {10.10.23.2; 10.30.38.101; };
+};
+}; //大括号要注意同一个view所属的都要包含进来，不然会报错；
+
+
+
+[root@localhost ~]# cat  /var/named/chroot/var/named/qh.dc.sgcc.com.cn.zone.wan 
+$TTL 1D
+@ IN SOA        dns root.qh.dc.sgcc.com.cn. (
+                                0;serial
+                                1D;refresh
+                                1H;retry
+                                1W;expire
+                                3H);minimum
+
+@                        NS               ABC
+ABC                      A              10.215.18.12
+home.dcloud       A              10.63.15.117  （外网地址）
+oms                     A              10.215.181.27
+
+[root@localhost etc]# cat /var/named/qh.dc.sgcc.com.cn.zone 
+$TTL 1D
+@ IN SOA        dns root.qh.dc.sgcc.com.cn. (
+                                0;serial
+                                1D;refresh
+                                1H;retry
+                                1W;expire
+                                3H);minimum
+
+@                      NS              ABC
+ABC                     A              10.215.18.12
+home.dcloud      A              10.215.181.84 （内网地址）
+oms                    A              10.215.181.27
+
+
+[root@localhost named]# ll
+总计 72
+drwxr-x--- 6 root  named 4096 08-03 11:17 chroot
+drwxrwx--- 2 named named 4096 2019-03-27 data
+-rw-r----- 1 root  named  509 11-05 11:44 guodiao.wan
+lrwxrwxrwx 1 root  named   45 2019-10-21 localdomain.zone -> /var/named/chroot//var/named/localdomain.zone
+lrwxrwxrwx 1 root  named   43 2019-10-21 localhost.zone -> /var/named/chroot//var/named/localhost.zone
+lrwxrwxrwx 1 root  named   44 2019-10-21 named.broadcast -> /var/named/chroot//var/named/named.broadcast
+lrwxrwxrwx 1 root  named   37 2019-10-21 named.ca -> /var/named/chroot//var/named/named.ca
+lrwxrwxrwx 1 root  named   44 2019-10-21 named.ip6.local -> /var/named/chroot//var/named/named.ip6.local
+lrwxrwxrwx 1 root  named   40 2019-10-21 named.local -> /var/named/chroot//var/named/named.local
+lrwxrwxrwx 1 root  named   39 2019-10-21 named.zero -> /var/named/chroot//var/named/named.zero
+lrwxrwxrwx 1 root  named   51 2019-10-21 qh.dc.sgcc.com.cn.zone -> /var/named/chroot//var/named/qh.dc.sgcc.com.cn.zone
+lrwxrwxrwx 1 root  named   55 2019-10-21 qh.dc.sgcc.com.cn.zone.wan -> /var/named/chroot//var/named/qh.dc.sgcc.com.cn.zone.wan 
+-rw-r----- 1 root  named  511 11-05 11:42 shengnei.lan
+drwxrwx--- 2 named named 4096 2019-03-27 slaves
+
+

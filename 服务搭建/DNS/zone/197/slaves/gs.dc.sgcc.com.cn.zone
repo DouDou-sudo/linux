@@ -1,0 +1,34 @@
+$ORIGIN .
+$TTL 3600	; 1 hour
+gs.dc.sgcc.com.cn	IN SOA	dns.gs.dc.sgcc.com.cn. root.gs.dc.sgcc.com.cn. (
+				0          ; serial
+				3600       ; refresh (1 hour)
+				3600       ; retry (1 hour)
+				604800     ; expire (1 week)
+				10800      ; minimum (3 hours)
+				)
+			NS	dns.gs.dc.sgcc.com.cn.
+$ORIGIN dcloud.gs.dc.sgcc.com.cn.
+home	A	10.62.16.97
+nrxt-home	A	10.62.16.97
+nrxt-ua-sso	A	10.62.16.97
+ua-sso	A	10.62.16.97
+$ORIGIN gs.dc.sgcc.com.cn.
+dns	A	10.62.16.196
+$ORIGIN oms.gs.dc.sgcc.com.cn.
+ddczp	A	10.62.16.109
+efile	A	10.62.16.101
+flow	A	10.62.16.96
+gis	A	10.62.16.99
+home	A	10.62.16.100
+kettle	A	10.62.16.102
+mtree	A	10.62.16.98
+nrxt-home	A	10.62.16.100
+report	A	10.62.16.102
+runlog	A	10.62.16.107
+sdczp	A	10.62.16.110
+seach	A	10.62.16.104
+sjjk	A	10.62.16.108
+uds	A	10.62.16.105
+yst	A	10.62.16.103
+yth	A	10.62.16.106

@@ -1,0 +1,29 @@
+$TTL 1H
+@	IN SOA	 dns root.gs.dc.sgcc.com.cn. (
+					0	; serial
+					1H	; refresh
+					1H	; retry
+					1W	; expire
+					3H )	; minimum
+	NS	dns
+dns	A	10.62.16.196
+nrxt-home.dcloud	A	10.62.16.97
+nrxt-home.oms	A	10.62.16.100
+nrxt-ua-sso.dcloud	A	10.62.16.97
+home.dcloud	A	10.62.16.97
+home.oms	A	10.62.16.100
+ua-sso.dcloud	A	10.62.16.97
+report.oms	A	10.62.16.102
+flow.oms	A	10.62.16.96
+mtree.oms	A	10.62.16.98
+gis.oms	A	10.62.16.99
+efile.oms	A	10.62.16.101
+kettle.oms	A	10.62.16.102
+yst.oms	A	10.62.16.103
+seach.oms	A	10.62.16.104
+uds.oms	A	10.62.16.105
+yth.oms	A	10.62.16.106
+runlog.oms	A	10.62.16.107
+sjjk.oms	A	10.62.16.108
+ddczp.oms	A	10.62.16.109
+sdczp.oms	A	10.62.16.110

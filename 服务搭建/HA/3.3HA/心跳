@@ -1,0 +1,170 @@
+corosync集群心跳配置及mgmt调用修改方法
+
+corosync集群心跳可在文件/etc/corosync/corosync.conf中的interface字段进行配置，如下配置了两路心跳：
+totem {
+
+version: 2
+
+secauth: off
+
+threads: 0
+
+rrp_mode: passive
+
+interface {
+
+ringnumber: 0
+
+bindnetaddr: 172.16.70.0
+
+broadcast: yes  ##广播，缺点是在网络中占据很多带宽以及影响其他主机
+
+mcastport: 5546
+
+}
+
+interface {
+
+ringnumber: 1
+
+bindnetaddr: 192.168.127.0
+
+broadcast: yes
+
+mcastport: 5547
+
+}
+
+}
+
+interface字段主要有以下几个参数：
+
+    ringnumber：interface的ring number，用于区分不同的心跳，必须从0开始
+    bindnetaddr：绑定的网络地址，经常以0结尾，也可以使用IPV6地址。例如，如果本地心跳为192.168.5.92，子网255.255.255.0，则设置bindnetaddr为192.168.5.0；如果本地心跳为192.168.5.92，子网255.255.255.192，则设置bindnetaddr为192.168.5.64。
+    mcastport：UDP端口号
+    broadcast：该字段可选，设为YES时表示将使用广播地址，如果设为该选项，则可以不设mcastaddr字段
+    mcastaddr：多播地址，不允许使用224.x.x.x之类的地址。也可以使用IPV6地址。
+
+corosync-cfgtool为显示及配置corosync的工具，与心跳有关的使用如下：
+
+显示该节点的当前心跳状态
+[root@server-1 BUILD]# corosync-cfgtool -s
+
+Printing ring status.
+
+Local node ID -1085927252
+
+RING ID 0
+
+id = 172.16.70.191
+
+status = ring 0 active with no faults
+
+RING ID 1
+
+id = 192.168.127.191
+
+status = ring 1 active with no faults
+
+心跳出错后重新配置集群中的心跳状态，即重新启动失败的心跳
+[root@server-1 BUILD]# corosync-cfgtool -r
+
+为了在mgmt下可以检查心跳状态，在mgmt/daemon/mgmt_crm.c中添加如下函数：
+char*
+
+on_status_of_hblinks(char* argv[], int argc)
+
+{
+
+char* ret = strdup(MSG_OK);
+
+cs_error_t result;
+
+corosync_cfg_handle_t handle;
+
+unsigned int interface_count;
+
+char **interface_names;
+
+char **interface_status;
+
+unsigned int i;
+
+unsigned int nodeid;
+
+//初始化；
+
+result = corosync_cfg_initialize (&handle, NULL);
+
+if (result != CS_OK) {
+
+mgmt_log(LOG_WARNING, "Could not initialize
+
+corosync configuration API error %d\n", result);
+
+exit (1);
+
+}
+
+//取当前node id；
+
+result = corosync_cfg_local_get(handle, &nodeid);
+
+if (result != CS_OK) {
+
+mgmt_log(LOG_WARNING, "Could not get the
+
+local node id, the error is: %d\n", result);
+
+}
+
+//取心跳情况，包括名称、状态等；
+
+result = corosync_cfg_ring_status_get (handle,
+
+&interface_names,
+
+&interface_status,
+
+&interface_count);
+
+//返回结果；
+
+if (result != CS_OK) {
+
+mgmt_log(LOG_WARNING, "Could not get the
+
+ring status, the error is: %d\n", result);
+
+} else {
+
+for (i = 0; i < interface_count; i++) {
+
+ret = mgmt_msg_append(ret, interface_names[i]);
+
+ret = mgmt_msg_append(ret, interface_status[i]);
+
+}
+
+}
+
+(void)corosync_cfg_finalize (handle);
+
+return ret;
+
+}
+
+之后即可在mgmt中使用status_hblinks命令即可查询心跳的状态，如下所示：
+[root@server-1 heartbeat-gui]# ./mgmtcmd.py status_hblinks
+
+---------------------------
+
+o
+
+172.16.70.191
+
+ring 0 active with no faults
+
+192.168.127.191
+
+ring 1 active with no faults

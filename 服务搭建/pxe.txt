@@ -1,0 +1,37 @@
+安装包
+yum install dhcp tftp-server tftp syslinux vsftpd/httpd
+关闭防火墙
+sed -i 's/SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config
+setenforce 0
+systemctl stop firewalld.service
+systemctl disable firewalld.service
+dhcp配置
+[root@localhost pxelinux.cfg]# cat /etc/dhcp/dhcpd.conf 
+#
+# DHCP Server Configuration file.
+#   see /usr/share/doc/dhcp*/dhcpd.conf.example
+#   see dhcpd.conf(5) man page
+#
+default-lease-time 3600;
+max-lease-time 7200;
+subnet 192.168.189.0 netmask 255.255.255.0{         # 这里写的ip地址为子网的地址，故为192.168.189.0
+    range 192.168.189.230 192.168.189.240;     # 子网的范围，之后主机请求获取的ip地址就是这其中的一个
+    next-server 192.168.189.140;     # 指明tftp服务器的地址{本机ip地址}
+    filename "pxelinux.0";           # 指明PXE文件位置，这个在申请ip的时候会发送给安装主机
+}
+重启dhcp服务
+systemctl restart dhcpd.service
+挂载光盘,拷贝相关文件
+mount /dev/sro /media
+cp /media/images/pxeboot/{initrd.img,vmlinuz} /var/lib/tftpboot/
+cp /media/isolinux/vesamenu.c32  /var/lib/tftpboot/
+cp /usr/share/syslinux/pxelinux.0 /var/lib/tftpboot/
+mkdir pxelinux.cfg
+systemctl restart tftp.socket
+cp /meida/isolinux/isolinux.cfg /var/lib/tftpboot/default
+修改default文件
+mkdir -p /var/ftp/pub/{kylin3.2,kylin3.3}
+mount --bind /media  /vat/ftp/pub/kylin3.2
+mkdir -p /var/ftp/pub/aks
+cp /root/anaconda-ks.cfg /var/ftp/pub/aks/kylin3.2-aks.cfg
+cp /root/anaconda-ks.cfg /var/ftp/pub/aks/kylin3.3-aks.cfg

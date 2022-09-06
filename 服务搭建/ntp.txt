@@ -1,0 +1,46 @@
+ntp多级服务器
+	ip地址
+a	192.168.18.140			
+b	192.168.18.150/30.30.30.2
+c	30.30.30.3
+
+b和a对时，c和b对时
+
+ignore：拒绝所有类型的ntp连接
+nomodify：客户端不能使用ntpc与ntpq两支程式来修改服务器的时间参数
+noquery：客户端不能使用ntpq、ntpc等指令来查询服务器时间，等于不提供ntp的网络校时
+notrap：不提供trap这个远程时间登录的功能
+notrust：拒绝没有认证的客户端
+nopeer：不与其他同一层的ntp服务器进行时间同步
+a）
+ntpdate cn.pool.ntp.org
+/etc/ntp.conf
+restrict 192.168.18.0 mask 255.255.255.0 nomodify notrap 允许192.168.18.0/24网段的服务器和本机对时
+server 127.127.1.0
+fudge 127.127.1.0 stratum 2
+将本机作为时间源
+把server 0-10注释掉
+
+/etc/init.d/ntpd start
+chkconfig ntpd on
+
+b）
+/etc/ntp.conf
+restrict 30.30.30.0 mask 255.255.255.0 nomodify notrap
+server 192.168.18.140 prefer
+fudge 192.168.18.140 stratum 3
+把server 0-10注释掉
+ntpdate 服务器a的ip地址
+/etc/init.d/ntpd restart
+chkconfig ntpd on
+c)/etc/ntp.conf
+server 30.30.30.2 prefer
+把server 0-10注释掉
+ntpdate 服务器b的ip地址
+1）使用定时任务，用ntpdate对时
+
+
+/etc/init.d/ntpd restart
+使用如下命令查看ntp运行状况
+ntpq -p
+ntpstat 等待5-10分钟才会生效

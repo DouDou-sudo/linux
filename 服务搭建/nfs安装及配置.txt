@@ -1,0 +1,103 @@
+服务端
+1、查看是否安装nfs、rpc服务
+ rpm –qa | grep nfs-utils rpcbind
+2、安装nfs、rpc服务
+  yum install nfs-utils –y
+  yum install rpcbind –y
+3、启动服务
+Centos6
+  service rpcbind status
+  service rpcbind start
+  service nfs start
+Centos7
+  systemctl start rpcbind
+  systemctl start nfs
+4、开机自启
+  cat /etc/rc.local
+  service rpcbind start
+  service nfs start
+或者
+  chkconfig rpcbind on
+  chkconfig nfs on
+5、配置
+vim /etc/exports
+/data/bbs 192.168.18.100(rw,sync)
+			本机ip	rw可读可写	sync实时同步
+/data/aas 192.168.18.100(ro,sync)
+					ro只读
+6、修改完配置，重新加载nfs服务
+/etc/init.d/nfs reload
+
+客户端
+1、查看是否安装rpcbind服务
+  rpm –qa | grep rpcbind
+2、安装rpcbind服务
+  yum install rpcbind –y
+3、启动服务
+　service rpcbind status
+　service rpcbind start
+4、查看挂载
+  showmount –e 192.168.18.100  显示此ip地址(服务端ip)分享出来的目录
+				
+5、进行nfs挂载
+  mount –t nfs 192.168.18.100:/data/bbs /ba1
+						服务端共享目录
+  mount –t nfs 192.168.18.100:/data/aas /ba2
+7、服务端共享目录修改权限
+  chmod –R 777 /data/bbs
+服务端其它用户有共享目录的读写权限，设置rw后，客户端才可以修改创建文件
+
+
+安全配置
+客户端默认是通过nfsnobody用户访问共享目录，该用户系统默认创建，不利于安全
+自建用户为共享目录的属主属组，提高安全性
+服务端
+  useradd –s /bin/nologin –M –u 3000 nfsuser
+  chmod –R nfsuser:nfsuser /data/bbs
+  chmod –R nfsuser:nfsuser /data/aas
+修改配置文件
+  vim /etc/exports
+  /data/bbs 192.168.18.100(rw,sync,all_squash,anonuid=3000,anongid=3000)
+  /data/aas 192.168.18.100(ro,sync,all_squash,anonuid=3000,anongid=3000)
+客户端
+同样创建用户nfsuser
+  useradd –s /bin/nologin –M –u 3000 nfsuser
+重新挂载
+  umount /da1
+  mount –t nfs 192.168.18.100:/data/bbs /da1
+
+在服务端cat /var/lib/nfs/etab
+[root@localhost ~]# cat /var/lib/nfs/etab 
+/data/bbs	192.168.189.135(rw,sync,wdelay,hide,nocrossmnt,secure,root_squash,no_all_squash,no_subtree_check,secure_locks,acl,anonuid=65534,anongid=65534,sec=sys,rw,root_squash,no_all_squash)
+no_root_squash是让root保持权限，root_squash将root映射成nfsnobody，所以会出现FAQ2的问题
+
+exportfs命令
+-r:重新读取/etc/exports中的信息，并同步更新/etc/exports、/var/lib/nfs/xtab
+-v:在exportfs的时候，将详细的信息输出到屏幕
+exportfs -rv 重新共享所以目录并输出详细信息，一般用于修改完/etc/export文件后执行，在服务端执行
+
+
+关于权限的分析
+　　1. 客户端连接时候，对普通用户的检查
+　　　　a. 如果明确设定了普通用户被压缩的身份，那么此时客户端用户的身份转换为指定用户；
+　　　　b. 如果NFS server上面有同名用户，那么此时客户端登录账户的身份转换为NFS server上面的同名用户；
+　　　　c. 如果没有明确指定，也没有同名用户，那么此时 用户身份被压缩成nfsnobody；
+　　2. 客户端连接的时候，对root的检查
+　　　　a. 如果设置no_root_squash，那么此时root用户的身份被压缩为NFS server上面的root；
+　　　　b. 如果设置了all_squash、anonuid、anongid，此时root 身份被压缩为指定用户；
+　　　　c. 如果没有明确指定，此时root用户被压缩为nfsnobody；
+　　　　d. 如果同时指定no_root_squash与all_squash 用户将被压缩为 nfsnobody，如果设置了anonuid、anongid将被压缩到所指定的用户与组；
+
+FAQ：
+1、给了客户端读写权限了，但是客户端创建文件，仍然提示权限不足
+/data/bbs 192.168.189.135(rw,sync)
+touch: 无法创建"1": 权限不够
+解决：这是因为共享目录的权限导致，chmod 777 共享目录，就可以创建了
+2、客户端使用root用户创建的文件权限为nfsnobody,
+原因：不修改设置，默认将root用户映射为nfsnobody
+3、创建文件后，文件的属主属组变为数字
+-rw-r--r--.  1 4294967294 4294967294    0 3月  11 2021 TEST
+解决：cd到别的目录后再cd到挂载目录下，再次查看
+-rw-r--r--.  1 nfsuser   nfsuser      0 3月  11 2021 TEST
+
+

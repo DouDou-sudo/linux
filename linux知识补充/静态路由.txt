@@ -33,3 +33,17 @@
 在ifcfg-ens33的配置文件中添加
 /usr/sbin/route  add -net 10.0.0.0/24  gw  192.0.0.254
 ifdown和ifup网口也不会丢失
+
+[root@k8snode1 ~]# route -n
+Kernel IP routing table
+Destination      Gateway           Genmask         Flags Metric Ref    Use Iface
+0.0.0.0             192.168.189.2   0.0.0.0              UG    100    0        0 ens33
+10.244.0.0       10.244.0.0        255.255.255.0   UG      0      0        0 flannel.1
+10.244.1.0        0.0.0.0             255.255.255.0   U         0      0        0 cni0
+10.244.2.0       10.244.2.0        255.255.255.0   UG      0       0        0 flannel.1
+172.17.0.0        0.0.0.0             255.255.0.0       U        0       0        0 docker0
+192.168.189.0    0.0.0.0           255.255.255.0   U      100     0        0 ens33
+
+Flags U代表它是一个直连路由，相当于在一个局域网内
+          UG表示需要经过网关
+Gateway 0.0.0.0 意味着这是一条直连规则，即：凡是匹配到这条规则的包，直接经过本机的ens33网卡，通过二层网络直接发往目的主机

@@ -1,0 +1,73 @@
+Vsftp服务器
+1、 确认是否安装
+rpm –qa | grep vsftp
+2、 安装
+yum install vsftpd –y
+3、启动服务
+　/etc/init.d/vsftpd status
+  /etc/init.d/vsftpd start
+4、 开机自启
+Chkconfig vsftpd on
+5、 配置文件
+anonymous_enable=NO 是否开启匿名登录
+local_enable=YES 是否允许本地用户登录
+write_enable=YES 是否对登录用户开启写权限
+local_umask=022 ftp上传本地文件的权限
+dirmessage_enable=YES 是否显示路径信息
+xferlog_enable=YES激活上传和下载的日志
+connect_from_port_20=YES 启用20端口的数据连接
+xferlog_file=/var/log/vsftpd.log 日志存储路径
+xferlog_std_format=YES 使用标准的日志格式
+ftpd_banner=Welcome 欢迎信息
+banner_file=/etc/vsftpd/banner 欢迎信息显示该路径文件中的信息
+local_root=/var/ftp 设置本地用户登录后所在目录
+anon_root=/var/ftp 设置匿名用户登录后所在目录
+
+
+chroot_list_enable=YES 设置是否启用chroot_list_file配置指定的用户列表文件，YES除了列在chroot_list文件中的账号外，所有用户都可以进入ftp根目录之外的目录，和chroot_list_file配合使用
+chroot_list_file 指定用户列表文件，该文件用于控制哪些用户可以切换到ftp站点根目录的上级目录
+chroot_local_user=YES 指定列表文件中的用户，是否允许切换到上级目录
+具体情况有以下几种：
+1）当chroot_list_enable=YES，chroot_local_user=YES时，在/etc/vsftpd/chroot_list文件中列出的用户，可以切换到上级目录；未在文件中列出的用户，不能切换到站点根目录的上级目录。
+2）当chroot_list_enable=YES，chroot_local_user=NO时，在/etc/vsftpd/chroot_list文件中列出的用户，不能切换到站点根目录的上级目录；未在文件中列出的用户，可以切换到上级目录。
+3）当chroot_list_enable=NO，chroot_local_user=YES时，所有用户均不能切换到上级目录。
+4）当chroot_list_enable=NO，chroot_local_user=NO时，所有用户均可以切换到上级目录。
+5）当用户不允许切换到上级目录时，登录后FTP站点的根目录“/”是该FTP账户的主目录，即文件的系统的/var/ftp目录
+listen=YES 
+pam_service_name=vsftpd
+tcp_wrappers=YES
+
+创建用户ftpuser1,ftpuser2,tom,jack
+ftpuser1和tom在user_list中
+ftpuser2和jack不在user_list中
+1)
+userlist_enable=YES 
+userlist_deny=YES
+拒绝user_list中的用户登录
+允许不在user_list的用户登录
+ftpuser1和tom不可以登录
+ftpuser2和jack可以登录
+2）
+userlist_enable=NO
+userlist_deny=NO
+都允许
+3）
+userlist_enable=NO
+userlist-deny=YES
+都允许
+4)
+userlist_enable=YES
+userlist_deny=no
+允许user_list中的用户登录
+拒绝不在user_list中的用户登录
+ftpuser1和tom可以登录
+ftpuser2和jack不可以登录
+
+ftp的主动和被动模式
+主动模式：
+client通过n(n>1024)端口去连接server的21端口(ftp的服务端口)，client开始监听n+1端口，并发出ftp命令"port N+1"到ftp服务器，接着server会从自己的数据端口(20)连接到client指定的数据端口(n+1)
+被动模式：
+client通过n(n>1024)端口去连接server的21端口(ftp的服务端口)，client提交PASV命令给server，server开放N(N>1024)端口，并告知client，client使用n+1端口和server的N端口建立连接，进行通信
+
+如果把server端放在防火墙或者nat服务器的背后，采用主动模式的client只能建立连接而无法进行文件传输，此时只能使用被动模式连接
+使用被动还是主动在client端选择

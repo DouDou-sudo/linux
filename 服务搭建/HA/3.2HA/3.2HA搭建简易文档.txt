@@ -1,0 +1,137 @@
+﻿                                                                              3.2 HA搭建简易文档
+
+1. 安装前配置：
+ 1.1 配置主机名和心跳ip，心跳地址一个设置为192.168.1.0网段，另外一个设置为10.0.0.0网段。
+ 1.2 将两个节点的IP和主机名写入/etc/hosts文件中。
+ 
+
+2. 安装corosync+pacemaker包
+ 2.1 挂载rpm包安装镜像 mount -o loop KYLINSEC_HA_32.iso /mnt/ 
+ 2.2 执行/mnt/file/ssh_keygen.sh脚本，配置双机无密码通信。
+ 2.3 cd /mnt 执行Kylin_HA_Autoinstall.sh脚本，安装HA。
+
+3.拷贝文件并设置
+#3.1  cp  /mnt/file/chckgky  /usr/sbin
+#3.2  cp  /mnt/file/deam_hb  /usr/sbin
+#3.3  cp  /mnt/file/Filesystem    /usr/lib/ocf/resource.d/heartbeat/ 
+#3.4  cp  /mnt/file/IPaddr   /usr/lib/ocf/resource.d/heartbeat/ 
+#3.5  cp /mnt/file/ha.cf   /etc/corosync/
+#3.6  cp /mnt/file/corosync.conf  /etc/corosync/ 
+#3.7 rpm -ivh /mnt/file/sshpass-1.05-1.skl.ky3.x86_64.rpm
+#3.8  chmod +x /usr/sbin/chckgky
+#3.9  chmod +x /usr/sbin/deam_hb
+3.1  chmod 644 /etc/corosync/ha.cf
+3.2  chmod 755 /usr/sbin/{chckgky,deam_hb}
+3.3  cp corosync /etc/logrotate.d/
+3.4  cp cron_corosync /etc/cron.monthly/
+3.5  chmod 755 /etc/cron.monthly/cron_corosync
+
+
+
+4. 配置corosync并启动corosync
+ 4.1 执行/mnt/file/authkry.sh 脚本，创建authkry文件。
+ 4.2 vim  /etc/corosync/corosync.conf 只修改心跳ip网段地址就行。 
+ 4.3 关闭防火墙 service iptables stop ; chkconfig iptables off
+ 4.4 关闭selinux  setenforce 0;  sed -i 's/permissive/disabled/' /etc/sysconfig/selinux
+ 4.5 启动corosync  /etc/init.d/corosync start    crm_mon -i1 查看状态 两个节点都是online
+ 4.6 corosync-cfgtool -s检测心跳
+
+5.加固corosync
+ 5.1配置/etc/corosync/ha.cf
+                #node后面为两双机主机名
+	#pword为对段主机root密码
+	ucast对端心跳ip，只配置纳入心跳监控的ip，参考/etc/corosync/corosync.conf文件
+	#vip为浮动ip，多个浮动ip则用vip1、vip2....，浮动ip对应的网口填写正确
+	#services为corosync监控的服务资源，多个服务用services1、services2.....  
+5.2 检查chckgky
+chckgky文件中网口（一般应为bond0）和挂载点确认与现场环境一致
+(1)SERVICE后接ha管理的程序名，需要按实际情况修改，若有多个程序，可按照该格式添加，如SERVICEE="dmagentd"
+
+(2)UMOUNT后接阵列分区的挂载点，需要按实际情况修改
+
+(3)ITFC后接虚拟IP（VIP）的网口，需要按实际情况修改
+
+(4)第77行之后，需要按照第(1)、(2)步中的配置进行修改
+
+6 crm配置资源
+ 6.1 全局配置  
+crm
+crm(live)# configure
+crm(live)configure # property stonith-enabled=false   (在集群没有STONITH设备时须设置此项)不使用STONITH，所以将stonith-enabled设置为false
+crm(live)configure # property no-quorum-policy=ignore （双节点须加此项）忽略达不到法定人数的情况
+crm(live)configure # commit    （提交修改）
+crm(live)configure # show   （查看配置）
+
+6.2 配置资源
+ 6.2.1 配置vip 资源
+crm(live)configure # primitive vip ocf:heartbeat:IPaddr params ip=172.19.159.88 cidr_netmask=24 op monitor interval=20s timeout=60s nic=bond0:0 （可用table键补齐，ip 设置为浮动ip ）
+crm(live)configure # commit    （提交修改）
+crm(live)configure # show   （查看配置）
+
+这里有注意事项，就是cidr_netmask=255.255.255.0会导致corosync.log日志里面不停地打印一些没有意义的错误提示，所以建议cidr_netmask配置成短码（255.255.255.0换算成32位的二进制，然后把所有的1相加就是掩码的短码形式），即cidr_netmask=24，不写成cidr_netmask =255.255.255.0。
+提交后集群会将缓存文件中的配置写入到/var/lib/heartbeat/crm/cib.xml文件中。
+
+ 6.2.2 配置Filesysyem资源
+crm(live)configure # primitive dbdata ocf:heartbeat:Filesystem params device="-Udb716a9f-e3fd-45ee-a168-1c469abbc8e1" directory="/dbdata" fstype=ext4 op monitor interval=20s timeout=150s op start interval=0 timeout=90s op stop interval=0 timeout=90s （device=为对应blkid 看到的 UUID，directory=对应挂载目录）
+crm(live)configure # commit    （提交修改）
+crm(live)configure # show   （查看配置）
+
+6.2.3 配置数据库资源
+crm(live)configure # primitive vmysql lsb:mysqld  op monitor interval=20s timeout=90s op start interval=0 timeout=90s op stop interval=0 timeout=90s （数据库管理脚本在/etc/init.d/下，为lsb资源，用table补齐可以看到）
+crm(live)configure # commit
+crm(live)configure # show		（查看添加资源情况）
+
+6.3 将资源加入组
+crm(live)configure# group my_res vip dbdata vmysql  （my_res为自定义的资源组标签）
+crm(live)configure# commit
+
+在完成上述配置之后，使用crm_mon命令查看集群状态，然后进行切机实验。
+
+附录：
+a)监控资源状态
+crm_mon或
+crm(live)#status
+
+b)crm下手动切换服务：
+crm(live)# resource 
+crm(live)resource# move vip kylinha2
+
+c)在线节点管理：
+crm(live)# node   
+crm(live)node# standby kylinha1                   （将kylinha1备用）
+crm(live)node# list                                             （查看节点状态）
+crm(live)# node 
+crm(live)node# online kylinha1                      （将kylinha1启用）
+
+d)删除资源：
+crm(live)# resource 
+crm(live)resource# stop my_res                      （删去前必须先停止资源/服务）  
+crm(live)resource# up
+crm(live)# configure 
+crm(live)configure# delete my_res  vmysql   （删除资源组和mysql服务）
+crm(live)configure# commit
+ 
+e)查看集群原始配置文件：
+crm(live)configure# show xml
+f）查看所有资源状态：
+# crm resource show/status/list
+g)查看具体资源状态（假设资源名为vmysql）：
+# crm resource status vmysql
+h)手动编辑具体资源（假设资源名为vmysql）：
+# crm configure edit vmysql
+# crm configure edit（可修改配置）
+i)查看当前节点的状态信息：
+# crm configure show
+j)重命名资源名称：
+# crm configure rename [原先标签] [新标签]
+k)查看脚本资源：
+# crm ra list [class]|lsb|ocf|stonith
+l)清理资源：
+# crm resource cleanup [资源标签] [节点名称]
+
+
+
+
+
+
+

@@ -1,0 +1,4 @@
+[ha]
+name=UniKylin 3.3 HA
+baseurl=file:///mnt
+gpgcheck=0

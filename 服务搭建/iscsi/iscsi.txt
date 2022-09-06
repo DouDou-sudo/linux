@@ -1,0 +1,42 @@
+IPsan（IP storage area network）服务器的搭建
+本文基于Kylin-3.0国电版讲述
+利用scsitarget-1.4.20.2.tar.gz搭建IP存储服务器
+ 
+step1: yum install patch
+step2: tar -xzvf iscsitarget-1.4.20.2.tar.gz -C /usr/src/
+step3: cd /usr/src/iscsitarget-1.4.20.2
+step4: make
+step5: make install
+###step6: 检查iscsitarget是否成功安装——chkconfig --list | grep iscsi-target
+step6: 编辑iscsitarget配置文件——vim /etc/iet/ietd.conf
+        修改Target行，将Target打头的行前注释去掉。Target行的格式：
+Target iqn.时间.存储名字[:存储标识符]
+        一般去掉注释就行，其它不用修改。具体怎么修改，后续再说。
+        还有一个地方需要修改：就是Lun所在行，首先去掉Lun行的行前注释，该
+行的格式：Lun 号码 Path=存储路径,Type=fileio,ScsiId=xyz,ScsiSN=xyz
+        一般我们将该行修改成如下：    Lun 0 Path=/dev/sda5,Type=fileio
+//当想映射多个磁盘时，LUN Scsild ScsiSN不能相同
+        保存退出
+step7：启动iscsi-target服务： service iscsi-target start
+ 
+ 
+ 
+ 
+在配置完存储服务端后，配置客户端：
+step1:yum install iscsi-initiator-utils
+step2:vim /etc/iscsi/initiatorname.iscsi
+	将服务器的/etc/iet/ietd.conf里的Target后面的复制过来
+step3:chkconfig iscsi --level 2345 on
+step4:service iscsi start
+step5:iscsiadm -m discovery -t sendtargets -p 40.10.1.1:3260  //模拟多路径映射两个磁盘，
+	iscsiadm -m discovery -t sendtargets -p 40.10.1.2:3260 
+//IP地址是存储自身的IP地址
+step6:iscsiadm -m node -T iqn.2007-04.acme.com:h3c:200realm.rhel5 -p 40.10.1.1:3260 -l  //IP地址是存储自身的IP地址
+	iscsiadm -m node -T iqn.2007-04.acme.com:h3c:200realm.rhel5 -p 40.10.1.2:3260 -l
+step7:iscsiadm -m session
+step8:fdisk -l就能看见存储了
+
+
+如iscsi节点的IP或节点名改变需要重新加载iscsi节点则需要将以前得配置删掉。
+rm /var/lib/iscsi/nodes/*
+rm /var/lib/iscsi/send_targets/*
