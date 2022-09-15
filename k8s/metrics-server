@@ -1,0 +1,27 @@
+Metrics Server是集群范围资源使用数据的聚合器。 从 Kubernetes 1.8开始，它作为 Deployment 对象，被默认部署在由kube-up.sh脚本创建的集群中。 如果您使用不同的 Kubernetes 安装方法，则可以使用提供的deployment yamls来部署。它在 Kubernetes 1.7+中得到支持（详见下文）。
+
+Metric server 从每个节点上的Kubelet公开的 Summary API 中采集指标信息。
+
+通过在主 API server 中注册的 Metrics Server Kubernetes 聚合器]来采集指标信息， 这是在 Kubernetes 1.7 中引入的。
+
+部署组件后可以查询kubernetes集群资源使用情况
+
+#查看node资源使用情况
+[root@km1-81 ~]# kubectl top node
+NAME          CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%   
+10.122.6.70   448m         5%     7083Mi          15%       
+10.122.6.74   1088m        14%    15664Mi         50%       
+10.122.6.75   2919m        38%    20649Mi         66%       
+10.122.6.85   1233m        16%    12107Mi         39%       
+10.122.6.87   709m         9%     20155Mi         65%       
+10.122.6.88   1257m        16%    20271Mi         65%       
+10.122.6.93   942m         12%    19992Mi         64%  
+#查看pod资源使用情况
+[root@km1-81 ~]# kubectl top pod
+NAME                                            CPU(cores)   MEMORY(bytes)              
+release-name-milvus-admin-6cdfb569bc-lxh4g      1m           10Mi            
+release-name-milvus-mishards-78c748ff65-q69sh   4m           129Mi           
+release-name-milvus-readonly-fbf86b7c7-w96hb    1m           220Mi           
+release-name-milvus-writable-7cccc8f9d4-5w6hl   3m           256Mi           
+release-name-mysql-7b5fdd4b5b-zhxnt             11m          206Mi
+

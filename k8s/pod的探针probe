@@ -1,5 +1,12 @@
 在 Kubernetes 中，你可以为 Pod 里的容器定义一个健康检查“探针”（Probe）。这样，kubelet 就会根据这个 Probe 的返回值决定这个容器的状态，而不是直接以容器镜像是否运行（来自 Docker 返回的信息）作为依据。这种机制，是生产环境中保证应用健康存活的重要手段。
 
+三种探针类型
+探针分为三种分别是StartupProbe、LivenessProbe、ReadinessProbe.
+1、StartupProbe：k8s的1.16版本后新加的探测方式，用于判断容器内应用程序是否已经启动。如果配置了startupProbe，就会先禁止其他的探测，直到它成功为止，成功后将不在进行探测。注意在k8s1.17及以下版本属于新特性默认是没有开启的需要手动配置开启--feature-gates=StartupProbe=true
+2、LivenessProbe：用于探测容器是否运行，如果探测失败，kubelet会根据配置的重启策略进行相应的处理。若没有配置该探针，默认就是success。
+3、ReadinessProbe：一般用于探测容器内的程序是否健康，它的返回值如果为success，那么久代表这个容器已经完成启动，并且程序已经是可以接受流量的状态。
+
+
 [root@k8smaster build-yaml]# cat test-livenes.yml
 apiVersion: v1
 kind: Pod

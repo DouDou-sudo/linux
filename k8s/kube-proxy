@@ -1,0 +1,26 @@
+kube-Proxy
+    
+    负责Pod之间的通信和负载均衡，将指定的流量分发到后端正确的机器上。
+    kube-proxy现在有两种工作方式分别是iptables、ipvs。
+    查看Kube-proxy工作模式：curl 127.0.0.1:10249/proxyMode
+    
+    IPtables
+	目前默认方式，1.1开始支持，1.2开始为默认
+    IPVS
+	1.9引入到1.11正式版本，需要安装ipvsadm、ipset 工具包和加载 ip_vs 内核模块
+
+1、IPtables
+Kube-Proxy 监听 Kubernetes Master 增加和删除 Service 以及 Endpoint 的消息。对于每一个 Service，Kube Proxy 创建相应的 IPtables 规则，并将发送到 Service Cluster IP 的流量转发到 Service 后端提供服务的 Pod 的相应端口上。
+
+注： 虽然可以通过 Service 的 Cluster IP 和服务端口访问到后端 Pod 提供的服务，但该 Cluster IP 是 Ping 不通的。 其原因是 Cluster IP 只是 IPtables 中的规则，并不对应到一个任何网络设备。 IPVS 模式的 Cluster IP 是可以 Ping 通的。
+
+2、IPVS
+IPVS 相对 IPtables 效率会更高一些，使用 IPVS 模式需要在运行 Kube-Proxy 的节点上安装 ipvsadm、ipset 工具 包和加载 ip_vs 内核模块，当 Kube-Proxy 以 IPVS 代理模式启动时，Kube-Proxy 将验证节点上是否安装了 IPVS 模块，如果未安装，则 Kube-Proxy 将回退到 IPtables 代理模式。
+
+使用IPVS模式，Kube-Proxy会监视Kubernetes Service对象和Endpoints，调用宿主机内核Netlink接口以相应地创建IPVS规则并定期与Kubernetes Service对象 Endpoints对象同步IPVS规则，以确保IPVS状态与期望一致，访问服务时，流量将被重定向到其中一个后端 Pod,IPVS使用哈希表作为底层数据结构并在内核空间中工作，这意味着IPVS可以更快地重定向流量，并且在同步代理规则时具有更好的性能，此外，IPVS 为负载均衡算法提供了更多选项，例如：rr (轮询调度)、lc (最小连接数)、dh (目标哈希)、sh (源哈希)、sed (最短期望延迟)、nq(不排队调度)等。
+
+
+
+
+
+

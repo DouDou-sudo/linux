@@ -1,0 +1,1 @@
+主要负责把集群中service资源的名称解析成对应的IP地址，coredns的副本数量可以根据集群的规模进行适当调整，但是在集群规模达到一定数量时扩展coredns副本数并不可以提高性能时，就需要部署dns缓存，具体原理就是每个node节点都运行一个dns组件代理到coredns，node节点的pod的dns服务器都指定到dns缓存，由dns缓存回复pod的dns请求。

@@ -345,5 +345,306 @@ http {
     }
 }
 5.1 template中使用流程控制for和if
+[root@k8smaster for]# cat for.yml 
+---
+- hosts: test
+  remote_user: root
+  vars:
+    nginx_user: nginx
+    ip:
+    - 192.168.10.181
+    - 192.168.10.182
+    - 192.168.10.183
+    name:
+      - hostname: "{{ ansible_nodename }}"
+        root: root
+        name: bxw
+  tasks:
+    - name: create group {{ nginx_user }}
+      group: name={{ nginx_user }} state=present gid=80 system=yes
+    - name: create user {{ nginx_user }}
+      user: name={{ nginx_user }} state=present create_home=no group=nginx uid=80 system=yes home=/data/html shell=/sbin/nolo
+gin    - name: mkdir nginx in html
+      file: path=/data/html group=nginx owner=nginx state=directory
+    - name: install nginx
+      yum: name=nginx
+    - name: teplate config to remote hosts
+      template: src=nginx.conf.j2 dest=/etc/nginx/nginx.conf group=nginx owner=nginx
+    - name: teplate index
+      template: src=index.html.j2 dest=/data/html/index.html group=nginx owner=nginx
+    - name: restart nginx
+      service: name=nginx state=restarted enabled=yes
+[root@k8smaster for]# cat templates/index.html.j2 
+{% for index_name in nginx_user %}
+<h1>{{ index_name }}</h1>
+{% endfor %}
+{% for node in ip %}
+<h1>{{ node }}</h1>
+{% endfor %}
+{% for nide in name %}
+<h1>{{ nide.hostname }}</h1>
+<h1>{{ nide.root }}</h1>
+<h1>{{ nide.name }}</h1>
+{% endfor %}
+查看被控端下发的文件
+[root@k8snode1 html]# cat index.html 
+<h1>n</h1>
+<h1>g</h1>
+<h1>i</h1>
+<h1>n</h1>
+<h1>x</h1>
+<h1>192.168.10.181</h1>
+<h1>192.168.10.182</h1>
+<h1>192.168.10.183</h1>
+<h1>k8snode1</h1>
+<h1>root</h1>
+<h1>bxw</h1>
+循环变量的说明
+vars:
+    nginx_user: nginx   #这种变量一次循环一个字符
+    ip:  #这种变量一次循序一个列表元素
+      - 192.168.10.181 
+      - 192.168.10.182
+      - 192.168.10.183
+    name:    #这样定义变量可以控制输入选择
+      - hostname: "{{ ansible_nodename }}"
+        root: root
+        name: bxw
+for循环说明
+{% for index_name in nginx_user %}
+<h1>{{ index_name }}</h1>
+{% else %}   #如果变量为空执行
+<h1>is null</h1>
+{% endfor %}
+5.2  template中使用if判断
+在模版文件中还可以使用 if条件判断，决定是否生成相关的配置信息
+[root@k8smaster for]# cat templates/index.html.j2 
+{% for index_name in nginx_user %}
+<h1>{{ index_name }}</h1>
+{% endfor %}
+{% for node in ip %}
+<h1>{{ node }}</h1>
+{% endfor %}
+{% for nide in name %}
+<h1>{{ nide.hostname }}</h1>
+<h1>{{ nide.root }}</h1>
+<h1>{{ nide.name }}</h1>
+{% endfor %}
+{% if ip == '192.168.189.201' %}
+<h1>is 201</h1>
+{% elif ip == '192.168.189.202' %}
+<h1>is 202</h1>
+{% else %}
+<h1>is flase</h1>
+{% endif %}
+5.3 playbook使用 when
+when语句可以实现条件测试。如果需要根据变量、facts或此前任务的执行结果来做为某task执行与否 的前提时要用到条件测试,通过在task后添加when子句即可使用条件测试，jinja2的语法格式
+[root@k8smaster when]# cat when.yml
+---
+- hosts: test
+  remote_user: root
+  vars:
+    nginx_user: nginx
+    ip:
+    - 192.168.189.200
+    - 192.168.189.201
+    - 192.168.189.202
+    name:
+      - hostname: "{{ ansible_nodename }}"
+        root: root
+        name: bxw
+  tasks:
+    - name: echo {{ ansible_nodename }}
+      shell: echo {{ ansible_nodename }} >>/data/html/index.html
+      when: ansible_nodename == "k8snode1"
+      #当被控端的主机名为k8snode1时追加主机名到/data/html/index.html文件
+[root@k8smaster when]# ansible-playbook when.yml
+[root@k8snode1 html]# cat index.html 
+k8snode1
+[root@k8snode2 html]# cat index.html  k8snode2为空
+上个task执行成功才执行下一个tags
+[root@k8smaster when]# cat when.yml
+---
+- hosts: test
+  remote_user: root
+  vars:
+    nginx_user: nginx
+    ip:
+    - 192.168.189.200
+    - 192.168.189.201
+    - 192.168.189.202
+    name:
+      - hostname: "{{ ansible_nodename }}"
+        root: root
+        name: bxw
+  tasks:
+    - name: echo {{ ansible_nodename }}
+      shell: echo {{ ansible_nodename }} >>/data/html/index.html
+      when: ansible_nodename == "k8snode1"
+      register: echo_html
+    - name: echo nide
+      shell: echo nide>>/data/html/index.html
+      when: echo_html.rc == 0 
+[root@k8snode1 html]# cat index.html
+k8snode1
+k8snode1
+nide
+[root@k8snode2 html]# cat index.html  k8snode2为空
+
+6、 playbook使用迭代with_items(loop)
+迭代：当有需要重复性执行的任务时，可以使用迭代机制
+对迭代项的引用，固定内置变量名为"item"
+要在task中使用with_items给定要迭代的元素列表
+注意: ansible2.5版本后,可以用loop代替with_items
+[root@k8smaster with_items]# cat with_items.yml 
+---
+- hosts: all
+  remote_user: root
+
+  tasks: 
+    - name: touch files
+      file: path=/root/{{ item }} state=touch
+      with_items:
+        - test1
+        - test2
+        - test3
+        - test4
+#就会在所有被控端的/root目录下创建tets{1..4}
+迭代嵌套子变量：在迭代中，还可以嵌套子变量，关联多个变量在一起使用
+[root@k8smaster with_items]# cat with_items.yml 
+---
+- hosts: all
+  remote_user: root
+
+  tasks: 
+    - name: touch files
+      file: path=/root/{{ item.name }} state=touch owner={{ item.user }} group={{ item.group }}
+      with_items:
+        - { name: 'test1',user: 'bin',group: 'root' }
+        - { name: 'test2',user: 'bin',group: 'root' }
+        - { name: 'test3',user: 'bin',group: 'root' }
+        - { name: 'test4',user: 'bin',group: 'root' }
+[root@k8snode2 ~]# ll -a
+-rw-r--r--   1 bin  root         0 Sep  9 15:50 test1
+-rw-r--r--   1 bin  root         0 Sep  9 15:51 test2
+-rw-r--r--   1 bin  root         0 Sep  9 15:51 test3
+-rw-r--r--   1 bin  root         0 Sep  9 15:51 test4
+7、 管理节点过多导致的超时时间问题解决方法
+默认情况下，Ansible将尝试并行管理playbook中所有的机器。对于滚动更新用例，可以使用serial关键 字定义Ansible一次应管理多少主机，还可以将serial关键字指定为百分比，表示每次并行执行的主机数占总数的比例
+
+[root@k8smaster with_items]# cat with_items.yml 
+---
+- hosts: all
+  remote_user: root
+  serial: 1   #每次只处理一个主机
+  serial: 50%  #每次只处理50%的主机
+
+  tasks: 
+    - name: touch files
+      file: path=/root/{{ item.name }} state=touch owner={{ item.user }} group={{ item.group }}
+      with_items:
+        - { name: 'test1',user: 'bin',group: 'root' }
+        - { name: 'test2',user: 'bin',group: 'root' }
+        - { name: 'test3',user: 'bin',group: 'root' }
+        - { name: 'test4',user: 'bin',group: 'root' }
+8、 忽略错误ignore_errors
+如果一个task出错,默认将不会继续执行后续的其它task
+利用 ignore_errors: yes 可以忽略此task的错误,继续向下执行playbook其它task
+[root@k8smaster playbook]# cat err.yml 
+---
+- hosts: all
+  remote_user: root
+  serial: 1
+  gather_facts: no
+  tasks:
+    - name: error
+      command: /bin/false
+      ignore_errors: yes    ##忽略error tasks的错误执行下一个tasks
+    - name: continue
+      shell: wall bxw
+9、 关闭 changed 状态
+当确定某个task不会对被控制端做修改时,可以通过 changed_when: false 关闭changed状态
+---
+- hosts: all
+  remote_user: root
+  serial: 1
+  gather_facts: no
+  tasks:
+    - name: error
+      command: /bin/false
+      ignore_errors: yes
+      changed_when: false   #关闭changed状态  
+    - name: continue
+      shell: wall z
+[root@k8smaster playbook]# ansible-playbook err.yml
+192.168.189.201            : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=1   
+192.168.189.202            : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=1  
+#此处changed就会变为1，不关闭changer状态为2
+10、 yaml文件的相互调用
+利用include 或 include_tasks 可以调用其它的yaml文件
+[root@k8smaster tets]# cat test.yml 
+---
+- hosts: all
+  remote_user: root
+  gather_facts: yes
+  tasks:
+    - name: create files
+      file: path=/root/bx state=touch
+    - name: excute b.yml
+      include: b.yml
+      #include_tasks: b.yml #另一种写法
+[root@k8smaster tets]# cat b.yml 
+    - name: touch files
+      file: path=/root/{{ item.name }} state=touch owner={{ item.user }} group={{ item.group }}
+      with_items:
+        - { name: 'test1',user: 'bin',group: 'root' }
+        - { name: 'test2',user: 'bin',group: 'root' }
+        - { name: 'test3',user: 'bin',group: 'root' }
+        - { name: 'test4',user: 'bin',group: 'root' }
+注意include文件的空格
+11、 使用connection本地执行tasks
+使用connection可以在本机执行tasks
+[root@k8smaster tets]# cat test.yml 
+---
+- hosts: all
+  tasks:
+    - name: node
+      shell: hostname
+      connection: local   #写到其中的一个tasks中表示只有这个tasks在本机执行
+                          #将控制端的nodename写入被控端/root/test文件中
+      register: hostname
+    - name: print variable
+      shell: echo {{ hostname.stdout }} >test
+    - name: print variable
+      debug:
+        msg: "{{ hostname }}"
+[root@k8snode1 ~]# cat test
+k8smaster
+[root@k8snode2 ~]# cat test
+k8smaster
+
+[root@k8smaster tets]# cat test.yml 
+---
+- hosts: all
+  connection: local   #写到这里表现tasks中所有的任务都只在本机执行
+  tasks:
+    - name: node
+      shell: hostname
+      register: hostname
+    - name: print variable
+      shell: echo {{ hostname.stdout }} >test
+    - name: print variable
+      debug:
+        msg: "{{ hostname }}"
+12、 使用Facts获取远程主机的源数据信息变量
+默认情况下ansible会在运行时自己获取，无需手动调用。
+#获取的变量较多这里介绍一些常用的
+"ansible_architecture": "x86_64"   #系统架构
+"ansible_hostname": "node-1"   #主机名称
+"ansible_distribution": "CentOS"  #系统类型
+"ansible_distribution_version": "7.8" #系统版本详细信息
+"ansible_distribution_major_version": "7" #系统具体大版本
+
+
 
 

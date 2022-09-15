@@ -1,0 +1,92 @@
+一、安装前准备
+关闭防火墙和selinux，dhcp服务器为静态ip
+网络要求：关闭VMware软件的dhcp服务
+二、安装相关软件包并启动服务
+[root@centos yum.repos.d]# yum install -y httpd tftp-server dhcp syslinux system-config-kickstart
+[root@centos ~]# systemctl enable --now httpd tftp dhcpd
+三、准备yum源和相关目录
+[root@centos ~]# mkdir -pv /var/www/html/centos/7/x86_64
+[root@centos ~]# mount /dev/sr0  /var/www/html/centos/7/x86_64
+四、准备kickstart文件
+cd /var/www/html/
+mkdir ks
+cd ks
+[root@localhost ks]# grep -vE '^#|^#' centos-7-ks.cfg 
+install
+keyboard 'us'
+rootpw --iscrypted $1$nFiYodEq$f8dx/G9PmfybO0xxoAQFB/  ##
+url --url="http://192.168.189.140/centos/7/x86_64"  #修改此处ip地址和路径
+lang en_US
+auth  --useshadow  --passalgo=sha512
+text
+selinux --disabled
+skipx
+
+firewall --disabled
+reboot
+timezone Asia/Shanghai
+bootloader --location=mbr
+zerombr
+clearpart --all --initlabel
+part /boot --fstype="xfs" --size=200
+part swap --fstype="swap" --size=1000
+part / --fstype="xfs" --grow --size=1
+
+五、 配置dhcp服务
+[root@localhost ks]# grep -vE '^#|^#' /etc/dhcp/dhcpd.conf 
+default-lease-time 3600;
+max-lease-time 7200;
+subnet 192.168.189.0 netmask 255.255.255.0 {         # 这里写的ip地址为子网的地址，故为192.168.14.0
+    range 192.168.189.230 192.168.189.240;     # 子网的范围，之后主机请求获取的ip地址就是这其中的一个
+    option routers 192.168.189.2;                #网关
+    next-server 192.168.189.140;     # 指明tftp服务器的地址，修改此处ip地址
+    filename "pxelinux.0";           # 指明PXE文件位置，这个在申请ip的时候会发送给安装主机
+}
+
+systemctl restart dhcpd
+
+六、 准备pxe启动相关文件
+mkdir /var/lib/tftpboot/pxelinux.cfg/
+cp /usr/share/syslinux/{pxelinux.0,menu.c32} /var/lib/tftpboot/
+cp /var/www/html/centos/7/x86_64/isolinux/{vmlinuz,initrd.img} /var/lib/tftpboot/
+cp /var/www/html/centos/7/x86_64/isolinux/isolinux.cfg /var/lib/tftpboot/pxelinux.cfg/default
+
+[17:17:57 root@centos7 ~]#tree /var/lib/tftpboot/
+/var/lib/tftpboot/
+├── initrd.img
+├── menu.c32
+├── pxelinux.0
+├── pxelinux.cfg
+│   └── default
+└── vmlinuz
+
+七、 准备启动菜单
+[17:35:18 root@centos7 ~]#cat /var/lib/tftpboot/pxelinux.cfg/default
+default menu.c32
+timeout 600
+menu title PXE INSTALL MENU
+label auto
+menu default
+menu label ^Auto Install MENU
+kernel vmlinuz
+append initrd=initrd.img ks=http://192.168.10.71/ks/ks-centos7.cfg
+#修改此处ip地址和路径
+label manual
+menu label  ^Manual Install CentOS 7
+kernel vmlinuz
+append initrd=initrd.img inst.repo=http://192.168.10.71/centos/7/x86_64/
+#修改此处ip地址和路径
+label local
+menu label ^Boot from local drive
+localboot 0xffff
+
+
+注意：
+    1、pxe服务器重启以后要重新挂载
+    2、提示如下：查看ks-centos7.cfg文件里的url的内容
+    warning: can't find installer maininage path in .treeinfo
+    warning: downloading 'ftp://192.168.213.163/centos7u7/live0s/squashfs.img' failed!
+    warning anaconda: failed to fetch stage2 from ftp://192.168.213.163/centos7u7
+    3、提示如下：查看pxe服务器内存最少为2G，查看clinet服务器是否没有识别到硬盘
+    /sbin/dmsquash-live-root:line286:printf:write error:no space left on device
+

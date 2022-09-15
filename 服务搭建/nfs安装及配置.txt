@@ -27,6 +27,9 @@ vim /etc/exports
 					ro只读
 6、修改完配置，重新加载nfs服务
 /etc/init.d/nfs reload
+7、执行命令查看共享目录
+[root@centos home]# exportfs 
+/home/818_data	<world>
 
 客户端
 1、查看是否安装rpcbind服务
@@ -43,10 +46,18 @@ vim /etc/exports
   mount –t nfs 192.168.18.100:/data/bbs /ba1
 						服务端共享目录
   mount –t nfs 192.168.18.100:/data/aas /ba2
-7、服务端共享目录修改权限
+6、服务端共享目录修改权限
   chmod –R 777 /data/bbs
 服务端其它用户有共享目录的读写权限，设置rw后，客户端才可以修改创建文件
 
+查看nfs协议版本
+1.NFS的客户端中：nfsstat -m
+
+中的vers=4.0确定NFS版本是4。
+
+2.NFS服务器中：nfsstat -s
+
+中的Server nfs v4确定NFS版本的确是4。
 
 安全配置
 客户端默认是通过nfsnobody用户访问共享目录，该用户系统默认创建，不利于安全

@@ -1,0 +1,1 @@
+kubernetes的node节点组件是并不提供容器运行时环境的，所以需要额外安装符合kubernetes的容器运行时主要是符合CRI接口的容器运行时，先版本常用的容器运行时有docker、conrainerd、cri-o等。
