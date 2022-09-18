@@ -130,4 +130,35 @@ command、args两项实现覆盖Dockerfile中ENTRYPOINT的功能
     如果command没写，但args写了，那么Dockerfile中配置的ENTRYPOINT的命令行会被执行，并且将args中填写的参数追加到ENTRYPOINT中。
     如果command和args都写了，那么Dockerfile的配置被忽略，执行command并追加上args参数。
 
+四、pod退出流程
+用户执行删除操作后pod所做的事情
+pod退出流程
+用户执行删除操作-->pod变成terminated-->endpoints会删除该pod的ip地址-->如果pod还有进程在运行，会默认预留一定的时间，默认为30秒-->执行prestop-->执行终止容器的信号
+最后两个操作必须在预留时间内执行完成如果没有执行完成k8s会直接杀死容器
+注意：在上面的流程中除去执行preStop外，其余必定都会执行。
+4.1 容器回调
+有两个回调暴露给容器：
+PostStart
+
+这个回调在容器被创建之后立即被执行。 但是，不能保证回调会在容器入口点（ENTRYPOINT）之前执行。 没有参数传递给处理程序。基本很少使用。
+PreStop
+
+在容器因 API 请求或者管理事件（诸如存活态探针、启动探针失败、资源抢占、资源竞争等） 而被终止之前，此回调会被调用。 在用来停止容器的 TERM 信号被发出之前，回调必须执行结束。 Pod 的终止宽限周期在 PreStop 回调被执行之前即开始计数，所以无论回调函数的执行结果如何，容器最终都会在 Pod 的终止宽限期内被终止。
+  terminationGracePeriodSeconds:容器的宽限时间
+回调方式
+    Exec - 在容器执行给定的命令或脚本，重点使用。
+    HTTP - 对容器上的特定端点执行 HTTP 请求。
+配置示例：
+lifecycle:    #回调配置
+      postStart:  #容器启动后执行  
+        exec:     #执行命令
+          command:
+          - sh
+          - -c
+          - 'mkdir /data/ '
+      preStop:    #容器终止前执行
+        httpGet:  #执行http请求    
+              path: /
+              port: 80
+
 

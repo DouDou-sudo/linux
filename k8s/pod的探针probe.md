@@ -1,11 +1,69 @@
+一、介绍
 在 Kubernetes 中，你可以为 Pod 里的容器定义一个健康检查“探针”（Probe）。这样，kubelet 就会根据这个 Probe 的返回值决定这个容器的状态，而不是直接以容器镜像是否运行（来自 Docker 返回的信息）作为依据。这种机制，是生产环境中保证应用健康存活的重要手段。
 
-三种探针类型
+二、 三种探针类型
 探针分为三种分别是StartupProbe、LivenessProbe、ReadinessProbe.
 1、StartupProbe：k8s的1.16版本后新加的探测方式，用于判断容器内应用程序是否已经启动。如果配置了startupProbe，就会先禁止其他的探测，直到它成功为止，成功后将不在进行探测。注意在k8s1.17及以下版本属于新特性默认是没有开启的需要手动配置开启--feature-gates=StartupProbe=true
 2、LivenessProbe：用于探测容器是否运行，如果探测失败，kubelet会根据配置的重启策略进行相应的处理。若没有配置该探针，默认就是success。
 3、ReadinessProbe：一般用于探测容器内的程序是否健康，它的返回值如果为success，那么久代表这个容器已经完成启动，并且程序已经是可以接受流量的状态。
 
+三、 探测方式
+1、ExecAction：在容器内执行一个命令，如果返回值为0，则认为容器健康。
+livenessProbe:  # 可选，健康检查
+      exec:        # 执行容器命令检测方式
+        command: 
+        - cat
+        - /health
+2、TCPSocketAction：通过TCP连接检查容器内的端口是否是通的，如果是通的就认为容器健康。
+livenessProbe:  # 可选，健康检查
+      tcpSocket:    # 端口检测方式
+        port: 80
+3、HTTPGetAction：通过应用程序暴露的API地址来检查程序是否是正常的，如果状态码为200~400之间，则认为容器健康。(推荐使用api接口来来探测容器是否运行正常，需要开发提供相应接口)
+readinessProbe:    # 可选，健康检查
+      httpGet:        # httpGet检测方式
+        path: /_health # 检查路径
+        port: 8080
+        httpHeaders:   # 检查的请求头
+        - name: end-user
+          value: Jason
+四、 探针检查参数配置
+1、initialDelaySeconds：容器启动后要等待多少秒后存活和就绪探测器才被初始化，默认是 0 秒，最小值是 0。请根据pod启动时间进行设置。
+2、periodSeconds：执行探测的时间间隔（单位是秒）。默认是 10 秒。最小值是 1。不易设置过短也不宜过长，请根据实际情况设置。
+3、timeoutSeconds：探测的超时后等待多少秒。默认值是 1 秒。最小值是 1。在1.20之前的版本这个参数是可以进行设置其他值在1.20之后官方修改为1。可以在你可以在所有的 kubelet 上禁用 ExecProbeTimeout。恢复之前的模式。
+3、successThreshold：探测器在失败后，被视为成功的最小连续成功数。默认值是 1。 存活和启动探测的这个值必须是 1。最小值是 1。
+4、failureThreshold：当探测失败时，Kubernetes 的重试次数。 存活探测情况下的放弃就意味着重新启动容器。 就绪探测情况下的放弃 Pod 会被打上未就绪的标签。默认值是 3。最小值是 1。不要设置的次数过多如果pod出问题会导致检测错误的时间变的过长。
+
+一个探针的探测失败时间=initialDelaySeconds+((periodSeconds+timeoutSeconds)*failureThreshold)
+为什么要使用StartupProbe？
+如果没有startupProbe，对于启动慢的程序来说必定需要调整等待时间参数，这会导致pod从启动到就绪的时间变长，在更新服务时会导致服务就绪时间变长从而有可能导致服务不可用。如果配置StartupProbe，可以把StartupProbe时间设置较长，其余探针设置的时间短一些，由于StartupProbe执行成功后变不会在执行所以会极大的降低pod的就绪时间。在滚动升级时非常好用。
+示例：
+startupProbe: # 探测容器是否启动
+      exec:        # 执行容器命令检测方式
+        command: 
+        - ls
+        - /tmp/zhangzhuo/1/
+      initialDelaySeconds: 30   # 初始化时间
+      timeoutSeconds: 1     # 超时时间
+      periodSeconds: 3      # 检测间隔
+      successThreshold: 1 # 检查成功为1次表示就绪
+      failureThreshold: 3 # 检测失败3次表示未就绪
+    readinessProbe: # 可选，就绪探针。
+      httpGet:      # httpGet检测方式
+        path: / # 检查路径
+        port: 80        # 监控端口
+      initialDelaySeconds: 3
+      timeoutSeconds: 1 
+      periodSeconds: 3  
+      successThreshold: 1 
+      failureThreshold: 3 
+    livenessProbe:  # 可选，存活探针
+      tcpSocket:    # 端口检测方式
+        port: 80
+      initialDelaySeconds: 60       
+      timeoutSeconds: 2     
+      periodSeconds: 5      
+      successThreshold: 1 
+      failureThreshold: 3
 
 [root@k8smaster build-yaml]# cat test-livenes.yml
 apiVersion: v1
@@ -34,10 +92,12 @@ spec:
 创建这个pod
 [root@k8smaster build-yaml]# kubectl create -f test-livenes.yml 
 pod/test-liveness-exec created
+
 查看pod状态
 [root@k8smaster build-yaml]# kubectl get pods
 NAME                                READY   STATUS    RESTARTS   AGE
 test-liveness-exec                  1/1     Running   0          6s
+
 查看该pod的events
 [root@k8smaster build-yaml]# kubectl describe pod test-liveness-exec
 Events:
