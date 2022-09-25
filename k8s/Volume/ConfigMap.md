@@ -64,32 +64,32 @@ kubectl create cm参数
 
 多个文件
 
-   kubectl create configmap test --from-file=redis=configmap/redis.config --from-file=nginx=configmap/nginx.config
+    kubectl create configmap test --from-file=redis=configmap/redis.config --from-file=nginx=configmap/nginx.config
 
 验证
 
-   [root@k8s test]# kubectl get cm test -oyaml
-   apiVersion: v1
-    data:
-      nginx: |
-        nginx true
-        password 123456
-      redis: |
-        redis true
-        password 123456
-    kind: ConfigMap
-    metadata:
-      creationTimestamp: "2022-01-06T02:58:35Z"
-      name: test
-      namespace: default
-      resourceVersion: "57247237"
-      selfLink: /api/v1/namespaces/default/configmaps/test
-      uid: 605febe6-b50e-45d5-b8ea-fee042279320
+    [root@k8s test]# kubectl get cm test -oyaml
+    apiVersion: v1
+      data:
+        nginx: |
+          nginx true
+          password 123456
+        redis: |
+          redis true
+          password 123456
+      kind: ConfigMap
+      metadata:
+        creationTimestamp: "2022-01-06T02:58:35Z"
+        name: test
+        namespace: default
+        resourceVersion: "57247237"
+        selfLink: /api/v1/namespaces/default/configmaps/test
+        uid: 605febe6-b50e-45d5-b8ea-fee042279320
 
 指定文件夹的方式创建
 
     kubectl create configmap test --from-file=configmap/
-    
+
 #验证
 
     [root@k8s test]# kubectl get cm test -oyaml
@@ -119,9 +119,10 @@ kubectl create cm参数
     name1=zhnagzhuo
     name2=zhang
     name3=zhuo
-    #创建cm
+#创建cm
+
     kubectl create cm test --from-env-file=env
-    #验证
+#验证
 
     [root@k8s configmap]# kubectl get cm test -oyaml
     apiVersion: v1
