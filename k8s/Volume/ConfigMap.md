@@ -38,11 +38,13 @@ kubectl create cm参数
 
 2.使用命令指定文件或文件夹的方式创建configmap的配置文件
 #查看文件夹下的文件
+
     [root@k8s test]# ls configmap/
     nginx.config  redis.config
 
     指定文件的方式创建
     单个文件
+
     kubectl create configmap test --from-file=redis=configmap/redis.config  
     #验证
     [root@k8s test]# kubectl get cm test -oyaml
@@ -60,8 +62,10 @@ kubectl create cm参数
       selfLink: /api/v1/namespaces/default/configmaps/test
       uid: 0a6ab496-f932-4a36-be25-b82aeb20cd84
 #多个文件
+
    kubectl create configmap test --from-file=redis=configmap/redis.config --from-file=nginx=configmap/nginx.config
 #验证
+
    [root@k8s test]# kubectl get cm test -oyaml
    apiVersion: v1
     data:
@@ -105,6 +109,7 @@ kubectl create cm参数
 3.使用命令指定文件的方式创建环境变量的configmap
 
 #创建变量文件
+
     [root@k8s configmap]# cat env 
     name=zz
     name1=zhnagzhuo
@@ -113,6 +118,7 @@ kubectl create cm参数
     #创建cm
     kubectl create cm test --from-env-file=env
     #验证
+
     [root@k8s configmap]# kubectl get cm test -oyaml
     apiVersion: v1
     data:
@@ -215,6 +221,7 @@ Pod使用cm需要与cm在同一个命名空间，否则是无法调用的，会�
                   name: test
                   key: test2
 #验证
+
     [root@k8smaster configmap]# kubectl exec  nginx-configmap-f47cd58bd-ncjzn -- env | grep -e test1 -e test2
     test1=zz
     test2=bxw
@@ -244,6 +251,7 @@ Pod使用cm需要与cm在同一个命名空间，否则是无法调用的，会�
             - configMapRef:  #可以写多个，来源cm
                 name: test   #cm名称
 #验证
+
     kubectl exec -it nginx-1-5f4f8cc5b4-9s9gc -- env | grep -e test1 -e test2 -e 
     test1=zz
     test2=zhanghuo
@@ -279,6 +287,7 @@ Pod使用cm需要与cm在同一个命名空间，否则是无法调用的，会�
               configMap:
                 name: test
 #验证
+
     [root@k8smaster configmap]# kubectl exec -it nginx-configmap-57d694b45-6mr6n -- ls /etc/config
     nginx.config  redis.config  test1  test2
     [root@k8smaster configmap]# kubectl exec -it nginx-configmap-57d694b45-6mr6n -- cat /etc/config/nginx.config
@@ -288,11 +297,13 @@ Pod使用cm需要与cm在同一个命名空间，否则是无法调用的，会�
 修改test-configmap.yml的password为12345重新apply
 #挂载的文件修改cm内容会自动刷新，同步会有一定的时间
 或者直接编辑
+
     kubectl edit cm test
       nginx.config: |
         nginx true-true
         password 12345
 #验证
+
     kubectl exec -it nginx-1-777cb9459f-bd7t9 -- cat /etc/config/nginx.config
     nginx true-true
     password 12345
@@ -329,6 +340,7 @@ Pod使用cm需要与cm在同一个命名空间，否则是无法调用的，会�
                     mode: 0777
                 defaultMode: 0666
 #验证
+
     [root@k8smaster configmap]# kubectl exec -it nginx-configmap-74df796678-cm7cc -- ls -la  /etc/config
     total 0
     drwxrwxrwx 3 root root 77 Sep 22 19:43 .
