@@ -1,4 +1,4 @@
-一、ConfigMap
+ConfigMap
 
 官方文档：https://kubernetes.io/zh/docs/concepts/configuration/configmap/
 1.1 ConfigMap介绍
@@ -11,7 +11,7 @@ ConfigMap 将您的环境配置信息和容器镜像解耦，便于应用配置�
 
 ConfigMap 在设计上不是用来保存大量数据的。在 ConfigMap 中保存的数据不可超过 1 MiB。如果你需要保存超出此尺寸限制的数据，你可能希望考虑挂载存储卷或者使用独立的数据库或者文件服务。
 
-1.2 ConfigMap的创建
+一、 ConfigMap的创建
 
 创建方式
 
@@ -25,23 +25,23 @@ kubectl create cm参数
     --from-literal：创建变量的cm，格式--from-literal=变量名称=变量值,可以写多个
 1.以yaml文件的方式
 
-apiVersion: v1        #api版本
-kind: ConfigMap       #资源类型
-metadata:             #元数据定义
-  name: test          #名称
-  namespace: default  #命名空间
-data:                 #具体配置定义，配置定义的类型有俩种
-  player_initial_lives: "3"   #这种以容器环境变量的方式使用
-  game.properties: |          #这种以映射到容器中为配置文件的方式使用
-    enemy.types=aliens,monsters
-    player.maximum-lives=5
+    apiVersion: v1        #api版本
+    kind: ConfigMap       #资源类型
+    metadata:             #元数据定义
+      name: test          #名称
+      namespace: default  #命名空间
+    data:                 #具体配置定义，配置定义的类型有俩种
+      player_initial_lives: "3"   #这种以容器环境变量的方式使用
+      game.properties: |          #这种以映射到容器中为配置文件的方式使用
+        enemy.types=aliens,monsters
+        player.maximum-lives=5
 
-2.以文件或文件夹的方式创建configmap的配置文件
+2.使用命令指定文件或文件夹的方式创建configmap的配置文件
 #查看文件夹下的文件
 [root@k8s test]# ls configmap/
 nginx.config  redis.config
 
-以文件的方式创建
+指定文件的方式创建
 单个文件
 kubectl create configmap test --from-file=redis=configmap/redis.config  
 #验证
@@ -80,7 +80,7 @@ metadata:
   selfLink: /api/v1/namespaces/default/configmaps/test
   uid: 605febe6-b50e-45d5-b8ea-fee042279320
 
-以文件夹的方式创建
+指定文件夹的方式创建
 
 kubectl create configmap test --from-file=configmap/
 #验证
@@ -102,7 +102,7 @@ metadata:
   selfLink: /api/v1/namespaces/default/configmaps/test
   uid: b68d1351-b70c-436b-ad5c-9f7610fce0bd
 
-3.以文件的方式创建环境变量的configmap
+3.使用命令指定文件的方式创建环境变量的configmap
 
 #创建变量文件
 [root@k8s configmap]# cat env 
@@ -129,7 +129,7 @@ metadata:
   selfLink: /api/v1/namespaces/default/configmaps/test
   uid: 12f35011-0593-47de-a1ff-67484917c437
 
-1.3 ConfigMap的使用
+二、 ConfigMap的使用
 
 首先创建一个configmap，示例如下
 
