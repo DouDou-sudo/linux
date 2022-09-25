@@ -61,10 +61,12 @@ kubectl create cm参数
       resourceVersion: "57247020"
       selfLink: /api/v1/namespaces/default/configmaps/test
       uid: 0a6ab496-f932-4a36-be25-b82aeb20cd84
-#多个文件
+
+多个文件
 
    kubectl create configmap test --from-file=redis=configmap/redis.config --from-file=nginx=configmap/nginx.config
-#验证
+
+验证
 
    [root@k8s test]# kubectl get cm test -oyaml
    apiVersion: v1
@@ -87,7 +89,9 @@ kubectl create cm参数
 指定文件夹的方式创建
 
     kubectl create configmap test --from-file=configmap/
+    
 #验证
+
     [root@k8s test]# kubectl get cm test -oyaml
     apiVersion: v1
     data:      #会把目录下的所有文件定义到mc中
