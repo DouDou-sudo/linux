@@ -23,7 +23,7 @@ kubectl create cm参数
     --from-file：以本地文件的方式创建cm的配置文件，可以指定一个文件或多个文件或一个文件夹。格式--from-file=定义到mc中的key名称=文件位置，如果不写名称直接指定文件默认会把文件名称作为key名称。不能与--from-env-file一起用。
     --from-env-file：以本地文件的方式创建cm的变量，可以指定多个。
     --from-literal：创建变量的cm，格式--from-literal=变量名称=变量值,可以写多个
-1.示例yaml文件
+1.以yaml文件的方式
 
 apiVersion: v1        #api版本
 kind: ConfigMap       #资源类型
@@ -133,20 +133,52 @@ metadata:
 
 首先创建一个configmap，示例如下
 
+[root@k8smaster configmap]# cat test-configmap.yml 
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  creationTimestamp: null
   name: test
 data:
-  nginx.config: |
+  nginx.config:
     nginx true
     password 123456
-  redis.config: |
+  redis.config:
     redis true
     password 123456
   test1: zz
-  test2: zhanghuo
+  test2: bxw
+[root@k8smaster configmap]# kubectl get cm test -oyaml
+apiVersion: v1
+data:
+  nginx.config: nginx true password 123456
+  redis.config: redis true password 123456
+  test1: zz
+  test2: bxw
+kind: ConfigMap
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"nginx.config":"nginx true password 123456","redis.config":"redis true password 123456","test1":"zz"
+,"test2":"bxw"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"test","namespace":"default"}}  creationTimestamp: "2022-09-22T11:48:37Z"
+  name: test
+  namespace: default
+  resourceVersion: "272694"
+  selfLink: /api/v1/namespaces/default/configmaps/test
+  uid: 93a33cd7-074e-4150-abb0-f78abf772221
+[root@k8smaster configmap]# cat test-configmap.yml 
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test
+data:
+  nginx.config:
+    nginx true
+    password 123456
+  redis.config:
+    redis true
+    password 123456
+  test1: zz
+  test2: bxw
 
 1.以环境变量的方式使用ConfigMap
 
@@ -154,38 +186,38 @@ Pod使用cm需要与cm在同一个命名空间，否则是无法调用的，会�
 
 手动指定环境变量，单个引用
 
+[root@k8smaster configmap]# cat configmap-deploy.yml 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-1
-  namespace: default
+  name: nginx-configmap
 spec:
   selector:
     matchLabels:
-      app: nginx-1
+        app: nginx-config
   template:
     metadata:
       labels:
-        app: nginx-1
+        app: nginx-config
     spec:
       containers:
-      - image: 10.122.6.81:5000/image/nginx:v1
+      - image: nginx:1.8
         name: nginx
-        env:             #变量定义
-        - name: test1    #定义到容器中的变量名称
-          valueFrom:     #定义变量来自哪里
-            configMapKeyRef:  #定义cm
-              name: test      #cm名称
-              key: test1      #cm中key名称
+        env:
+        - name: test1
+          valueFrom:
+            configMapKeyRef:
+              name: test
+              key: test1
         - name: test2
           valueFrom:
             configMapKeyRef:
               name: test
               key: test2
 #验证
-kubectl exec -it nginx-1-6dc7b8574-8862z -- env | grep -e test1 -e test2
+[root@k8smaster configmap]# kubectl exec  nginx-configmap-f47cd58bd-ncjzn -- env | grep -e test1 -e test2
 test1=zz
-test2=zhanghuo
+test2=bxw
 
 定义一次定义多个环境变量
 
@@ -222,36 +254,40 @@ test2=zhanghuo
 
 这种挂载方式会把configmap的所有内容以文件的方式挂载到所定义的挂载点，挂载点如果有内容会进行覆盖。文件名称会定义为cm中的key名称，内容为key的value。
 
+[root@k8smaster configmap]# cat configmap-deploy.yml 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-1
-  namespace: default
+  name: nginx-configmap
 spec:
   selector:
     matchLabels:
-      app: nginx-1
+        app: nginx-config
   template:
     metadata:
       labels:
-        app: nginx-1
+        app: nginx-config
     spec:
       containers:
-      - image: 10.122.6.81:5000/image/nginx:v1
+      - image: nginx:1.8
         name: nginx
-        volumeMounts:       #容器挂载定义
-          - name: nginx-conf  #定义的volumes的名称
-            mountPath: /etc/config  #挂载点，目录
-      volumes:          #挂载定义
-        - name: nginx-conf  #挂载名称
-          configMap:        #挂载的资源
-            name: test      #cm名称
+        volumeMounts:
+          - name: nginx-conf
+            mountPath: /etc/config
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: test
 #验证
-kubectl exec -it nginx-1-777cb9459f-bd7t9 -- ls /etc/config
+[root@k8smaster configmap]# kubectl exec -it nginx-configmap-57d694b45-6mr6n -- ls /etc/config
 nginx.config  redis.config  test1  test2
-
+[root@k8smaster configmap]# kubectl exec -it nginx-configmap-57d694b45-6mr6n -- cat /etc/config/nginx.config
+nginx true password 123456
+[root@k8smaster configmap]# kubectl exec -it nginx-configmap-57d694b45-6mr6n -- cat /etc/config/redis.confi
+redis true password 123456
+修改test-configmap.yml的password为12345重新apply
 #挂载的文件修改cm内容会自动刷新，同步会有一定的时间
-kubectl edit cm test
+或者直接编辑kubectl edit cm test
   nginx.config: |
     nginx true-true
     password 12345
@@ -262,72 +298,80 @@ password 12345
 
 挂载configmap中其中的一个配置到文件夹
 
+[root@k8smaster configmap]# cat configmap-deploy.yml 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-1
-  namespace: default
+  name: nginx-configmap
 spec:
   selector:
     matchLabels:
-      app: nginx-1
+        app: nginx-config
   template:
     metadata:
       labels:
-        app: nginx-1
+        app: nginx-config
     spec:
       containers:
-      - image: 10.122.6.81:5000/image/nginx:v1
+      - image: nginx:1.8
         name: nginx
         volumeMounts:
           - name: nginx-conf
-            mountPath: /etc/config 
+            mountPath: /etc/config
       volumes:
         - name: nginx-conf
           configMap:
-            name: test 
-            items:  #具体定义要挂载的内容
-              - key: redis.config  #cm的key名称
-                path: redis.conf   #挂载后的文件名称
-                mode: 0000         #文件权限，要比defaultMode优先级高
-            defaultMode: 0666      #文件权限作用与整个cm
+            name: test
+            items:
+              - key: redis.config
+                path: redis.conf
+                mode: 0777
+            defaultMode: 0666
 #验证
-kubectl exec -it nginx-1-6b7bcc77cc-n2f7k -- ls /etc/config
-redis.conf
-root@nginx-1-74bb6cfdfd-fqw6q:/# cd /etc/config/
-root@nginx-1-74bb6cfdfd-fqw6q:/etc/config# ls -l
+[root@k8smaster configmap]# kubectl exec -it nginx-configmap-74df796678-cm7cc -- ls -la  /etc/config
 total 0
-lrwxrwxrwx 1 root root 17 Jan  6 05:40 redis.conf -> ..data/redis.conf
-root@nginx-1-74bb6cfdfd-fqw6q:/etc/config# ls -l ..data/redis.conf 
--rw-rw-rw- 1 root root 27 Jan  6 05:40 ..data/redis.conf
+drwxrwxrwx 3 root root 77 Sep 22 19:43 .
+drwxr-xr-x 1 root root 20 Sep 22 19:43 ..
+drwxr-xr-x 2 root root 24 Sep 22 19:43 ..2022_09_22_19_43_48.007213378
+lrwxrwxrwx 1 root root 31 Sep 22 19:43 ..data -> ..2022_09_22_19_43_48.007213378
+lrwxrwxrwx 1 root root 17 Sep 22 19:43 redis.conf -> ..data/redis.conf
+
+root@nginx-configmap-5767df6b97-jpn49:/etc/config# ls -la ..data/redis.conf 
+---------- 1 root root 25 Sep 22 19:42 ..data/redis.conf
 
 挂载一个配置文件到文件，避免目录覆盖
 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-1
-  namespace: default
+  name: nginx-configmap
 spec:
   selector:
     matchLabels:
-      app: nginx-1
+        app: nginx-config
   template:
     metadata:
       labels:
-        app: nginx-1
+        app: nginx-config
     spec:
       containers:
-      - image: 10.122.6.81:5000/image/nginx:v1
+      - image: nginx:1.8
         name: nginx
         volumeMounts:
-          - name: test
-            mountPath: /etc/nginx/nginx.conf  #挂载路径写全部，到挂载的文件
-            subPath: nginx.conf  #挂载为那个文件
-      volumes:          
-        - name: test  
-          configMap:   
-            name: nginx-conf
+          - name: nginx-conf
+            mountPath: /etc/config/nginx.conf
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: test
             items:
-              - key: nginx.conf
+              - key: nginx.config
                 path: nginx.conf
+                mode: 0777
+            defaultMode: 0666
+
+root@nginx-configmap-667b46c999-f7mhq:/etc/config# ls -la
+total 0
+drwxr-xr-x 3 root root 24 Sep 22 19:51 .
+drwxr-xr-x 1 root root 20 Sep 22 19:51 ..
+drwxrwxrwx 2 root root  6 Sep 22 19:51 nginx.conf

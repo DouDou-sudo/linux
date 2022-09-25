@@ -1,0 +1,72 @@
+1.什么是Init Container
+ Init Container就是用来做初始化工作的容器，可以是一个或者多个，如果有多个的话，这些容器会按定义的顺序依次执行，只有所有的Init Container执行完后，主容器才会被启动。我们知道一个Pod里面的所有容器是共享数据卷和网络命名空间的，所以Init Container里面产生的数据可以被主容器使用到的。
+
+   Init Container与应用容器本质上是一样的，但他们是仅运行一次就结束的任务，并且必须在成功执行完后，系统才能继续执行下一个容器
+2、示例
+[root@k8smaster init]# cat myapp.yml 
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp-pod
+  labels:
+    app: myapp
+spec:
+  containers:
+  - name: myapp-container
+    image: busybox
+    command: ['sh','-c','echo The app is runnign && sleep 60']
+  initContainers:
+  - name: init-hostname
+    image: busybox
+    command: ['sh','-c','until nslookup hostname;do echo waiting for myservice;sleep 2;done;']
+  - name: init-mydb
+    image: busybox
+    command: ['sh','-c','until nslookup mydb;do echo waiting for mydb;sleep 2;done;']
+以上pod定义包含两个初始容器,第一个等待hostname服务可用,第二个等待mydb服务可用,这两个pod执行完成,应用容器开始执行
+查看创建的pod，init
+[root@k8smaster init]# kubectl get pods
+NAME                             READY   STATUS     RESTARTS   AGE
+myapp-pod                        0/1     Init:0/2   0          106s
+此时hostname的service存在，hostname是我的k8s集群本身就存在的一个service
+[root@k8smaster init]# kubectl get svc
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)                        AGE
+hostname     ClusterIP   10.1.115.75    <none>        80/TCP                         2d22h
+第一个初始化容器完成
+[root@k8smaster Ingress]# kubectl get pods
+NAME                                READY   STATUS     RESTARTS   AGE
+myapp-pod                           0/1     Init:1/2   0          10m
+
+创建第二个初始化完成需要的service
+[root@k8smaster init]# cat mydb.yml 
+kind: Service
+apiVersion: v1
+metadata:
+  name: mydb
+spec:
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 9377
+[root@k8smaster init]# kubectl applf -f mydb.yml 
+构建mydb这个service
+[root@k8smaster init]# kubectl get svc
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)                        AGE
+my-nginx     NodePort    10.1.246.166   <none>        8080:30000/TCP,443:31446/TCP   2d21h
+mydb         ClusterIP   10.1.206.69    <none>        80/TCP                         41s
+第二个service构建完成，myapp-pod这个pod init完成，已经在运行状态了
+[root@k8smaster init]# kubectl get pods
+NAME                                READY   STATUS    RESTARTS   AGE
+myapp-pod                           1/1     Running   4          20m
+查看该pod的Events
+[root@k8smaster init]# kubectl describe pod myapp-pod 
+Events:
+  Type     Reason     Age                    From               Message
+  ----     ------     ----                   ----               -------
+  Normal   Scheduled  21m                    default-scheduler  Successfully assigned default/myapp-pod to k8snode1
+  Normal   Pulling    21m                    kubelet, k8snode1  Pulling image "busybox"
+  Normal   Pulled     21m                    kubelet, k8snode1  Successfully pulled image "busybox"
+  Normal   Created    21m                    kubelet, k8snode1  Created container init-hostname
+  Normal   Started    21m                    kubelet, k8snode1  Started container init-hostname
+  Normal   Pulling    16m                    kubelet, k8snode1  Pulling image "busybox"
+  Normal   Started    15m                    kubelet, k8snode1  Started container init-mydb
+  Normal   Pulled     15m                    kubelet, k8snode1  Successfully pulled image "busybox"

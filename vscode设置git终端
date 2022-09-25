@@ -1,0 +1,43 @@
+vscode设置git终端
+左下角设置--》设置--》输入git.path--》settings.json
+{
+    "go.testFlags": [
+    "-v"
+    ],
+    "go.toolsManagement.autoUpdate": true,
+    "files.autoSave": "afterDelay",
+    // "terminal.integrated.automationProfile.windows": {
+    //     "GitBash"
+    // },
+    "terminal.integrated.defaultProfile.windows": "GitBash",
+    "explorer.confirmDelete": false,
+    "terminal.integrated.profiles.windows": {
+        "PowerShell": {
+            "source": "PowerShell",
+            "icon": "terminal-powershell"
+        },
+        "Command Prompt": {
+            "path": [
+                "${env:windir}\\Sysnative\\cmd.exe",
+                "${env:windir}\\System32\\cmd.exe"
+            ],
+            "args": [],
+            "icon": "terminal-cmd"
+        },
+        "GitBash": {
+            "path": [
+                ; "C:\\Program Files\\Git\\bin\\bash.exe"
+                "D:\\Git\\bin\\bash.exe"     ;此处将git安装在D盘，"terminal.integrated.defaultProfile.windows": "GitBash"一直报错，如下：
+            ],
+            "icon": "terminal-bash"
+        }
+    },
+    "explorer.confirmDragAndDrop": false,
+    "git.path": ""
+}
+Value is not accepted. Valid values: "PowerShell", "Command Prompt".(1)
+The default profile used on Windows. This setting will currently be ignored if either #terminal.integrated.shell.windows# or #terminal.integrated.shellArgs.windows# are set.
+查看https://stackoverflow.com/questions/68068359/gitbash-not-showing-up-as-a-terminal-option-in-visual-studio-code#提示
+将git重装在C盘，将path设置为C盘的path，就不会报错。无语!!!
+vscode安装在D盘，更新以后自动将新版本安装在C盘，大无语!!!
+

@@ -5,6 +5,65 @@
 二、Service资源介绍
 Service主要用于Pod之间的通信，由于Pod是一种临时资源可能随时会被调度重建，重建后Pod的IP地址也会进行变化，由于Pod的IP地址不确定性，我们无法使用Pod的IP地址来进行服务的访问，所以k8s中加入了一个service资源用来解决Pod的访问。Service一般会通过选择器选择一个或一组Pod，之后通过iptables或者ipvs的方式进行代理，service的请求会被转发到自己所代理的Pod。service资源创建后只要不进行修改他的IP地址就不会变化相对来说他的IP地址是固定的，k8s中还引用了dns组件用来解析service资源的名称得到他的IP地址，所以集群中访问service，可以直接通过service的名称就是访问service了。
 
+2.1 集群内部访问service
+创建一个service
+[root@k8smaster service]# cat hostname-svc.yml 
+apiVersion: v1
+kind: Service
+metadata:
+  name: hostname
+spec:
+  selector:
+    app: hostnames
+  ports:
+  - name: default
+    protocol: TCP
+    port: 80
+    targetPort: 9376
+创建service匹配的pod
+[root@k8smaster service]# cat hostname.yml 
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hostname
+spec:
+  selector:
+    matchLabels:
+      app: hostnames
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: hostnames
+    spec:
+      containers:
+      - name: hostnames
+        image: mirrorgooglecontainers/serve_hostname
+        ports:
+        - containerPort: 9376
+          protocol: TCP
+查看创建的svc
+[root@k8smaster service]# kubectl get svc
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+hostname     ClusterIP   10.1.115.75    <none>        80/TCP    48m
+查看创建的pod
+[root@k8smaster service]# kubectl get pods
+NAME                               READY   STATUS    RESTARTS   AGE
+hostname-69cd56f6d5-cgnrx          1/1     Running   0          37m
+hostname-69cd56f6d5-rlpng          1/1     Running   0          39m
+hostname-69cd56f6d5-vjd95          1/1     Running   0          37m
+查看生成的endpoints
+[root@k8smaster service]# kubectl get ep
+NAME         ENDPOINTS                                            AGE
+hostname     10.244.1.54:9376,10.244.1.55:9376,10.244.2.53:9376   48m
+此时在宿主机上就可以访问cluster-ip了（此处为10.1.115.75）
+[root@k8smaster service]# curl 10.1.115.75
+hostname-69cd56f6d5-vjd95
+[root@k8smaster service]# curl 10.1.115.75
+hostname-69cd56f6d5-cgnrx
+[root@k8smaster service]# curl 10.1.115.75
+hostname-69cd56f6d5-rlpng
+
 2.1 如何通过service的名称访问service
 由于service资源是有命名空间隔离性的，所以不同命名空间可以创建相同名称的service。
 
@@ -133,4 +192,32 @@ dep    ExternalName   <none>       www.dev.pcep.cloud   <none>    5s
 / # curl dep
 {"message":"no route and no API found with those values"}
 
+3.5 NodePort
+[root@k8smaster service]# cat node-svc.yml 
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-nginx
+  labels:
+    run: my-nginx
+spec:
+  type: NodePort
+  ports:
+  - port: 8080
+    nodePort: 30000
+    targetPort: 80
+    protocol: TCP
+    name: http
+  - port: 443
+    protocol: TCP
+    name: https
+  selector:
+    run: my-nginx
 
+[root@k8smaster service]# kubectl get svc
+NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)                        AGEd
+my-nginx     NodePort    10.1.246.166   <none>        8080:30000/TCP,443:31446/TCP   5m7s
+
+nodeport的端口号可以指定也可以不指定，指定的话范围必须在30000-32767内
+
+pod 80--》svc 8080 --》node 30000

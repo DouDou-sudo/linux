@@ -14,8 +14,8 @@ spec:
   nfs:
     server: 10.244.1.4
     path: "/"
+    
 声明一个1G大小的PVC
-
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

@@ -1,0 +1,77 @@
+1.1 常用的Volumes类型
+    
+    emptyDir：临时卷的一种，Pod删除卷也会被删除
+    hostPath：本地卷，删除Pod不影响卷
+    nfs：网络存储
+    ConfigMap&Secret
+1.2  emptyDir
+如果删除Pod，emptyDir卷中的数据也将被删除，一般emptyDir卷用于Pod中的不同Container共享数据。它可以被挂载到相同或不同的路径上。默认情况下，emptyDir卷支持节点上的任何介质，可能是SSD、磁盘或网络存储，具体取决于自身的环境。可以将emptyDir.medium字段设置为Memory，让Kubernetes使用tmpfs（内存支持的文件系统），虽然tmpfs非常快，但是tmpfs在节点重启时，数据同样会被清除，并且设置的大小会被计入到Container的内存限制当中。
+emptyDir实现数据共享
+        volumeMounts:
+        - mountPath: /data/
+          name: test
+      volumes:       #定义
+        - name: test #volume名称
+          emptyDir: {} #类型emptyDir
+#如果使用内存存储数据定义方式如下
+      volumes:      
+        - name: test
+          emptyDir:    #这里不需要写东西
+            medium: Memory  #定义为使用内存
+
+1.3 hostPath
+
+hostPath卷可将节点上的文件或目录挂载到Pod上，用于Pod自定义日志输出或访问Docker内部的容器等。
+
+hostPath卷常用的type（类型）如下：
+
+    type为空字符串：默认选项，意味着挂载hostPath卷之前不会执行任何检查。
+    DirectoryOrCreate：如果给定的path不存在任何东西，那么将根据需要创建一个权限为0755的空目录，和Kubelet具有相同的组和权限。
+    Directory：目录必须存在于给定的路径下。
+    FileOrCreate：如果给定的路径不存储任何内容，则会根据需要创建一个空文件，权限设置为0644，和Kubelet具有相同的组和所有权。
+    File：文件，必须存在于给定路径中。
+    Socket：UNIX套接字，必须存在于给定路径中。
+    CharDevice：字符设备，必须存在于给定路径中。
+    BlockDevice：块设备，必须存在于给定路径中。
+
+利用hostPath修改容器时区
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: test
+  template:
+    metadata:
+      labels:
+        app: test
+    spec:
+      containers:
+      - image: 10.122.6.81:5000/image/nginx:v1
+        name: nginx
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: test
+      volumes:      
+        - name: test
+          hostPath:   #volumes类型
+            type: File  #hostPath类型
+            path: /etc/localtime #挂载的文件
+
+1.4  NFS
+
+需要按照NFS服务器，具体配置如下
+
+        volumeMounts:
+        - mountPath: /data
+          name: test
+      volumes:      
+        - name: test
+          nfs:   #volume类型
+            server: 192.168.10.71  #nfs服务器地址
+            path: /data   #nfs共享目录
+

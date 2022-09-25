@@ -89,7 +89,11 @@ spec:           # 必选，用于定义容器的详细信息
         httpGet:  #执行http请求    
               path: /
               port: 80
-  restartPolicy: Always   # 可选，默认为Always，容器故障或者没有启动成功，那就自动重启该容器，Onfailure: 容器以不为0的状态终止，自动重启该容器, Never:无论何种状态，都不会重启，默认为Always
+
+  restartPolicy三种: 
+  Always   # 可选，默认为Always，容器故障或者没有启动成功，那就自动重启该容器，
+  Onfailure: 容器以不为0的状态终止，自动重启该容器,
+  Never:无论何种状态，都不会重启，默认为Always
   nodeSelector:  #可选，指定Node节点
     type: normal #填写node标签
   terminationGracePeriodSeconds: 30 #Pod删除停止时最大容忍时间，默认30s
