@@ -1,0 +1,9 @@
+[root@node1 ~]# sysctl net.bridge.bridge-nf-call-iptables=1
+sysctl: cannot stat /proc/sys/net/bridge/bridge-nf-call-iptables: No such file or directory
+需要先加载模块
+[root@node1 net]# modprobe br_netfilter
+再执行
+[root@node1 net]# sysctl net.bridge.bridge-nf-call-ip6tables=1
+net.bridge.bridge-nf-call-ip6tables = 1
+[root@node1 net]# sysctl net.bridge.bridge-nf-call-iptables=1
+net.bridge.bridge-nf-call-iptables = 1

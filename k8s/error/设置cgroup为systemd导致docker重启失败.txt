@@ -1,0 +1,6 @@
+因为/lib/systemd/system/docker.service 和daemon.json有冲突导致
+vim /lib/systemd/system/docker.service文件将如下行删除即可
+--exec-opt native.cgroupdriver=cgroupfs \
+systemctl daemon-reload
+systemctl restart docker
+##注意

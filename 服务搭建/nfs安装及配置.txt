@@ -33,7 +33,7 @@ vim /etc/exports
 
 客户端
 1、查看是否安装rpcbind服务
-  rpm –qa | grep rpcbind
+  rpm –qa | grep rpcbind nfs-utils
 2、安装rpcbind服务
   yum install rpcbind –y
 3、启动服务
