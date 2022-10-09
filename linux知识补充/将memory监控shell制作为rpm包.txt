@@ -1,0 +1,67 @@
+Shell脚本制作rpm包
+1、安装rpmbuild包
+yum install rpm-build
+2、将要打包的文件拷贝到/root/rpmbuild/BUILD目录
+system_memory_monitor.sh和memory日志转存文件
+3、创建spec文件
+cd /root/rpmbuild/SPECS
+vim sys_tem.spec内容如下
+Name:		sys_tem_monitor	
+Version:	1   
+Release:	1%{?dist}  
+Summary:	jiankong   
+Group:		System Environment/Libraries
+License:	GPLv2+
+%description
+%prep
+echo -e "\033[1;41;33m pre install NOTHING\033[0mprep"
+%build
+echo -e "\033[1;41;33m pre install NOTHING\033[0mprep"
+%install
+mkdir -p %{buildroot}/usr/sbin
+mkdir -p %{buildroot}/etc/logrotate.d
+install -m 744 system_memory_monitor.sh  %{buildroot}/usr/sbin/system_memory_monitor.sh
+install -m 744 memory  %{buildroot}/etc/logrotate.d/memory
+%post 
+sh /usr/sbin/system_memory_monitor.sh &
+echo "/usr/sbin/system_memory_monitor.sh &" >> /etc/rc.local
+%files
+/usr/sbin/system_memory_monitor.sh
+/etc/logrotate.d/memory
+%doc
+%postun
+%changelog
+spec内容介绍：
+Name:		sys_tem_monitor	  //包名字
+Version:	1 					//包版本
+Release:	1%{?dist}				//发布序列号，标明第几次打包  
+Summary:	jiankong				//软件包内容概要
+Group:		System Environment/Libraries		//软件包分组
+License:	GPLv2+                                    
+%description           //定义rpm包的描述信息
+%prep				//编译的时候执行的脚本
+echo -e "\033[1;41;33m pre install NOTHING\033[0mprep"
+%build    
+echo -e "\033[1;41;33m pre install NOTHING\033[0mprep"
+%install   //编译的时候把软件包放在哪里（把system_memory_monitor.sh放到/usr/sbin/，把memory放到/etc/logrotate.d目录）
+mkdir -p %{buildroot}/usr/sbin
+mkdir -p %{buildroot}/etc/logrotate.d
+install -m 744 system_memory_monitor.sh  %{buildroot}/usr/sbin/system_memory_monitor.sh
+install -m 744 memory  %{buildroot}/etc/logrotate.d/memory
+%post //安装rpm包的时候执行的脚本
+sh /usr/sbin/system_memory_monitor.sh &
+echo "/usr/sbin/system_memory_monitor.sh &" >> /etc/rc.local
+%files  //定义rpm包安装时创建的相关目录及文件
+/usr/sbin/system_memory_monitor.sh
+/etc/logrotate.d/memory
+%doc
+%postun
+%changelog
+4、编译spec文件
+rpmbuild -ba sys_tem.spec
+5在/root/rpmbuild/RPMS/x86_64/目录下面有rpm包生成
+ls /root/rpmbuild/RPMS/x86_64/sys_tem_monitor-1-1.ky3.x86_64.rpm
+
+
+
+

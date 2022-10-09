@@ -9,18 +9,32 @@ iostat 参数 时间 次数
 -x 显示详细信息
 -V 显示版本信息
 
-[root@localhost ~]# iostat -d -k 1 1
-Linux 3.10.0-1062.9.1.ky3.kb6.pg.x86_64 (localhost.localdomain) 	2022年05月05日 	_x86_64_	(6 CPU)
-	
-Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
-sda               0.79         5.84        11.25           5658601   10897504
-scd0              0.00         0.01         0.00           6824          0
-dm-0              0.62         1.18         9.27          1141460    8981064
-dm-1              0.00         0.00         0.00          3492          0
-dm-2              0.00         0.01         0.00          7552       2116
-dm-3              0.00         0.00         0.00          2272       2048
-dm-4              0.25         4.63         1.95         4484679    1886736
+[root@node1 ~]# iostat -m
+Linux 3.10.0-1160.ky3.kb8.ksvd.x86_64 (node1) 	2022年06月08日 	_x86_64_	(24 CPU)
 
+avg-cpu:  %user   %nice %system %iowait  %steal   %idle
+           0.76    0.00    0.43    0.01    0.00   98.80
+
+Device:            tps    MB_read/s    MB_wrtn/s    MB_read    MB_wrtn
+sda               9.03         0.10         0.25       2071       5011
+sdb               0.01         0.00         0.00          8          0
+sdc               0.39         0.00         0.07          6       1454
+dm-0              9.02         0.10         0.23       2028       4569
+dm-1              0.00         0.00         0.00          2          0
+dm-2              0.88         0.00         0.10          6       1894
+
+cpu属性值说明：
+
+%user：CPU处在用户模式下的时间百分比。
+%nice：CPU处在带NICE值的用户模式下的时间百分比。
+%system：CPU处在系统模式下的时间百分比。
+%iowait：CPU等待输入输出完成时间的百分比。
+%steal：管理程序维护另一个虚拟处理器时，虚拟CPU的无意识等待时间百分比。
+%idle：CPU空闲时间百分比。
+
+如果%iowait的值过高，表示硬盘存在I/O瓶颈，
+%idle值高，表示CPU较空闲，如果%idle值高但系统响应慢时，有可能是CPU等待分配内存，此时应加大内存容量。
+%idle值如果持续低于10，那么系统的CPU处理能力相对较低，表明系统中最需要解决的资源是CPU
 tps：该设备每秒的传输次数
  kB_read/s：每秒从设备读取的数据量
  kB_wrtn/s：每秒向设备写入的数据量
@@ -52,6 +66,9 @@ w_await
 svctm：平均每次IO请求的处理时间(毫秒为单位)
 %util： 采用周期内用于IO操作的时间比率，即IO队列非空的时间比率
 
-
+如果 %util 接近 100%，说明产生的I/O请求太多，I/O系统已经满负荷，该磁盘可能存在瓶颈。
+如果 svctm 比较接近 await，说明 I/O 几乎没有等待时间；
+如果 await 远大于 svctm，说明I/O 队列太长，io响应太慢，则需要进行必要优化。
+如果avgqu-sz比较大，也表示有当量io在等待。
 
 

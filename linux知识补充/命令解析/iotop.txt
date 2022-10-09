@@ -1,0 +1,49 @@
+ iotop 类似top命令，不过iotop是只监控io相关的进程
+
+每秒刷新一次，可以查看哪些进程使用io比较高
+
+按下o键可以只显示I当前O活跃的线程，再按下o键可以恢复显示成全部的IO线程
+
+按下p键可以把线程ID转换为进程ID，再按下p键可以恢复成线程ID
+
+如下图
+Total DISK READ :       0.00 B/s | Total DISK WRITE :       0.00 B/s
+Actual DISK READ:	0.00 B/s | Actual DISK WRITE:       0.00 B/s
+  PID  PRIO  USER     DISK READ  DISK WRITE  SWAPIN     IO>    COMMAND                                            
+    1 be/4 root        0.00 B/s    0.00 B/s  0.00 %  0.00 % systemd --switched-root --system --deserialize 22
+    2 be/4 root        0.00 B/s    0.00 B/s  0.00 %  0.00 % [kthreadd]
+    4 be/0 root        0.00 B/s    0.00 B/s  0.00 %  0.00 % [kworker/0:0H]
+    6 be/4 root        0.00 B/s    0.00 B/s  0.00 %  0.00 % [ksoftirqd/0]
+    7 rt/4 root        0.00 B/s    0.00 B/s  0.00 %  0.00 % [migration/0]
+    8 be/4 root        0.00 B/s    0.00 B/s  0.00 %  0.00 % [rcu_bh]
+    9 be/4 root        0.00 B/s    0.00 B/s  0.00 %  0.00 % [rcu_sched]
+   10 be/0 root        0.00 B/s    0.00 B/s  0.00 %  0.00 % [lru-add-drain]
+   11 rt/4 root        0.00 B/s    0.00 B/s  0.00 %  0.00 % [watchdog/0]
+   12 rt/4 root        0.00 B/s    0.00 B/s  0.00 %  0.00 % [watchdog/1]
+   13 rt/4 root        0.00 B/s    0.00 B/s  0.00 %  0.00 % [migration/1]
+   14 be/4 root        0.00 B/s    0.00 B/s  0.00 %  0.00 % [ksoftirqd/1]
+   16 be/0 root        0.00 B/s    0.00 B/s  0.00 %  0.00 % [kworker/1:0H]
+
+Total DISK READ                :        从磁盘中读取的总速率		//一般看这个读速率
+
+Total DISK WRITE              :        往磁盘里写入的总速率		//看这个写速率
+
+Actual DISK READ                :        从磁盘中读取的实际速率
+
+Actual DISK WRITE                 :        往磁盘里写入的实际速率
+
+TID                                        :        线程ID，按p键可转换成进程ID，再按p键可恢复成线程ID
+
+PRIO                                        :        优先级
+
+USER                                :        线程所有者
+
+DISK READ                        :        从磁盘中读取的速率
+
+DISK WRITE                        :        往磁盘里写入的速率
+
+SWAPIN                                :        swap交换百分比
+
+IO>                                        :        IO等待所占用的百分比
+
+COMMAND                        :        具体的进程命令

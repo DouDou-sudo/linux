@@ -26,8 +26,7 @@ vscode设置git终端
         },
         "GitBash": {
             "path": [
-                ; "C:\\Program Files\\Git\\bin\\bash.exe"
-                "D:\\Git\\bin\\bash.exe"     ;此处将git安装在D盘，"terminal.integrated.defaultProfile.windows": "GitBash"一直报错，如下：
+                "C:\\Program Files\\Git\\bin\\bash.exe"
             ],
             "icon": "terminal-bash"
         }
