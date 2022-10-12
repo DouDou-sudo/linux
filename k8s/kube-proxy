@@ -2,7 +2,8 @@ kube-Proxy
     
     负责Pod之间的通信和负载均衡，将指定的流量分发到后端正确的机器上。
     kube-proxy现在有两种工作方式分别是iptables、ipvs。
-    查看Kube-proxy工作模式：curl 127.0.0.1:10249/proxyMode
+    查看Kube-proxy工作模式：
+        curl 127.0.0.1:10249/proxyMode
     
     IPtables
 	目前默认方式，1.1开始支持，1.2开始为默认
@@ -20,7 +21,17 @@ IPVS 相对 IPtables 效率会更高一些，使用 IPVS 模式需要在运行 K
 使用IPVS模式，Kube-Proxy会监视Kubernetes Service对象和Endpoints，调用宿主机内核Netlink接口以相应地创建IPVS规则并定期与Kubernetes Service对象 Endpoints对象同步IPVS规则，以确保IPVS状态与期望一致，访问服务时，流量将被重定向到其中一个后端 Pod,IPVS使用哈希表作为底层数据结构并在内核空间中工作，这意味着IPVS可以更快地重定向流量，并且在同步代理规则时具有更好的性能，此外，IPVS 为负载均衡算法提供了更多选项，例如：rr (轮询调度)、lc (最小连接数)、dh (目标哈希)、sh (源哈希)、sed (最短期望延迟)、nq(不排队调度)等。
 
 
-
-
+如何更改kube-proxy的mode
+修改mode为ipvs，修改前确保
+执行kubectl edit cm kube-proxy -n kube-system
+..............
+    mode: "ipvs"
+...........
+删除原有的kube-proxy，因为kube-proxy为Daemonset,删除后自动在每台node上重新创建新的pod
+kubectl get pods -n kube-system | awk '/kube-proxy/{print $1}' | xargs kubectl delete pods -n kube-system
+kube-proxy为Daemonset
+[root@k8smaster ingress]# kubectl -n kube-system get daemonsets.apps kube-proxy  -oyaml
+apiVersion: apps/v1
+kind: DaemonSet
 
 

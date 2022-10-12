@@ -1,0 +1,6 @@
+原有版本，v1.15.0
+[root@k8smaster ingress]# kubectl get nodes
+NAME        STATUS   ROLES    AGE   VERSION
+k8smaster   Ready    master   42d   v1.15.0
+k8snode1    Ready    <none>   42d   v1.15.0
+k8snode2    Ready    <none>   42d   v1.15.0

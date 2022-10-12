@@ -2,7 +2,7 @@ Metrics Server是集群范围资源使用数据的聚合器。 从 Kubernetes 1.
 
 Metric server 从每个节点上的Kubelet公开的 Summary API 中采集指标信息。
 
-通过在主 API server 中注册的 Metrics Server Kubernetes 聚合器]来采集指标信息， 这是在 Kubernetes 1.7 中引入的。
+通过在主 API server 中注册的 Metrics Server Kubernetes 聚合器来采集指标信息， 这是在 Kubernetes 1.7 中引入的。
 
 部署组件后可以查询kubernetes集群资源使用情况
 
