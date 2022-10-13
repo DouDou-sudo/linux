@@ -108,4 +108,4 @@ location的详细使用
 	├── 123
 	└── abc
 本地访问
-
+![Alt text](https://github.com/DouDou-sudo/linux/blob/main/images/nginx-download%E6%95%88%E6%9E%9C%E5%9B%BE.png)
