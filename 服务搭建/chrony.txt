@@ -1,0 +1,407 @@
+Linux时间同步chrony
+Chrony是网络时间同步协议（ntp）的通用实现
+切记：服务端必须关闭防火墙，chrony版本必须一致
+[root@glusterfs-node1 ~]# systemctl stop firewalld
+[root@glusterfs-node1 ~]# systemctl disable firewalld
+Removed symlink /etc/systemd/system/multi-user.target.wants/firewalld.service.
+Removed symlink /etc/systemd/system/dbus-org.fedoraproject.FirewallD1.service.
+配置文件详解
+/etc/chrony.conf
+
+
+服务端配置
+添加两处 如下:
+[root@glusterfs-node1 ~]# grep -Ev "#|^$" /etc/chrony.conf 
+
+server cn.pool.ntp.org  iburst	//指定上级时间同步服务器 iburst：并行同步，加快同步速度
+driftfile /var/lib/chrony/drift
+makestep 1.0 3				//果系统时钟的偏移量大于1秒，则允许系统时钟在前三次更新中步进。
+rtcsync						//启用实时时钟（RTC）的内核同步
+allow 192.168.189.0/24			//允许以本机作为时间同步服务器时间同步的客户端地址
+local stratum 10
+logdir /var/log/chrony			//指定日志文件的目录
+
+systemctl enable chronyd
+systemctl restart chronyd
+
+
+
+
+客户端配置
+
+[root@glusterfs-node2 ~]# grep -Ev "#|^$" /etc/chrony.conf 
+server 192.168.189.131 iburst  iburst：并行同步，加快同步速度
+driftfile /var/lib/chrony/drift
+makestep 1.0 3
+rtcsync
+logdir /var/log/chrony
+
+systemctl enable chronyd
+systemctl restart chronyd
+
+验证时间同步
+chronyc sources -v 或者chronyc sources查看最下面一行是否有上级时间同步服务器
+[root@glusterfs-node1 ~]# chronyc sources
+210 Number of sources = 1
+MS Name/IP address         Stratum Poll Reach LastRx Last sample               
+===============================================================================
+^* 219.216.128.25                2   6   377    15   -175us[ -425us] +/-   24ms
+[root@glusterfs-node2 ~]# chronyc sources
+210 Number of sources = 1
+MS Name/IP address         Stratum Poll Reach LastRx Last sample               
+===============================================================================
+^? glusterfs-node1               0   8     0     -     +0ns[   +0ns] +/-    0ns
+
+^?表示未同步，^*表示已同步
+查看当前时间同步状态
+[root@glusterfs-node1 ~]# timedatectl status
+      Local time: Sun 2022-04-24 16:32:30 CST
+  Universal time: Sun 2022-04-24 08:32:30 UTC
+        RTC time: Sun 2022-04-24 08:32:30
+       Time zone: America/New_York (CST, +0800)
+     NTP enabled: yes
+NTP synchronized: yes			//ntp已同步
+ RTC in local TZ: no
+      DST active: n/a
+
+[root@glusterfs-node2 ~]# timedatectl 
+      Local time: Sun 2022-04-24 14:57:38 CST
+  Universal time: Sun 2022-04-24 06:57:38 UTC
+        RTC time: Sun 2022-04-24 08:33:11
+       Time zone: America/New_York (CST, +0800)
+     NTP enabled: yes
+NTP synchronized: no			//ntp未同步
+ RTC in local TZ: no
+      DST active: n/a
+
+
+#开启网络时间同步
+timedatectl set-ntp true
+
+[root@glusterfs-node2 ~]# timedatectl set-ntp false
+[root@glusterfs-node2 ~]# timedatectl 
+      Local time: Sun 2022-04-24 16:43:05 CST
+  Universal time: Sun 2022-04-24 08:43:05 UTC
+        RTC time: Sun 2022-04-24 08:43:05
+       Time zone: America/New_York (CST, +0800)
+     NTP enabled: no
+NTP synchronized: yes
+ RTC in local TZ: no
+      DST active: n/a
+[root@glusterfs-node2 ~]# timedatectl set-ntp true
+[root@glusterfs-node2 ~]# timedatectl 
+      Local time: Sun 2022-04-24 16:44:30 CST
+  Universal time: Sun 2022-04-24 08:44:30 UTC
+        RTC time: Sun 2022-04-24 08:44:30
+       Time zone: America/New_York (CST, +0800)
+     NTP enabled: yes
+NTP synchronized: yes
+ RTC in local TZ: no
+      DST active: n/a
+
+
+
+系统时钟与时钟服务器
+同步，让时间保持精确。
+Chrony
+（NTP）
+分为守护进程
+，⽤于调整内核中运⾏的系统时间和时间服务器同步 以及 ⽤于监控性能并进⾏多样化的配置的
+Chrony
+chronyd
+chronyc
+环境信息
+[root@suhw ~]# cat /etc/redhat-release 
+CentOS Linux release 7.7.1908 (Core)
+[root@suhw ~]# uname -a
+Linux suhw 3.10.0-1062.4.3.el7.x86_64 #1 SMP Wed Nov 13 23:58:53 UTC 2019 x86_64 x86_64 x86_64 GNU/Linux
+安装
+[root@suhw ~]# yum install chrony -y
+设置开机启动
+[root@suhw ~]# systemctl enable chronyd.service
+[root@suhw ~]# systemctl restart chronyd.service
+[root@suhw ~]# systemctl status chronyd.service
+● chronyd.service - NTP client/server
+   Loaded: loaded (/usr/lib/systemd/system/chronyd.service; enabled; vendor preset: enabled)
+   Active: active (running) since Thu 2020-06-04 10:12:10 CST; 4s ago
+     Docs: man:chronyd(8)
+           man:chrony.conf(5)
+  Process: 11520 ExecStartPost=/usr/libexec/chrony-helper update-daemon (code=exited, status=0/SUCCESS)
+  Process: 11516 ExecStart=/usr/sbin/chronyd $OPTIONS(code=exited, status=0/SUCCESS)
+ Main PID: 11518 (chronyd)
+    Tasks: 1
+   Memory: 804.0K
+   CGroup: /system.slice/chronyd.service
+└─11518 /usr/sbin/chronyd
+Jun 04 10:12:10 suhw systemd[1]: Starting NTP client/server...
+Jun 04 10:12:10 suhw chronyd[11518]: chronyd version 3.4 starting (+CMDMON +NTP +REFCLOCK +RTC +PRIVDROP +SCFILTER +SIGND +ASYNCDN
+S +SECHASH +IPV6 +DEBUG)
+Jun 04 10:12:10 suhw systemd[1]: Started NTP client/server.
+防⽕墙设置
+$ firewall-cmd --add-service=ntp --permanent
+$ firewall-cmd --reload
+因
+使⽤
+端⼝协议，所以允许
+服务即可。
+NTP
+123/UDP
+NTP
+配置参数
+默认配置在
+中，参考如下
+/etc/chrony.conf
+⽤于添加
+服务器
+# server 
+ ntp 
+server 0.centos.pool.ntp.org iburst
+server 1.centos.pool.ntp.org iburst
+server 2.centos.pool.ntp.org iburst
+server 3.centos.pool.ntp.org iburst
+记录系统时钟增益
+损失时间的速率
+# 
+/
+driftfile /var/lib/chrony/drift
+允许跳跃式校时如果在前
+次校时中时间差⼤于
+# 
+ 3 
+ 1.0s
+makestep 1.0 3
+同步时间⾄
+# 
+ RTC
+rtcsync
+在⽀持它的所有接⼝上启⽤硬件时间戳。
+# 
+#hwtimestamp *
+增加调整系统时钟所需的最⼩可选源数。
+# 
+#minsources 2
+允许那些客户端访问
+# 
+ NTP
+#allow 192.168.0.0/16
+即使未同步到时间源，也会提供时间。
+# 
+#local stratum 10
+指定
+认证的
+存在的⽂件
+# 
+ NTP 
+ key 
+#keyfile /etc/chrony.keys
+为⽇志⽂件指定⽬录
+# 
+logdir /var/log/chrony
+选择要被记录的信息
+# 
+#log measurements statistics tracking
+Server
+server hostname [option]…
+默认配置中默认使⽤四组官⽅的
+服务器
+NTP
+0.centos.pool.ntp.org
+1.centos.pool.ntp.org
+2.centos.pool.ntp.org
+3.centos.pool.ntp.org
+是为了缩短初始同步所花费的时间，该参数⼀般为
+的默认选项。
+iburst
+server
+driftfile
+根据实际时间计算修正值，并将补偿参数记录在该指令指定的⽂件⾥，默认为 
+driftfile var/lib/chrony/drift
+[root@suhw ~]# cat /var/lib/chrony/drift 
+            7.843162             0.028786
+makestep
+⽤法：
+makestep threshold limit
+根据需要通过加速或减慢时钟来逐渐校正任何时间偏移。例如：
+makestep 1.0 3
+就表⽰当头三次校时，如果时间相差 
+, 则跳跃式校时。
+1.0s
+rtcsync
+指令会将内核时间与
+进⾏同步
+rtcsync
+RTC（ Real_Time Clock）
+：实时时钟芯⽚
+RTC
+allow / deny
+这⾥你可以指定⼀台主机、⼦⽹，或者⽹络以允许或拒绝
+连接到扮演时钟服务器的机器。例如
+NTP
+allow 192.168.4.5
+deny 192.168/16
+commandkey
+如果在
+中指定
+参数，那么将 在
+中⽣成⼀个密码，或者也可以⾃⼰⼿动在
+中
+/etc/chrony.conf
+generatecommandkey
+/etc/chrony.keys
+chrony.keys
+添加指定密码。
+后跟的数字就代表使⽤
+中的哪个密码，默认值为1。
+commandkey
+chrony.keys
+local stratum 10
+由于
+是层型结构，有顶端的服务器，多层的
+再到客户端，所以服务器从⾼到低级别可以设定为1-16。0层为⾼精度计时设
+NTP
+Relay Server
+备，从1层开始，每层设备的时间都向前⼀层设备同步时间。（
+从
+同步时间，以此类推）
+stratum 2
+stratum 1
+为了减缓负荷和⽹络堵塞，原则上应该避免直接连接到级别为1的服务器。此处的就设置的是当前本地
+服务器的层数。
+NTP
+bindaddress
+将
+监听
+请求的
+绑定到计算机的本地地址。
+chronyd
+NTP
+socket
+配置⽰例
+以下⽰例中 
+机器地址为 
+，
+为
+ntp server
+10.91.156.174
+client
+10.47.119.96
+NTP server
+设置本地作为
+例如要将本地设置为
+服务器。该机器地址为
+NTP
+10.91.156.174
+修改配置⽂件
+/etc/chrony.conf
+配置本地作为
+服务器
+# 
+ ntp 
+server 127.0.0.1 iburst
+计算时间补偿
+# 
+driftfile /var/lib/chrony/drift
+如果前三次校时相差⼤于
+，则使⽤跳跃校时来校正时间
+# 
+1s
+makestep 1.0 3
+同步时间到
+# 
+ RTC
+rtcsync
+⽇志存放在
+# 
+ /var/log/chrony
+logdir /var/log/chrony
+bindaddress ::
+表⽰所有⼈都可访问本机提供的
+服务
+# 
+ntp
+allow
+重启服务
+[root@ntp-server ~]# systemctl restart chronyd
+查看
+服务器状态
+ntp
+[root@ntp-server ~]# chronyc sourcestats
+210 Number of sources = 1
+Name/IP Address            NP  NR  Span  Frequency  Freq Skew  Offset  Std Dev
+==============================================================================
+localhost                   2   0    65     +0.000   2000.000  -6105ns  4000ms
+NTP server
+设置
+将第⼆台
+的
+设置为第⼀台机器
+10.47.119.96
+NTP server
+[root@ntp-client ~]# cat /etc/chrony.conf 
+server 10.91.156.174 iburst
+driftfile /var/lib/chrony/drift
+makestep 1.0 3
+rtcsync
+logdir /var/log/chrony
+keyfile /etc/chrony.keys
+bindaddress ::
+allow
+同样重启⽣效
+chronyc
+常⽤⽤法
+注：详细解释参考
+man chronyc
+交互式使⽤
+可以交互式使⽤，直接输⼊
+后，输⼊对应命令即可
+chronyc
+chronyc
+[root@ntp-server ~]# chronyc
+chrony version 3.4
+Copyright (C) 1997-2003, 2007, 2009-2018 Richard P. Curnow and others
+chrony comes with ABSOLUTELY NO WARRANTY.  This is free software, and
+you are welcome to redistribute it under certain conditions.  See the
+GNU General Public License version 2 for details.
+chronyc> sources
+210 Number of sources = 1
+MS Name/IP address         Stratum Poll Reach LastRx Last sample               
+===============================================================================
+^* localhost                    10   9   377  117m  -6818ns[  -14us] +/-   32us
+chronyc>
+NTP server
+查看
+信息
+[root@ntp-client ~]# chronyc sources
+210 Number of sources = 1
+MS Name/IP address         Stratum Poll Reach LastRx Last sample               
+===============================================================================
+^* 10.91.156.174                11   6   377    42   -645us[-1177us] +/-   14ms
+NTP server
+检查
+状态
+显⽰当前在线和脱机的源
+[root@ntp-client ~]# chronyc activity
+200 OK
+1 sources online
+0 sources offline
+0 sources doing burst (return to online)
+0 sources doing burst (return to offline)
+0 sources with unknown address
+NTP
+检查
+是否对特定主机可⽤
+[root@ntp-server ~]# chronyc accheck 10.47.119.96
+208 Access allowed
+ntp client
+获取
+此命令显⽰通过
+或命令端⼝访问服务器的客户端列表
+NTP
+[root@ntp-server ~]# chronyc clients
+Hostname                      NTP   Drop Int IntL Last     Cmd   Drop Int  Last
+===============================================================================
+localhost                      30      0   8   -    49       0      0   -     -
+10.47.119.96                   17      0   6   -    37       0      0   -     -
+查看系统时钟性能
+--------------------------------------------------------
+
