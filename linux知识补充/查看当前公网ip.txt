@@ -1,0 +1,2 @@
+[root@k8snode1 ~]#  curl -s http://myip.ipip.net
+当前 IP：219.144.185.95  来自于：中国 陕西 西安  电信

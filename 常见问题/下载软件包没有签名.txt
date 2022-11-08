@@ -1,1 +1,3 @@
+yum install *.rpm --nogpgcheck
+
 在后面加上--nogpgcheck参数即可

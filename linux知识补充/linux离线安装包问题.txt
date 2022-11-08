@@ -10,10 +10,11 @@ yum安装安装包，会缓存下来rpm包，然后打包给生产环境使用�
 	yumdownloader(下载软件的依赖包，如果本机已经安装就不会下载依赖包，但是还是会下载指定的包)
 	reposync(下载一个yum仓库中的所有包)
 安装createrepo
+[root@k8snode2 docker]# yum install -t createrepo
 这个软件可以利用目录中的rpm包生成repodata目录
 1、mkdir ansible
-cd absible
-repotrack ansible 会在当前目录下下载ansible所需的所有依赖包
+[root@sr2 ansible]# cd absible
+[root@sr2 ansible]# repotrack ansible 会在当前目录下下载ansible所需的所有依赖包
 [root@sr2 ansible]# ls | wc -l
 88
 生成repodata元数据信息目录
@@ -42,7 +43,7 @@ repolist: 28,642
 2、[root@sr2 ~]# mkdir yumdownloader
 [root@sr2 ~]# cd yumdownloader
 [root@sr2 yumdownloader]# yumdownloader ansible
-依赖包我已经安装就不会再次安装，只会按照指定包
+依赖包我已经安装就不会再次安装，只会下载指定包
 [root@sr2 yumdownloader]# ls
 ansible-2.9.27-1.el7.noarch.rpm
 3、执行reposync ansible会安装ansible源的所有安装包
@@ -51,4 +52,52 @@ ansible-2.9.27-1.el7.noarch.rpm
 ansible
 [root@sr2 ansible]# ls | wc -l
 88
+4、下载指定包到指定目录
+yum install --downloadonly --downloaddir=/tmp/docker-19.03 docker-ce-19.03.8-3.el7 docker-ce-cli-19.03.8-3.el7 
 
+linux锁定已安装软件的版本，不让它被yum update更新，但是rpm不能锁定，还是可以使用rpm包进行更新
+yum install yum-plugin-versionlock
+添加锁定软件
+yum versionlock add docker-ce
+查看锁定列表
+[root@k8snode2 docker]# yum versionlock status
+Loaded plugins: fastestmirror, versionlock
+Repository base is listed more than once in the configuration
+Repository updates is listed more than once in the configuration
+Repository extras is listed more than once in the configuration
+Repository centosplus is listed more than once in the configuration
+Loading mirror speeds from cached hostfile
+ * base: mirrors.aliyun.com
+ * extras: mirrors.aliyun.com
+ * updates: mirrors.aliyun.com
+3:docker-ce-20.10.18-3.el7.*
+versionlock status done
+尝试使用yum更新锁定的软件包
+[root@k8snode2 docker]# yum update docker-ce
+Loaded plugins: fastestmirror, versionlock
+Repository base is listed more than once in the configuration
+Repository updates is listed more than once in the configuration
+Repository extras is listed more than once in the configuration
+Repository centosplus is listed more than once in the configuration
+Loading mirror speeds from cached hostfile
+ * base: mirrors.aliyun.com
+ * extras: mirrors.aliyun.com
+ * updates: mirrors.aliyun.com
+Excluding 1 update due to versionlock (use "yum versionlock status" to show it)
+No packages marked for update
+尝试安装锁定的软件包
+[root@k8snode2 docker]# yum install -y docker-ce
+Loaded plugins: fastestmirror, versionlock
+Repository base is listed more than once in the configuration
+Repository updates is listed more than once in the configuration
+Repository extras is listed more than once in the configuration
+Repository centosplus is listed more than once in the configuration
+Loading mirror speeds from cached hostfile
+ * base: mirrors.aliyun.com
+ * extras: mirrors.aliyun.com
+ * updates: mirrors.aliyun.com
+Excluding 1 update due to versionlock (use "yum versionlock status" to show it)
+Package docker-ce-18.06.1.ce-3.el7.x86_64 already installed and latest version
+Nothing to do
+解锁指定软件
+[root@k8snode2 docker]# yum versionlock delete docker-ce
