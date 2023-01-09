@@ -1,4 +1,5 @@
 
+![image](https://github.com/DouDou-sudo/linux/blob/main/images/20201002112953829.jpg)
 
 1.首先不必做公钥交换了，在登录请求之前我需要将客户端的公钥发给服务器端
 2.现在客户端发起一个登录请求
