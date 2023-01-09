@@ -38,7 +38,7 @@ ulimit -u 10240
 test soft nproc 65535
 test hard nproc 65535
 注意：###20-nproc.conf文件优先级高于limits.conf文件，root用户该文件设置必须将soft和hard都设置才会对之后打开的shell生效，普通用户只设置一个soft不会生效，设置一个hard生效？？？？（两个都设置任何用户都生效，建议两个都设置）
-	/etc/security/limits.d/90-nproc.conf
+	/etc/security/limits.d/20-nproc.conf
 	*          soft    nproc     4096
 	*          hard    nproc     4096
 	root       soft    nproc     unlimited

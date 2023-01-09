@@ -198,7 +198,18 @@ HEADtesttail
 124567849
 
 8、注释掉/etc/fstab文件的swap行,并备份原有的/etc/fstab文件
-sed -i.bak  '/swap/s/^/\1/g' /etc/fstab
+sed -i.bak '/swap/s/^/#/g' /etc/fstab
 
 9、去掉/etc/fstab文件的swap行的注释
-sed -i  '/swap/s/#\(.*\)$/\1/g' /etc/fstab
+sed -i '/swap/s/#\(.*\)/\1/g' /etc/fstab
+
+10、在匹配行的下面追加一行
+lc-messages-dir	= /usr/share/mysql
+skip-external-locking
+bind-address		= 127.0.0.1
+
+sed -i "/skip-external-locking/a\skip-grant-tables" /etc/mysql/mysql.conf.d/mysqld.cnf
+lc-messages-dir	= /usr/share/mysql
+skip-external-locking
+skip-grant-tables
+bind-address		= 127.0.0.1

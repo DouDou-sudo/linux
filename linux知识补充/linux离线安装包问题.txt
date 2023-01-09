@@ -13,7 +13,7 @@ yum安装安装包，会缓存下来rpm包，然后打包给生产环境使用�
 [root@k8snode2 docker]# yum install -t createrepo
 这个软件可以利用目录中的rpm包生成repodata目录
 1、mkdir ansible
-[root@sr2 ansible]# cd absible
+[root@sr2 ansible]# cd ansible
 [root@sr2 ansible]# repotrack ansible 会在当前目录下下载ansible所需的所有依赖包
 [root@sr2 ansible]# ls | wc -l
 88
