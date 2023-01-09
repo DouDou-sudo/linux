@@ -71,7 +71,7 @@ COPY 复制文件
     报错:
     Step 2/6 : COPY count.sh  mariadb-5.5.68-1.el7.x86_64.rpm mariadb-libs-5.5.68-1.el7.x86_64.rpm /root
     When using COPY with more than one source file, the destination must be a directory and end with a /
-    当copy多个文件时，目录必须是一个目录并且以/结尾
+    当copy多个文件时，目标必须是一个目录并且以/结尾
     如下就可以正常拷贝多个文件：
     COPY count.sh  mariadb-5.5.68-1.el7.x86_64.rpm mariadb-libs-5.5.68-1.el7.x86_64.rpm /root/
     进入容器查看
@@ -80,6 +80,14 @@ COPY 复制文件
     [root@9c4eaaa334e1 ~]# ls
     anaconda-ks.cfg  count.sh  mariadb-5.5.68-1.el7.x86_64.rpm  mariadb-libs-5.5.68-1.el7.x86_64.rpm
 
+    eg：
+    1、当dockerfile文件如下时，构建images会报错，如果想把一个文件拷贝到目录下，必须在目录后面加上/
+    COPY app.py /code
+    WORKDIR /code
+    Cannot mkdir: /code is not a directory
+    2、当dockerfike文件没有指定WORKDIR时, COPY 会拷贝到/目录下
+    FROM centos:7
+    COPY pip.conf  .
 
 ADD指令 更高级的复制文件
     ADD 指令和 COPY 的格式和性质基本一致。但是在 COPY 基础上增加了一些功能。
@@ -101,6 +109,17 @@ ADD指令 更高级的复制文件
         ADD --chown=bin files* /mydir/
         ADD --chown=1 files* /mydir/
         ADD --chown=10:11 files* /mydir/
+
+    eg：
+    1、当dockerfile文件如下时，构建images会报错，如果想把一个文件拷贝到目录下，必须在目录后面加上/
+    ADD app.py /code
+    WORKDIR /code
+    Cannot mkdir: /code is not a directory
+    2、当dockerfike文件没有指定WORKDIR时, ADD 会拷贝到/目录下
+    FROM centos:7
+    ADD pip.conf  .
+
+    
 CMD 容器启动命令
     CMD 指令的格式和 RUN 相似，也是两种格式：
 
@@ -167,9 +186,9 @@ ENV 设置环境变量
 
     eg：添加多个env，一般情况下添加环境变量为:ENV MYSQL_USER root不加"=",当一次添加多个env时，使用 \换行并在环境变量之间添加"="
     ENV MYSQL_USER="root" \
-    MYSQL_IP=""   \
-    MYSQL_PORT="3306" \
-    MYSQL_PASSWD=""
+        MYSQL_IP=""   \
+        MYSQL_PORT="3306" \
+        MYSQL_PASSWD=""
     进入容器查看环境变量是否生效
     [root@k8snode2 ms]# docker exec -it count bash
     [root@9c4eaaa334e1 ~]# echo $MYSQL_USER
@@ -324,7 +343,7 @@ HEALTHCHECK 健康检查
 SHELL 指令
     格式：SHELL ["executable", "parameters"]
 
-    SHELL 指令可以指定 RUN ENTRYPOINT CMD 指令的 shell，Linux 中默认为 ["/bin/sh", "-c"]
+    SHELL 指令可以指定 RUN ENTRYPOINT CMD 指令的 shell环境，Linux 中默认为 ["/bin/sh", "-c"]
     两个 RUN 运行同一命令，第二个 RUN 运行的命令会打印出每条命令并当遇到错误时退出。
 
     当 ENTRYPOINT CMD 以 shell 格式指定时，SHELL 指令所指定的 shell 也会成为这两个指令的 shell

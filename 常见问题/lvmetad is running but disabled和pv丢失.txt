@@ -1,0 +1,48 @@
+执行lvs，pvs，vgs告警
+WARNING: lvmetad is running but disabled. Restart lvmetad before enabling it
+查看lvm配置文件
+root@KPF001:~# grep -Ev "^[[:space:]]*#|^$" /etc/lvm/lvm.conf | grep "use_lvmetad"
+	use_lvmetad = 0
+更改use_lvmetad的参数为1
+root@KPF001:~# sed -i 's/use_lvmetad = 0/use_lvmetad = 1/g' /etc/lvm/lvm.conf 
+root@KPF001:~# grep -Ev "^[[:space:]]*#|^$" /etc/lvm/lvm.conf | grep "use_lvmetad"
+	use_lvmetad = 1
+
+
+问题：执行pvs发现pv丢失
+root@KPF001:~# pvs
+  WARNING: Device for PV dKEWCR-yjNC-RXmf-k0xY-YfEp-4bDA-eJBVy6 not found or rejected by a filter.
+  WARNING: Device for PV dKEWCR-yjNC-RXmf-k0xY-YfEp-4bDA-eJBVy6 not found or rejected by a filter.
+  PV             VG     Fmt  Attr PSize  PFree 
+  unknown device vg_kpf lvm2 a-m  56.95g 42.95g
+root@KPF001:~# vgs
+  WARNING: Device for PV dKEWCR-yjNC-RXmf-k0xY-YfEp-4bDA-eJBVy6 not found or rejected by a filter.
+  VG     #PV #LV #SN Attr   VSize  VFree 
+  vg_kpf   1   2   0 wz-pn- 56.95g 42.95g
+root@KPF001:~# lvs
+  WARNING: Device for PV dKEWCR-yjNC-RXmf-k0xY-YfEp-4bDA-eJBVy6 not found or rejected by a filter.
+  LV        VG     Attr       LSize Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert
+  lv_backup vg_kpf -wi-----p- 7.00g                                                    
+  lv_mdata  vg_kpf -wi-----p- 7.00g 
+
+lvm的备份在/etc/lvm/backup目录下
+1、执行以下命令修复丢失的pv
+root@KPF001:~# pvcreate /dev/drbd0 -u dKEWCR-yjNC-RXmf-k0xY-YfEp-4bDA-eJBVy6 --restorefile /etc/lvm/backup/vg_kpf 
+  WARNING: Device for PV dKEWCR-yjNC-RXmf-k0xY-YfEp-4bDA-eJBVy6 not found or rejected by a filter.
+  Couldn't find device with uuid dKEWCR-yjNC-RXmf-k0xY-YfEp-4bDA-eJBVy6.
+  Physical volume "/dev/drbd0" successfully created
+root@KPF001:~# vgcfgrestore vg_kpf
+  Duplicate of PV dKEWCR-yjNC-RXmf-k0xY-YfEp-4bDA-eJBVy6 dev /dev/drbd0 exists on unknown device 254:3
+  Duplicate of PV dKEWCR-yjNC-RXmf-k0xY-YfEp-4bDA-eJBVy6 dev /dev/drbd0 exists on unknown device 254:3
+  Restored volume group vg_kpf
+2、修复完成后查看pvs
+root@KPF001:~# pvs
+  PV         VG     Fmt  Attr PSize  PFree 
+  /dev/drbd0 vg_kpf lvm2 a--  56.95g 42.95g
+root@KPF001:~# vgs
+  VG     #PV #LV #SN Attr   VSize  VFree 
+  vg_kpf   1   2   0 wz--n- 56.95g 42.95g
+root@KPF001:~# lvs
+  LV        VG     Attr       LSize Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert
+  lv_backup vg_kpf -wi------- 7.00g                                                    
+  lv_mdata  vg_kpf -wi------- 7.00g   

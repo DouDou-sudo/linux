@@ -22,10 +22,9 @@ node2     7.9.2009  192.168.189.202                        1.23.9
 [root@master ~]# echo "nameserver 223.5.5.5" >> /etc/resolv.conf
 
 5、配置yun源
-[root@master ~]# cd /etc/yum.repos.d/
-[root@master yum.repos.d]# curl -O   https://mirrors.aliyun.com/repo/Centos-7.repo
-[root@master yum.repos.d]# curl -O https://mirrors.aliyun.com/repo/epel-7.repo
-[root@master yum.repos.d]# curl -O https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+[root@master ~]# curl -o /etc/yum.repos.d/Centos-7.repo   https://mirrors.aliyun.com/repo/Centos-7.repo
+[root@master ~]# curl -o /etc/yum.repos.d/epel-7.repo   https://mirrors.aliyun.com/repo/epel-7.repo
+[root@master ~]# curl -o /etc/yum.repos.d/docker-ce.repo   https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
 [root@master yum.repos.d]# cat > kubernetes.repo  <<EOF
 [kubernetes]
 name=Kubernetes
