@@ -9,17 +9,20 @@ yum安装安装包，会缓存下来rpm包，然后打包给生产环境使用�
 	repotrack(全量下载一个软件的依赖包)
 	yumdownloader(下载软件的依赖包，如果本机已经安装就不会下载依赖包，但是还是会下载指定的包)
 	reposync(下载一个yum仓库中的所有包)
-安装createrepo
-[root@k8snode2 docker]# yum install -t createrepo
+1）安装createrepo生成源
+[root@k8snode2 docker]# yum install -y createrepo
 这个软件可以利用目录中的rpm包生成repodata目录
-1、mkdir ansible
+[root@sr2 ~]# mkdir ansible
+[root@sr2 ~]# chmod 777 ansible
 [root@sr2 ansible]# cd ansible
 [root@sr2 ansible]# repotrack ansible 会在当前目录下下载ansible所需的所有依赖包
 [root@sr2 ansible]# ls | wc -l
 88
 生成repodata元数据信息目录
-[root@sr2 ansible]# createrepo .
-在yum源中配置新的仓库
+[root@sr2 ~]# createrepo ansible/
+如果目录下的rpm文件有删减，需要执行以下命令重新产生元数据
+createrepo --update /root/ansible/
+2）在yum源中配置新的仓库
 [root@sr2 ansible]# cat /etc/yum.repos.d/ansible.repo 
 [ansible]
 name=ansible
@@ -40,7 +43,8 @@ epel/x86_64                                        Extra Packages for Enterprise
 extras/7/x86_64                                    CentOS-7 - Extras - mirrors.aliyun.com                                      512
 updates/7/x86_64                                   CentOS-7 - Updates - mirrors.aliyun.com                                   4,050
 repolist: 28,642
-2、[root@sr2 ~]# mkdir yumdownloader
+2、yumdownloader下载
+[root@sr2 ~]# mkdir yumdownloader
 [root@sr2 ~]# cd yumdownloader
 [root@sr2 yumdownloader]# yumdownloader ansible
 依赖包我已经安装就不会再次安装，只会下载指定包
