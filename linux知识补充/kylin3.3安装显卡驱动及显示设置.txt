@@ -3,7 +3,7 @@
 	#blacklist  nvidiafb
 	blacklist nouveau
 	options nouveau modeset=0
-执行后 运行命令 Dracut  --force 并Reboot服务器生效
+执行后 运行命令 dracut  --force 并Reboot服务器生效
 2.1、编辑 /etc/modprobe.d/blacklist.conf ，再加入
 blacklist nouveau 
 options nouveau modeset=0
@@ -11,11 +11,12 @@ options nouveau modeset=0
 GRUB_CMDLINE_LINUX=”rd.lvm.lv=vg_centos/lv_root rd.lvm.lv=vg_centos/lv_swap rhgb quiet”
 quiet后面加入rdblacklist=nouveau ，保存。（或者添加rd.driver.blacklist=nouveau nouveau.modeset=0）
 打开终端，执行：
-3、sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+3、sudo grub2-mkconfig -o /boot/grub2/grub.cfg 重新生成grub配置文件
 4、reboot
 5、lsmod | grep nouveau 正常没有输出任何模块才对
 6、systemctl isolate multi-user.target
 安装显卡驱动
+7、systemctl isolate graphical.target  6和7重启X
 ##图形化界面按ctrl+alt+backspace可以重启X
 ##重新生成即可。
 ##在kernel版本后加 nouveau.modeset=0 rdblacklist=nouveau

@@ -54,6 +54,7 @@ docker-compose.yml
 运行compose项目
 
     [root@zabbix-server docker-compose]# docker-compose  up
+    [root@zabbix-server docker-compose]# docker-compose  up -d
     [+] Building 17.6s (9/9) FINISHED                                                                                                                                                                                
     => [internal] load build definition from dockerfile                                                                                                                                                        0.0s
     => => transferring dockerfile: 237B                                                                                                                                                                        0.0s

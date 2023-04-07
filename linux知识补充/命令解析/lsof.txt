@@ -19,4 +19,4 @@ lsof -i 用以显示符合条件的进程情况
 	  hostname --> Internet host name
   	hostaddr --> IPv4地址
 	  service --> /etc/service中的 service name (可以不止一个)
- 	 port --> 端口号 (可以不止一个)
+ 	 :port --> 端口号 (可以不止一个)

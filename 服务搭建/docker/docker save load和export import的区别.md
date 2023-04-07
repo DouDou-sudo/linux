@@ -6,7 +6,7 @@ export导入的镜像看不到镜像的构建history，
 
 保存镜像
 
-    $ docker save alpine -o filename
+    $ docker save NAME:TAG  -o filename
     $ file filename
     filename: POSIX tar archive
 这里的 filename 可以为任意名称甚至任意后缀名，但文件的本质都是归档文件

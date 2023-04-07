@@ -33,7 +33,7 @@ a
 fdsfsdf
 fdfg
 #sed -i  's/[[:space:]]//g' a 此命令会删除掉所有空格，但是只有空格的行仍存在
-
+sed -i 's/^[[:space:]]\+#.*$//g' monitor.py 去掉以空格开头跟着#任意字符结尾的行
 sed 'G' file 在原有的每一行后面添加一个空白行
 sed -n 'n;p' a 显示偶数行
 

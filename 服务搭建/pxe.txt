@@ -35,3 +35,4 @@ mount --bind /media  /vat/ftp/pub/kylin3.2
 mkdir -p /var/ftp/pub/aks
 cp /root/anaconda-ks.cfg /var/ftp/pub/aks/kylin3.2-aks.cfg
 cp /root/anaconda-ks.cfg /var/ftp/pub/aks/kylin3.3-aks.cfg
+注意各目录的权限
