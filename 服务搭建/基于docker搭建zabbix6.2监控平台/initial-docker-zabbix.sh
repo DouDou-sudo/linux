@@ -10,7 +10,8 @@ cat >>/etc/docker/daemon.json <<EOF
 EOF
 systemctl daemon-reload
 systemctl restart docker
-curl -L https://get.daocloud.io/docker/compose/releases/download/v2.9.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+#curl -L https://get.daocloud.io/docker/compose/releases/download/v2.9.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+cp -rp docker-compose/docker-compose /usr/local/bin/
 chmod +x /usr/local/bin/docker-compose
 
 echo "-------------创建目录--------------------"
@@ -29,7 +30,7 @@ docker volume create zabbix_server
 docker volume create zabbix_agent
 
 echo "-------------启动docker-compose--------------------"
-docker-compose -f /docker/yaml/docker-compose-zabbix.yml -d 
+docker-compose -f /docker/yaml/docker-compose-zabbix.yml  up -d 
 
 echo "请使用浏览器访问主机ip地址"
 echo "login:Admin"

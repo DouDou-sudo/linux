@@ -117,16 +117,4 @@ systemctl enable --now chronyd
 systemctl restart chronyd
 hwclock -w
 
-echo "-------------安装docker和docker-compose--------------------"
-yum install -y docker-ce-20.10.10
-systemctl enable --now docker
-cat >>/etc/docker/daemon.json <<EOF
-{
-  "registry-mirrors": ["https://v16stybc.mirror.aliyuncs.com"],
-  "exec-opts": ["native.cgroupdriver=systemd"]
-}
-EOF
-systemctl daemon-reload
-systemctl restart docker
-curl -L https://get.daocloud.io/docker/compose/releases/download/v2.9.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
+
