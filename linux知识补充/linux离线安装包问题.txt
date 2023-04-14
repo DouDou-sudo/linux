@@ -7,7 +7,7 @@ yum安装安装包，会缓存下来rpm包，然后打包给生产环境使用�
 二、安装yum-utils下载rpm包
 1、在联网环境中，yum install -y yum-utils
 	repotrack(全量下载一个软件的依赖包)
-	yumdownloader(下载软件的依赖包，如果本机已经安装就不会下载依赖包，但是还是会下载指定的包)
+	yumdownloader(下载软件的依赖包，如果本机已经安装就不会下载依赖包，但是还是会下载指定的包)？？下载时只下载了指定包没用下载依赖包
 	reposync(下载一个yum仓库中的所有包)
 1）安装createrepo生成源
 [root@k8snode2 docker]# yum install -y createrepo
