@@ -1,9 +1,0 @@
-1、重启linux
-2、按e键，进入grub界面
-3、在linux16那行，找到ro，将ro改为rw，并在后面添加init=/sysroot/bin/sh
-4、按ctrl+x
-5、切换到原系统执行 chroot /sysroot/
-6、passwd root修改root密码；出现乱码，输入LANG=en
-7、执行 touch /.autorelabel
-8、exit
-9、reboot

@@ -1,5 +1,6 @@
 #!/bin/bash
 echo "-------------安装docker和docker-compose--------------------"
+yum remove docker-ce docker-ce-cli containerd.io -y
 yum install -y docker-ce-20.10.10
 systemctl enable --now docker
 cat >>/etc/docker/daemon.json <<EOF
