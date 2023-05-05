@@ -33,6 +33,6 @@ docker volume create zabbix_agent
 echo "-------------启动docker-compose--------------------"
 docker-compose -f /docker/yaml/docker-compose-zabbix.yml  up -d 
 
-echo "请使用浏览器访问主机ip地址"
+echo "正在初始化，请稍等2分钟，再使用浏览器访问主机ip地址登录访问"
 echo "login:Admin"
 echo "passwd:zabbix"
