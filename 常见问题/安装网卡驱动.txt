@@ -1,0 +1,51 @@
+1、查看网卡适配器的设备ID
+    [root@localhost intel]# lspci -nn | grep -i eth
+    02:01.0 Ethernet controller [0200]: Intel Corporation 82545EM Gigabit Ethernet Controller     (Copper) [8086:100f] (rev 01)
+    8086:100f   设备ID，通过这个查找
+    02:01.0       设备编码，服务器上的编码
+    根据设备编码查看设备具体信息
+    [root@localhost intel]# lspci -nvs "02:01.0"
+    02:01.0 0200: 8086:100f (rev 01)
+	Subsystem: 15ad:0750
+	Physical Slot: 33
+	Flags: bus master, 66MHz, medium devsel, latency 0, IRQ 19
+	Memory at fd5c0000 (64-bit, non-prefetchable) [size=128K]
+	Memory at fdff0000 (64-bit, non-prefetchable) [size=64K]
+	I/O ports at 2000 [size=64]
+	[virtual] Expansion ROM at fd500000 [disabled] [size=64K]
+	Capabilities: [dc] Power Management version 2
+	Capabilities: [e4] PCI-X non-bridge device
+	Kernel driver in use: e1000		#如果没有驱动，没有下面这两行
+	Kernel modules: e1000		#内核驱动模块
+    
+2、下载对应驱动
+    根据下面这个网址查找设备ID对应的驱动，一般都是e1000,e1000e,igb
+    http://elrepo.org/tiki/DeviceIDs#e1000e.ko
+    去下面的网址下载最新驱动(e1000,e1000e,igb)
+    https://www.intel.cn/content/www/cn/zh/support/articles/000005480/ethernet-products.html
+
+3、安装驱动
+     https://www.intel.cn/content/www/cn/zh/support/articles/000005480/ethernet-products.html
+     下载界面有官方的安装方法，根据官方的方法安装即可,也可以按照如下方法安装
+注： 安装驱动前需要先安装gcc make kernel-devel (gcc-c++ rpm-build)
+3.1、安装e1000e驱动
+    rpmbuild -tb   e1000e-3.8.4.tar.gz          #编译rpm包
+    cd  /root/rpmbuild/RPMS/x86_64/         #进入rpm包目录
+    rpm  -Uvh  e1000e-3.8.4-1.x86_64.rpm  #升级安装驱动
+3.2、安装igb驱动
+    tar xzvf igb-xxx.tar.gz     #解压驱动程序 tar 压缩文件
+    cd  igb-xxx/src/              #进到驱动文件 src 目录
+    make install                    #编译驱动模块
+    驱动文件生成位置：
+    /usr/lib/modules/`uname -r`/updates/drivers/net/ethernet/intel/igb/igb.ko（不同版本可能有差异）
+    modprobe igb                #加载驱动模块
+
+注：若驱动加载报错，先移除旧的 igb 驱动程序，然后再加载新模块：
+    rmmod  igb 或 modprobe -r igb	#移除旧的igb驱动模块
+    modprobe  igb 或 insmod /usr/lib/modules/`uname -r`/updates/drivers/net/ethernet/intel/igb/igb.ko  #加载驱动模块
+4、查看所有已加载和未加载的模块
+    lsmod
+5、查询内核驱动模块的相关信息,查看目前执行的设备ID
+    modinfo e1000e
+    alias:          pci:v00008086d00002E6Esv*sd*bc*sc*i*	[8086:2E6E]
+    ........
