@@ -216,7 +216,7 @@ cat 1.txt
 功能：从ansible服务器主控端复制文件到远程主机
 #如目标存在，默认覆盖，此处指定先备份，如果不存在不备份，指定权限，可以指定copy到被控端的文件name，如果不指定就为原有name
 [root@k8smaster playbook]# ansible test -m copy -a 'src=/etc/ansible/playbook/1.sh dest=/opt/ mode=755 backup=yes'
-#指定内容，直接生成目标文件 
+#指定文件内容，直接生成目标文件 
 [root@k8smaster playbook]# ansible all -m copy -a 'content="test line1\ntest line2" dest=/root/1.txt'
 [root@k8snode1 ~]# cat 1.txt 
 test line1

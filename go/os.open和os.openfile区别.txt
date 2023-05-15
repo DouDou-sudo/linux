@@ -1,0 +1,2 @@
+os.open只能用于读取文件 *os.File只有O_RDONLY模式
+os.open
