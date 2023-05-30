@@ -1,0 +1,15 @@
+二、attr权限
+添加attr权限
+[root@glusterfs-node2 opt]# chattr +i a 
+[root@glusterfs-node2 opt]# lsattr a
+----i----------- a
+删除报错
+[root@glusterfs-node2 opt]# rm a
+rm: remove regular file ‘a’? y
+rm: cannot remove ‘a’: Operation not permitted
+[root@glusterfs-node2 opt]# rm -rf a
+rm: cannot remove ‘a’: Operation not permitted
+删除attr权限
+[root@glusterfs-node2 opt]# chattr -i a 
+[root@glusterfs-node2 opt]# rm a 
+rm: remove regular file ‘a’? y

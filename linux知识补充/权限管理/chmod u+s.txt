@@ -41,15 +41,4 @@ test.txt
 rm: remove write-protected regular empty file ‘test.txt’? y
 rm: cannot remove ‘test.txt’: Operation not permitted
 
-二、attr权限
-添加attr权限
-[root@ceph-node2 tmp]# chattr +i abc
-[root@ceph-node2 tmp]# lsattr abc
-----i----------- abc
-[test@ceph-node2 tmp]$ rm abc 
-rm: remove write-protected regular empty file ‘abc’? y
-rm: cannot remove ‘abc’: Operation not permitted
-删除attr权限，非root用户即可删除
-[root@ceph-node2 tmp]# chattr -i abc
-[test@ceph-node2 tmp]$ rm abc 
-rm: remove write-protected regular empty file ‘abc’? y
+

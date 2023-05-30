@@ -1,0 +1,6 @@
+setfattr
+setfattr -n name path   	新增标注
+setfattr -x name  path 	取消标注
+getfattr -n user.foo test	读取
+attr -lq test # 列举属性，不包含命名空间 
+getfattr -d -m ".*"  test # 列举所有属性，包含命名空间

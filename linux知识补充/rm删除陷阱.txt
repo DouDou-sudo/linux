@@ -1,0 +1,39 @@
+一、正常删除一个目录
+	[root@glusterfs-node2 opt]# mkdir c
+	[root@glusterfs-node2 opt]# ls
+	a  b  c
+	[root@glusterfs-node2 opt]# rm -rf c
+	[root@glusterfs-node2 opt]# ls
+	a  b
+	[root@glusterfs-node2 opt]# mkdir c
+	[root@glusterfs-node2 opt]# rm -rf c/
+	[root@glusterfs-node2 opt]# ls
+	a  b
+二、删除软链接目录
+	[root@glusterfs-node2 opt]# mkdir a
+	[root@glusterfs-node2 opt]# ln -s a b
+	[root@glusterfs-node2 opt]# ll -a
+	total 4
+	drwxr-xr-x   2 root root   41 May 30 15:15 a
+	lrwxrwxrwx   1 root root    1 May 30 15:11 b -> a
+	1）此时删除的是软链接目录b，源目录a和目录下的文件不会被删除
+	[root@glusterfs-node2 opt]# rm -rf b
+	[root@glusterfs-node2 opt]# ls
+	a
+	[root@glusterfs-node2 opt]# ll -a a 
+	total 12
+	-rw-r--r--  1 root root  2 May 30 15:11 abc
+**********2）此时删除的是链接下的文件，源目录a下的文件也会被删除***********
+	[root@glusterfs-node2 opt]# rm -rf b/	
+	[root@glusterfs-node2 opt]# ls
+	a  b
+	[root@glusterfs-node2 opt]# ll -a a
+	total 0
+***************追加数字到文件时不能紧跟>，必须中间加上空格或者使用""括起来*****************
+[root@glusterfs-node2 opt]# echo 1>a/abc
+此时查看文件abc为空
+[root@glusterfs-node2 opt]# cat a/abc 
+
+[root@glusterfs-node2 opt]# echo 1 > a/abc
+[root@glusterfs-node2 opt]# cat a/abc
+1
