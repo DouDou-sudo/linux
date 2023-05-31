@@ -1,7 +1,11 @@
 一、单用户模式（rescue mode）runleve1，不需要介质
 grub加参数1/single，需要输入root密码
 二、救援模式，(rescue mode)需要安装介质
-
+  1、从光盘启动
+  2、Troubleshooting
+  3、Rescue a Centos system
+  4、选择第一项1）Continue
+  5、此时系统根分区挂载在/mnt/sysimage/下，可以chroot /mnt/sysimage/切换到原系统
 三、紧急模式（emergency mode）（不需要安装介质）
 3.1 建议使用使用这种
     1、按e键，进入grub界面
@@ -19,7 +23,7 @@ grub加参数1/single，需要输入root密码
     5、mount -o rw,remount / 重新挂载为rw
     6、passwd root修改root密码；出现乱码，输入LANG=en
     7、执行 touch /.autorelabel
-    8、exec /sbin/inti 重启特别慢
+    8、exec /sbin/init 重启特别慢
 
 四、grub.cfg丢失或损坏
 4.1、手动敲命令引导
