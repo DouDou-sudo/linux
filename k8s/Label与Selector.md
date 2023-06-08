@@ -13,7 +13,7 @@ label可以给k8s中大多数资源进行标签的定义，主要作用为用于
 kubernetes.io/ 和 k8s.io/ 前缀是为 Kubernetes 核心组件保留的。
 1.2 标签的使用
 
-添加label
+添加`label`
 
 大多数kubernetes中的资源都是可以进行打标签的，命令是kubectl label。
 可以给指定资源添加多个标签
@@ -39,13 +39,14 @@ kubectl get deployments.apps --show-labels
 
 1.3 利用label查找资源
 kubectl get可以打印资源列表，并且可以使用-l参数利用label进行资源筛选
-
+```
     ==,=:等于
     !=:不等于
     in:包含
     notin:不包含
-
+```
 #一个条件
+
 kubectl get po -l app=nginx
 kubectl get po -l app!=nginx
 
@@ -59,7 +60,7 @@ kubectl get po -l 'app in(nginx,nginx-1)'
 kubectl get po -l 'app notin(nginx,nginx-1)'
 
 查看labels
-[root@k8smaster DaemonSet]# kubectl get deployments.apps nginx-deployment  --show-labels 
+[root@k8smaster DaemonSet]# kubectl get deployments.apps nginx-deployment  --show-labels  
 NAME               READY   UP-TO-DATE   AVAILABLE   AGE   LABELS
 nginx-deployment   3/3     3            3           19d   app=nginx-1,da=test
 查找app=nginx的pod，此查找不是严格匹配
