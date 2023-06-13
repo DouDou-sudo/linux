@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"sync"
 	"time"
 )
@@ -116,17 +118,14 @@ func RetiCommand(cmd string) error {
 	reader := bufio.NewReader(stdout)
 	for {
 		readString, err := reader.ReadString('\n')
-		if err == nil {
+		fmt.Print(readString)
+		if err == io.EOF {
 			fmt.Print(readString)
+			// return
+			break
 		} else {
-			if err == io.EOF {
-				fmt.Print(readString)
-				// return
-				break
-			} else {
-				// return
-				break
-			}
+			// return
+			break
 		}
 	}
 	// }()
@@ -137,7 +136,7 @@ func RetiCommand(cmd string) error {
 	return err
 }
 
-//一次性获取所有输出(stderr and stdout)再打印，windows下会乱码
+// 一次性获取所有输出(stderr and stdout)再打印，windows下会乱码
 func Command(cmd string) error {
 	c := exec.Command("sh", "-c", cmd)
 	output, err := c.CombinedOutput() //linux
@@ -178,6 +177,7 @@ func IoReadFile(s string) error {
 // bufio读取大文件并打印
 func BufReadFile(s string) error {
 	file, err := os.Open(s)
+	file.Sync()
 	if err != nil {
 		return fmt.Errorf("读取文件%s失败,%v", s, err)
 	} else {
@@ -185,16 +185,25 @@ func BufReadFile(s string) error {
 		reader := bufio.NewReader(file)
 		for {
 			str, err := reader.ReadString('\n') // 每次读取一行
-			if err == nil {
-				fmt.Print(str)
-			} else {
-				if err == io.EOF { // 读到文件末尾
-					fmt.Print(str)
-				} else {
-					return fmt.Errorf("读取文件%s错误,%v", s, err)
-				}
+			fmt.Print(str)
+			if err == io.EOF { // 读到文件末尾
+				// fmt.Print(str)
 				break
 			}
+			if err != nil {
+				return fmt.Errorf("读取文件%s错误,%v", s, err)
+			}
+			// if err == nil {
+			// 	fmt.Print(str)
+			// } else {
+			// 	if err == io.EOF { // 读到文件末尾
+			// 		fmt.Print(str)
+			// 	} else {
+			// 		return fmt.Errorf("读取文件%s错误,%v", s, err)
+			// 	}
+
+			// }
+			// break
 		}
 	}
 	// fmt.Print("文件读取结束!")
@@ -311,4 +320,146 @@ func CtxFunc2(ctx context.Context) {
 			fmt.Println("chaoshi2")
 		}
 	}
+}
+
+func main1() {
+	ioutil.ReadFile("test")
+	// ioutil.WriteFile()
+	// json.Unmarshal()
+	// c := time.Now()
+	// fmt.Println(c)
+	// a := c.Unix()
+	// fmt.Println(a)
+	// b := time.Unix(a, 0)
+	// fmt.Println(b)
+	// s := "   \t\na b\nc\td\t "
+	// s1 := "a,b c d"
+	// fmt.Printf("%q\n", strings.Split(s1, ","))
+	// fmt.Println(strings.Fields(s))
+	// fmt.Printf("%q\n", strings.TrimSpace(s))
+	// fmt.Printf("%q\n", strings.Trim(s, " "))
+	// fmt.Println(strings.TrimSpace(s))
+	// fmt.Println(strings.Trim(s, " "))
+	// a, _ := ioutil.ReadFile("test")
+	Server := "test"
+	a, _ := os.Open(Server)
+	defer a.Close()
+	b := bufio.NewReader(a)
+	for {
+		lines, err := b.ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
+				if strings.Contains(lines, "UNIQB_KSVD_PUBADDR") {
+					a := strings.Trim(lines, "\n")
+					// a := strings.TrimSpace(lines)
+					// a := strings.Trim(lines, "\n")
+					b := strings.Split(a, "=")[1]
+					fmt.Print(a)
+					fmt.Print(b)
+				}
+			}
+			break
+		}
+		if strings.Contains(lines, "UNIQB_KSVD_PUBADDR") {
+			a := strings.TrimSpace(lines)
+			// a := strings.Trim(lines, "\n")
+			b := strings.Split(a, "=")[1]
+			// fmt.Printf("%q\n", a)
+			fmt.Println(a)
+			// fmt.Printf("%q", b)
+			fmt.Println(b)
+		}
+	}
+}
+
+type Student struct {
+	Name  string
+	Age   int
+	Score float64
+}
+
+func JsonTest(s string) {
+	fileName := s
+	stu := Student{
+		Name:  "HaiCoder",
+		Age:   109,
+		Score: 100.5,
+	}
+	fileContent, err := json.Marshal(stu)
+	if err = ioutil.WriteFile(fileName, fileContent, 0666); err != nil {
+		fmt.Println("Writefile Error =", err)
+		return
+	}
+	//读取文件
+	fileContent, err = ioutil.ReadFile(fileName)
+	if err != nil {
+		fmt.Println("Read file err =", err)
+		return
+	}
+	fmt.Print(string(fileContent))
+	// var stuRes Student
+	// if err := json.Unmarshal(fileContent, &stuRes); err != nil {
+	// 	fmt.Println("Read file error =", err)
+	// } else {
+	// 	fmt.Println("Read file success =", stuRes)
+	// }
+}
+func BufReadFile1(s string) (err1 error) {
+	file, err := os.Open(s)
+	if err != nil {
+		return fmt.Errorf("读取文件%s失败,%v", s, err)
+	} else {
+		defer file.Close()
+		reader := bufio.NewReader(file)
+		for {
+			str, err := reader.ReadString('\n') // 每次读取一行
+			fmt.Print(str)
+			if err == io.EOF { // 读到文件末尾
+				err1 = nil
+				fmt.Print("\n文件读取结束!")
+				// fmt.Print(str)
+				break
+			}
+			if err != nil {
+				err1 = fmt.Errorf("读取文件%s错误,%v", s, err)
+				break
+			}
+		}
+	}
+	// fmt.Print("文件读取结束!")
+	return err1
+}
+
+func BufWriFile(s, con string) error {
+	var f *os.File
+	_, err := os.Stat(s)
+	if os.IsNotExist(err) {
+		f, _ = os.Create(s)
+	} else {
+		f, _ = os.OpenFile(s, os.O_APPEND, 0666)
+	}
+	defer f.Close()
+	// io.WriteString
+	// if _, err := io.WriteString(f, con); err != nil {
+	// 	return err
+	// }
+	// f.Sync()
+	// 无buf
+	// if _, err := f.WriteString(con); err != nil {
+	// 	return err
+	// }
+	// f.Sync()
+
+	// bufio写入
+	// writer := bufio.NewWriter(f)
+	// if _, err := writer.WriteString(con); err != nil {
+	// 	return err
+	// }
+	// writer.Flush()	//必须Flush到文件
+
+	// ioutil会清空原文件，如果原文件不存在会窗口
+	// if err := ioutil.WriteFile(s, []byte(con), 0666); err != nil {
+	// 	return err
+	// }
+	return nil
 }
