@@ -1,0 +1,9 @@
+groups:
+  - roomname: idgroup1
+    ip:
+        - 192.168.189.201 root  root.2020
+        - 192.168.189.200 root  root.2020
+  - roomname: idgroup2
+    ip:
+        - 192.168.40.147  root  unikylinsec
+        - 192.168.40.149  root  unikylinsec
