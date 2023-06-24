@@ -3,11 +3,14 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"math"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -37,14 +40,14 @@ func main() {
 	// <-time.After(time.Second * 3)
 	// // time.Now().Format()
 	// fmt.Println(a)
-	t := time.NewTicker(time.Second)
-	// for i := 0; i < 3; i++ {
-	// 	<-t.C
-	// 	fmt.Println(i)
-	// }
-	<-t.C
-	fmt.Println("123")
-	t.Stop()
+	// t := time.NewTicker(time.Second)
+	// // for i := 0; i < 3; i++ {
+	// // 	<-t.C
+	// // 	fmt.Println(i)
+	// // }
+	// <-t.C
+	// fmt.Println("123")
+	// t.Stop()
 	// time.strftime
 	// fmt.Print(exec.LookPath("ls"))
 	// IoReadFile("test")
@@ -55,7 +58,19 @@ func main() {
 	// } else {
 	// 	fmt.Println("执行完毕，退出代码 0")
 	// }
+	fmt.Println(2, 1)
+	// 打印log并os.Exit(1)
+	log.Fatalln("123")
+	// 打印log继续向下运行
+	log.Print("123")
+	fmt.Print("abc")
 
+}
+
+func upload(w http.ResponseWriter, r *http.Request) {
+	h:=md5.New()
+	h.Sum(nil)
+	r.FormFile()
 }
 
 // 可关闭+实时输出
@@ -151,6 +166,7 @@ func LinuxCommand(cmd string) {
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	c.Run()
+	// os.Args()
 }
 
 // 遍历目录
@@ -237,7 +253,7 @@ func BufReadFile(s string) error {
 // 	return
 // }
 
-func main1() string {
+func main11() string {
 	file, err := os.Open("./hello.go")
 	if err != nil {
 		fmt.Println("文件读取错误", err)

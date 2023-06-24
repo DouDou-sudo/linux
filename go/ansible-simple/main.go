@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -177,11 +178,31 @@ func Runshell(room, user, passwd, ip, comm string) {
 }
 
 func main() {
-	// ipAddrs <- "1"
-	// close(ipAddrs)
-	i := 1
-	fmt.Print(&i)
-	a := &i
-	fmt.Print(*a)
-	fmt.Println(i, 1)
+	flag.Parse()
+	if flag.NArg() == 2 && os.Args[1] == "h" {
+		flag.Usage()
+	} else if flag.NArg() == 2 && os.Args[2] != "scp" {
+		go OpencfgFile()
+		Opsee()
+	} else if flag.NArg() == 4 && os.Args[2] == "scp" {
+		go OpencfgFile()
+		Opsee()
+	} else {
+		fmt.Println("Thos util only two,scp and command")
+		return
+	}
+}
+
+func init() {
+	var c string
+	flag.StringVar(&c, "c", "/etc/roomname.yaml", "set configure `file`")
+	flag.Usage = usage
+}
+
+func usage() {
+	fmt.Fprintf(os.Stderr, `go-ansible version: go-ansible/1.0
+Usage: go-ansible [command] [scp]
+Options:
+`)
+	flag.PrintDefaults()
 }

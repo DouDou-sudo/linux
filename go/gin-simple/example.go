@@ -5,12 +5,110 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	_ "github.com/go-sql-driver/mysql"
 )
 
+type Human struct {
+	name  string
+	age   int
+	phone string
+}
+
+// 通过这个方法 Human 实现了 fmt.Stringer
+
+func (h Human) String() string {
+	return "❰" + h.name + " - " + strconv.Itoa(h.age) + " years -  ✆ " + h.phone + "❱"
+}
+func say(s string) {
+	for i := 0; i < 5; i++ {
+		// runtime.Gosched()
+		fmt.Println(s)
+	}
+}
+
+var ch1 chan string
+var ch = make(chan int, 8)
+var cloch = make(chan int, 1)
+
 func main() {
+	c := make(chan int)
+	// close(c)
+	go func(c chan int) {
+		time.Sleep(time.Second * 2)
+		c <- 1
+	}(c)
+	a := false
+	for {
+		select {
+		case <-c:
+			fmt.Println("read sucess")
+			// return
+			a = true
+		default:
+			fmt.Println("wait..")
+			time.Sleep(time.Second)
+		}
+		if a {
+			break
+		}
+	}
+	fmt.Println(123)
+	// c := make(chan int, 2)
+	// // close(c)
+	// // fmt.Print(<-c)
+	// c <- 1
+	// // c <- 2
+	// // c <- 3
+	// c <- 2
+	// <-c
+	// <-c
+	// close(c)
+	// <-c
+	// // for i := range c {
+	// // 	fmt.Print(i)
+	// // }
+	// // close(c)
+
+	// if i, ok := <-c; ok {
+	// 	fmt.Print(i)
+	// }
+
+	// close(c)
+	// for {
+	// 	if ele, ok := <-c; ok {
+	// 		fmt.Println(ele)
+	// 	} else {
+	// 		fmt.Println("fail")
+	// 		break
+	// 	}
+	// }
+	// go say("world") //开一个新的Goroutines执行
+	// say("hello")    //当前Goroutines执行
+	// Bob := Human{"Bob", 39, "000-7777-XXX"}
+	// fmt.Printf("This Human is : ", Bob)
+	// // var a []string
+	// a1 := make([]string, 3)
+	// fmt.Print(a1)
+	// fmt.Println(filepath.Dir("/home/polaris/studygolang.go/"))
+	// fmt.Println(filepath.Base("/home/polaris/studygolang.go/"))
+	// fmt.Println(filepath.Ext("/home/polaris/studygolang.go.123"))
+	// dir, filename := filepath.Split("/home/polaris/studygolang.go/")
+	// fmt.Printf("dir:%s\nfilename:%s\n", dir, filename)
+	// fmt.Println(filepath.Join("/home", "d5000", "/var"))
+	// fmt.Println("/homme" + "/" + "d5000" + "/var")
+
+	// var m sync.RWMutex
+	// m.RLock()
+	// defer m.RUnlock()
+	// m.Lock()
+	// defer m.Unlock()
+	// var n sync.Mutex
+	// n.Lock()
+	// n.Unlock()
 	// JsonTest("test")
 	// fmt.Print(BufReadFile("test"))
 	// Gin_test()
@@ -30,7 +128,46 @@ func main() {
 	// fmt.Printf("%q\n", ts)
 	// time, _ := time.ParseInLocation("2006-01-02 15:04:05", ts, time.Local)
 	// fmt.Printf("%q", time)
-	TimeAf()
+	// TimeAf()
+
+	// f, err := os.Open("test")
+	// // fmt.Println(err)
+	// // _, err = f.Stat()
+	// if os.IsNotExist(err) {
+	// 	fmt.Println("not exist")
+	// }
+	// defer f.Close()
+	// err := os.Remove("abc")
+	// if os.IsNotExist(err) {
+	// 	fmt.Print("12")
+	// }
+	// +拼接字符串
+	// fmt.Print("123" + "abc")
+	// strings.Json拼接字符串
+	// a := []string{"abc", "123", "gfg"}
+	// f := strings.Join(a, "")
+	// fmt.Print(f)
+	// buffer.Builder拼接字符串
+	// str1 := "abc"
+	// str2 := "123"
+	// var build strings.Builder
+	// build.WriteString(str1)
+	// build.WriteString(str2)
+	// fmt.Print(build.String())
+	// f, _ := os.Open("abc")
+	// defer f.Close()
+	// file, _ := f.Stat()
+	// fmt.Print(file.IsDir())
+	// var f *os.File
+	// // fmt.Print(d.IsDir())
+	// _, err := os.Stat("test")
+	// if os.IsNotExist(err) {
+	// 	// f, _ = os.Create(s)
+	// 	fmt.Print("is not exist")
+	// } else {
+	// 	// f, _ = os.OpenFile(s, os.O_APPEND, 0666)
+	// }
+	// defer f.Close()
 }
 
 func TimeAf() {
