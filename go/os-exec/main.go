@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"math"
 	"net/http"
 	"os"
@@ -24,7 +23,91 @@ func CheckError(e error) {
 		fmt.Println(e)
 	}
 }
+
+type IAnimal interface {
+	Eat()
+}
+type Animal struct {
+	string
+	int
+}
+
+func (a *Animal) Eat() {
+	fmt.Println("0", a.int)
+}
+
+type Animal1 struct {
+	string
+	int
+}
+
+func (a *Animal1) Eat() {
+	fmt.Print("1", a.int)
+}
+
+type person struct {
+	a int
+}
+
+//	type anyo struct {
+//		*Animal
+//		*Animal1
+//	}
+type anyo1 struct {
+	*Animal
+	a int
+}
+type Cat struct {
+	*Animal
+	a int
+	string
+}
+type evero struct {
+	av *anyo1
+	a  int
+}
+
 func main() {
+	// var an IAnimal = &Animal1{}
+	// // an = &Animal1{}
+	// an.Eat()
+	ani := &Animal{}
+	any := &anyo1{Animal: ani}
+	ever := &evero{
+		av: any,
+		a:  1,
+	}
+	ani.Eat()
+	any.Eat()
+	ever.av.Eat()
+	// a := anyo{
+	// 	Animal:  &Animal{string: "an", int: 0},
+	// 	Animal1: &Animal1{"an1", 1},
+	// }
+	// a.Eat1()
+	// wh := &evero{
+	// 	anyo: &a,
+	// 	a:    1,
+	// }
+	// wh.Eat1()
+	// fmt.Println()
+	// a1 := &anyo1{
+	// 	Animal: &Animal{},
+	// 	a:      1,
+	// }
+	// fmt.Printf("%p", a1)
+	// ani
+	// al := Animal{"123", 1}
+	// cat := Cat{
+	// 	Animal: &Animal{
+	// 		string: "1a",
+	// 		int:    1,
+	// 	},
+	// 	a:      1,
+	// 	string: "123",
+	// }
+	// fmt.Print(cat.string, "   ", cat.Animal.string)
+	// fmt.Print("\n", al.int)
 	// temp("D:/iso")
 	// LinuxCommand("ping 127.0.0.1")
 	// RetiCommand("ping 127.0.0.1")
@@ -58,19 +141,19 @@ func main() {
 	// } else {
 	// 	fmt.Println("执行完毕，退出代码 0")
 	// }
-	fmt.Println(2, 1)
-	// 打印log并os.Exit(1)
-	log.Fatalln("123")
-	// 打印log继续向下运行
-	log.Print("123")
-	fmt.Print("abc")
+	// fmt.Println(2, 1)
+	// // 打印log并os.Exit(1)
+	// log.Fatalln("123")
+	// // 打印log继续向下运行
+	// log.Print("123")
+	// fmt.Print("abc")
 
 }
 
 func upload(w http.ResponseWriter, r *http.Request) {
-	h:=md5.New()
+	h := md5.New()
 	h.Sum(nil)
-	r.FormFile()
+	// r.FormFile()
 }
 
 // 可关闭+实时输出

@@ -17,7 +17,19 @@
 	Capabilities: [e4] PCI-X non-bridge device
 	Kernel driver in use: e1000		#如果没有驱动，没有下面这两行
 	Kernel modules: e1000		#内核驱动模块
-    
+    显示网卡驱动的信息，如驱动的名称，版本等
+    [root@node1 ~]# ethtool -i ethx0
+    driver: igb
+    version: 5.4.0-k
+    firmware-version: 1.63, 0x80000f04, 1.1197.0
+    expansion-rom-version: 
+    bus-info: 0000:02:00.0
+    supports-statistics: yes
+    supports-test: yes
+    supports-eeprom-access: yes
+    supports-register-dump: yes
+    supports-priv-flags: yes
+
 2、下载对应驱动
     根据下面这个网址查找设备ID对应的驱动，一般都是e1000,e1000e,igb
     http://elrepo.org/tiki/DeviceIDs#e1000e.ko

@@ -1,0 +1,67 @@
+go继承的具体实现是组合
+1、支持继承
+2、支持多重继承 b继承a c继承b
+type Animal struct {
+	string
+	int
+}
+
+func (a *Animal) Eat() {
+	fmt.Println("0", a.int)
+}
+type anyo1 struct {
+	*Animal
+	a int
+}
+type evero struct {
+	*anyo1				//av *anyo1
+	a int
+}
+func main() {
+	ani := &Animal{}
+	any := &anyo1{Animal: ani}
+	ever := &evero{
+		anyo1: any,
+		a:     1,
+	}
+	ani.Eat()
+	any.Eat()
+	ever.Eat()				//ever.av.Eat()
+}
+output:
+0 0
+0 0
+0 0
+3、支持不同struct继承同一个struct
+4、多继承，一个struct继承多个struct，a继承b和c，如果b和c有相同方法，会有模糊匹配的报错。如果没有相同方法也是可以继承的
+ambiguous selector a.EatcompilerAmbiguousSelector
+type IAnimal interface {
+	Eat()
+}
+type Animal struct {
+	string
+	int
+}
+
+func (a *Animal) Eat() {
+	fmt.Print("0", a.int)
+}
+
+type Animal1 struct {
+	string
+	int
+}
+
+func (a *Animal1) Eat() {
+	fmt.Print("1", a.int)
+}
+func main() {
+	var an IAnimal = &Animal{}
+	an.Eat()
+}
+output:   00
+func main() {
+	var an IAnimal = &Animal1{}
+	an.Eat()
+}
+output:   10
