@@ -1,0 +1,644 @@
+[toc]
+### 一、glusterfs服务端部署
+初装配置
+|主机名	                  |Ip地址	        |盘符|
+---|:--:|---:
+glusterfs-node1	  |  192.168.189.131	|    /dev/sdb
+glusterfs-node2 	|192.168.189.132	 |   /dev/sdb
+glusterfs-client	|192.168.189.150	
+#### 1、安装常见依赖包
+```
+yum install -y vim net-tools ntpdate
+```
+#### 2、配置yum源，安装glusterfs相关包
+ ```
+yum install epel-release -y 
+yum install -y centos-release-gluster6.noarch
+yum	install glusterfs-server  glusterfs glusterfs-fuse glusterfs-rdma -y
+ ```
+#### 3、启动glusterd服务并设置开机自启
+```
+systemctl start --now glusterd
+```
+#### 4、设置主机名并写入hosts文件
+```
+hostnamectl set-hostname glusterfs-node1
+su
+hostnamectl set-hostname glusterfs-node2
+su
+
+[root@glusterfs-node1 ~]# cat /etc/hosts
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+192.168.189.131 glusterfs-node1
+192.168.189.132 glusterfs-node2
+scp -rp /etc/hosts glusterfs-node2:/etc/
+```
+#### 5、关闭防火墙
+```
+systemctl stop firewalld
+systemctl disable firewalld
+setenforce 0
+sed -i 's/enforcing/disabled/g' /etc/selinux/config
+```
+#### 6、配置ssh互信
+```
+[root@glusterfs-node1 ~]# ssh-keygen
+[root@glusterfs-node1 ~]# ssh-copy-id glusterfs-node2
+[root@glusterfs-node2 ~]# ssh-keygen
+[root@glusterfs-node2 ~]# ssh-copy-id glusterfs-node1
+```
+#### 7、配置时间同步
+###### 1)更改当前时区
+```
+[root@glusterfs-node1 ~]# cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+[root@glusterfs-node1 ~]# ntpdate cn.pool.ntp.org
+[root@glusterfs-node2 ~]# cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+[root@glusterfs-node2 ~]# ntpdate cn.pool.ntp.org
+```
+###### 2)配置时间同步服务端
+修改`glusterfs-node1`的`/etc/chrony.conf`文件如下：
+```
+[root@glusterfs-node1 ~]# grep -v "#" /etc/chrony.conf
+server cn.pool.ntp.org  iburst
+driftfile /var/lib/chrony/drift
+makestep 1.0 3
+rtcsync
+allow 192.168.189.0/24
+local stratum 10
+logdir /var/log/chrony
+```
+###### 3)配置时间同步客户端
+修改`glusterfs-node2`的`/etc/chrony.conf`文件如下：
+```
+[root@glusterfs-node2 ~]# grep -v "#" /etc/chrony.conf
+server 192.168.189.131 iburst
+driftfile /var/lib/chrony/drift
+makestep 1.0 3
+rtcsync
+logdir /var/log/chrony
+```
+###### 4)两台分别重启chrony服务并设置开机自启
+```
+Systemctl restart chronyd
+Systemctl enable chronyd
+```
+###### 5)查看当前时间同步状态
+```
+[root@glusterfs-node1 ~]# chronyc sources -v
+[root@glusterfs-node2 ~]# chronyc sources -v
+```
+#### 8、添加节点
+```
+[root@glusterfs-node1 ~]# gluster peer probe glusterfs-node2
+peer probe: success. 
+[root@glusterfs-node1 ~]# gluster peer status
+Number of Peers: 1
+
+Hostname: glusterfs-node2
+Uuid: 1131bc82-350e-4da0-9ec9-a4f25f768dc8
+State: Peer in Cluster (Connected)
+```
+#### 9、创建卷
+###### 1)格式化磁盘并挂载
+```
+[root@glusterfs-node1 ~]# mkfs.xfs /dev/sdb
+[root@glusterfs-node2 ~]# mkfs.xfs /dev/sdb
+[root@glusterfs-node1 ~]# mount /dev/sdb /gluster
+[root@glusterfs-node2 ~]# mount /dev/sdb /gluster
+```
+写入/etc/fstab文件开机自动挂载
+###### 2)创建卷，此处创建了一个复制卷
+```
+gluster v create fuzhi transport tcp replica 2  glusterfs-node1:/gluster/brick1/ glusterfs-node2:/gluster/brick1/
+```
+###### 3)启动卷
+```
+gluster v start  fuzhi
+```
+### 二、客户端部署及使用
+#### 1、安装客户端相关依赖包
+```
+yum -y install glusterfs glusterfs-fuse glusterfs-cli glusterfs-libs glusterfs-client-xlator
+```
+#### 2、挂载卷
+配置`/etc/hosts`文件
+```
+[root@localhost ~]# cat /etc/hosts
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+192.168.189.131 glusterfs-node1
+192.168.189.132 glusterfs-node2
+```
+挂载server提供的卷
+```
+mount -t glusterfs  <server>:/<volume>  <mountdir>
+```
+```
+[root@localhost ~]# mount.glusterfs 192.168.189.132:/fuzhi /media/
+```
+***
+创建卷之前先了解一下glusterfs卷的常见模式
+### 三、glusterfs卷的常见模式
+#### 1、复制卷（replica）
+双复制类似于raid1，可以选择三复制，四复制....支持多副本,每一个brick都是一个独立完整的副本。
+
+```
+ gluster volume create NEW-VOLNAME [replica COUNT] [transport tcp | rdma | tcp, rdma] NEW-BRICK
+ ```
+ eg:
+ ```
+gluster volume create test-volume3 replica 2 transport tcp server1:/data/brick1/test1/ server2:/data/brick1/test1/
+ ```
+ #### 2、分布式卷（Distribute）
+每一个brick只存储副本的一部分，以文件为单位。
+ ```
+ gluster volume create NEW-VOLNAME [transport tcp | rdma | tcp, rdma] NEW-BRICK
+ ```
+ eg:
+ ```
+gluster	volume	create	new-volume server1:/data/brick1/exp2 server2:/data/brick1/exp2
+ ```
+ 当客户端挂载分布式卷时，创建多个文件，在每个server端只能看到一部分文件
+ ```
+ [root@glusterfs-client]# ls
+testfile1  testfile10  testfile2  testfile3  testfile4  testfile5  testfile6  testfile7  testfile8  testfile9
+```
+server端查看
+```
+[root@glusterfs-node1 ~]#  ls /data0/gluster/data1/
+testfile1  testfile10  testfile2  testfile3  testfile4  testfile6  testfile8
+[root@glusterfs-node2 ~]#  ls /data0/gluster/data1/
+testfile5  testfile7  testfile9
+```
+ #### 3、条带卷（Strip）
+条带卷将数据条带化，切割成若干等份，分别存储在不同的brick里面。减少了负载加速了文件存取的速度
+ ```
+ gluster volume create NEW-VOLNAME [stripe COUNT] [transport tcp | rdma | tcp, rdma] NEW-BRICK...
+ ```
+eg：
+```
+gluster volume create test-volume3 stripe 2 transport tcp server1:/data/brick1/test1/ server2:/data/brick1/test1/
+```
+当客户端挂载条带式卷时，每个server端只能看到条带后的一部分文件
+```
+[root@glusterfs-client ~]#  du -sh /root/root.tar.gz
+140M    /root/root.tar.gz
+```
+server端查看
+```
+[root@lvs ~]# du -sh /data0/gluster/data3/root.tar.gz
+70M     /data0/gluster/data3/root.tar.gz
+[root@lvs ~]# du -sh /data0/gluster/data3/root.tar.gz
+70M     /data0/gluster/data3/root.tar.gz
+```
+ #### 4、分布式复制卷
+ ```
+ gluster volume create NEW-VOLNAME [replica COUNT] [transport tcp | rdma | tcp, rdma] NEW-BRICK...
+ ```
+ #### 5、分布式条带卷
+ ```
+gluster volume create NEW-VOLNAME [stripe COUNT] [transport tcp | rdma | tcp, rdma] NEW-BRICK...
+ ```
+ #### 6、条带复制卷
+ ```
+gluster volume create NEW-VOLNAME [stripe COUNT] [replica COUNT] [transport tcp | rdma | tcp, rdma] NEW-BRICK...
+ ```
+  #### 7、仲裁卷
+  如果是副本为3的仲裁器卷，其中第三个brick 充当仲裁器brick。 该配置具有防止发生裂脑的机制。
+```
+# gluster volume create  <VOLNAME>  replica 3 arbiter 1 host1:brick1 host2:brick2 host3:brick3`
+```
+### 四、glusterfs常用命令
+ #### 1、启停/查看glusterd服务,设置开机自启
+ ```
+systemctl start glusterd
+systemctl stop glusterd
+systemctl status glusterd
+systemctl enable glusterd
+systemctl list-unit-files | grep glusterd
+ ```
+ #### 2、查看卷信息
+```
+gluster volume list    #列出集群中的所有卷：
+gluster volume info [all] <VOLNAME> #查看集群中的卷信息：
+gluster volume status [all]    #查看集群中的卷状态：
+gluster volume status <VOLNAME> [detail| clients | mem | inode | fd] 
+```
+
+#### 3、为存储池添加/移除服务器节点
+```
+gluster peer probe <node>		添加服务器节点
+gluster peer detach <node>		移除服务器节点 移除节点前必须将该节点上的brick删除
+gluster peer status		        查看所有节点的基本状态
+```
+#### 4、创建/启动/停止/删除卷
+```
+gluster volume start <volname>
+gluster volume stop <volname>
+gluster volume delete <volname>  删除卷之前必须先停止卷，最后可清空brick server节点对应目录下的内容
+```
+eg：
+```
+[root@glusterfs-node1 brick]# gluster v stop test-replica4
+Stopping volume will make its data inaccessible. Do you want to continue? (y/n) y
+volume stop: test-replica4: success
+[root@glusterfs-node1 brick]# gluster v delete test-replica4
+Deleting volume will erase all information about the volume. Do you want to continue? (y/n) y
+volume delete: test-replica4: success
+```
+#### 5、扩容/缩容volume
+###### 1)缩容
+缩容，remove-brick之前会自动均衡数据
+```
+gluster v remove-brick <VOLNAME> [replica <COUNT>] <BRICK> ... <start|stop|status|commit|force>  
+```
+eg：
+如果是复制卷或者条带卷，则每次移除的brick数必须是replica或者stripe的整数倍，
+```
+[root@glusterfs-node1 brick]# gluster v remove-brick replica2 glusterfs-node1:/test-replica{3..4}/brick start
+[root@glusterfs-node1 brick]# gluster v remove-brick replica2 glusterfs-node1:/test-replica{3..4}/brick status
+ Node Rebalanced-files          size       scanned      failures       skipped               status  run time in h:m:s
+ ---------      -----------   -----------   -----------   -----------   -----------         ------------     --------------
+localhost                0        0Bytes             9             0             0          in progress        0:00:10
+The estimated time for rebalance to complete will be unavailable for the first 10 minutes.
+[root@glusterfs-node1 brick]# gluster v remove-brick replica2 glusterfs-node1:/test-replica{3..4}/brick commit
+```
+如果是`distribute` volume可以直接remove brick
+>remove-brick前，node1 801M，node2 1.4G
+```
+[root@glusterfs-node1 brick1]# du -sh 
+801M	.
+[root@glusterfs-node2 brick1]# du -sh 
+1.4G	.
+```
+>remove-brick start
+```
+[root@glusterfs-node1 ~]# gluster v remove-brick haxi glusterfs-node2:/glusterfs/replica/brick1/ start
+Running remove-brick with cluster.force-migration enabled can result in data corruption. It is safer to disable this option so that files that receive writes during migration are not migrated.
+Files that are not migrated can then be manually copied after the remove-brick commit operation.
+Do you want to continue with your current cluster.force-migration settings? (y/n) y
+volume remove-brick start: success
+ID: d8cc074f-ac59-439e-8b7d-dbbbef279045
+```
+>remove-brick后,node1 2.2G，node2上的数据自动迁移到node1上
+```
+[root@glusterfs-node1 brick1]# du -sh 
+2.2G	.
+```
+>commit前
+```
+[root@glusterfs-node1 ~]# gluster v info
+Brick1: glusterfs-node1:/glusterfs/replica/brick1
+Brick2: glusterfs-node2:/glusterfs/replica/brick1
+```
+```
+[root@glusterfs-node1 ~]# gluster v remove-brick haxi glusterfs-node2:/glusterfs/replica/brick1/ commit
+volume remove-brick commit: success
+Check the removed bricks to ensure all files are migrated.
+If files with data are found on the brick path, copy them via a gluster mount point before re-purposing the removed brick. 
+```
+>commit后
+```
+[root@glusterfs-node1 ~]# gluster v info
+Brick1: glusterfs-node1:/glusterfs/replica/brick1
+```
+###### 2)扩容
+```
+gluster volume add-brick <VOLNAME> [<stripe|replica> <COUNT> [arbiter <COUNT>]] <NEW-BRICK> ... [force]
+```
+eg:
+add-brick前
+```
+[root@glusterfs-node1 brick1]# du -sh 
+2.2G	.
+[root@glusterfs-node1 ~]# gluster v info
+Brick1: glusterfs-node1:/glusterfs/replica/brick1
+```
+add-brick start
+```
+[root@glusterfs-node1 ~]# gluster v add-brick haxi glusterfs-node2:/glusterfs/replica/brick1/
+volume add-brick: success
+```
+add-brick之后
+```
+[root@glusterfs-node2 replica]# gluster v info
+Brick1: glusterfs-node1:/glusterfs/replica/brick1
+Brick2: glusterfs-node2:/glusterfs/replica/brick1
+```
+**扩容完后最好均衡下数据，见第7节**
+如果是复制卷或者条带卷，则每次添加的Brick数必须是replica的整数倍。
+#### 6、替换brick
+>on distribute only volumes仅哈希卷不允许迁移替换
+```
+gluster volume replace-brick <VOLNAME> <SOURCE-BRICK> <NEW-BRICK> {commit force}
+```
+#### 7、均衡volume
+>一般add-brick扩容后才需要均衡卷
+当add new brick后，新的brick里面都会创建已存在的目录，但是内容为空
+当新增文件时，glusterfs会根据各个brick的剩余空间大小来决定写到那个brick里
+当新增brick后，新增brick下会同步创建以前存在的目录，但目录下为空
+新增brick以前创建的旧目录下新增文件默认不会在新brick下存储
+volume根下的文件也不会在新的brick下存储
+只有新创建的目录及新创建目录下的文件才会在新的brick下存储
+
+```
+gluster volume rebalance <VOLNAME> fix-layout start   重新哈希分布目录，不会迁移数据
+gluster volume rebalance <VOLNAME> start              开始迁移数据
+gluster volume rebalance <VOLNAME> start force
+gluster volume rebalance <VOLNAME> status
+gluster volume rebalance <VOLNAME> stop
+```
+eg:
+1. fix-layout重新哈希分布目录，
+   不会迁移数据，但可以让旧目录下的新创建的文件存储在新brick下。
+```
+[root@glusterfs-node2 kylin]# gluster v rebalance replica2 fix-layout start
+volume rebalance: replica2: success: Rebalance on replica2 has been started successfully. Use rebalance status command to check status of the rebalance process.
+ID: e3116dbe-60b9-4867-8f32-8f4a37d6c23f
+当rebalance后在旧目录下或者volume根目录下创建新文件，会在新的brick下存储
+```
+2. 均衡数据，会把新旧brick下的数据进行迁移均衡,创建的新文件也会在new brick下存储
+>rebalance前
+```
+[root@glusterfs-node2 replica]# gluster v info
+Brick1: glusterfs-node1:/glusterfs/replica/brick1
+Brick2: glusterfs-node2:/glusterfs/replica/brick1
+[root@glusterfs-node2 brick1]# du -sh 
+4.0K	.
+[root@glusterfs-node1 brick1]# du -sh 
+2.2G	.
+```
+>rebalance start
+```
+[root@glusterfs-node1 ~]# gluster volume rebalance haxi start
+volume rebalance: haxi: success: Rebalance on haxi has been started successfully. Use rebalance status command to check status of the rebalance process.
+ID: 7c67dbcf-48d1-45ee-ad64-c122f7018bb5
+```
+>rebalance后
+```
+[root@glusterfs-node1 brick1]# du -sh 
+801M	.
+[root@glusterfs-node2 brick1]# du -sh 
+1.4G	.
+```
+**设置迁移速度**
+`gluster volume set <VOLUME> rebal-throttle lazy|normal|aggressive`
+默认normal
+Lazy:慢速模式，较少线程迁移
+Normal：正常模式线程数量适中
+Aggressive：激进模式，较多线程迁移
+**均衡前的注意事项**
+* 如果有文件损坏，先修复
+* 均衡前，确认集群没有自修复在进行否则会影响数据正确率和迁移效率
+* 先执行fix-layout再进行数据迁移，可以提高迁移效率
+* 如果可以，停止客户端使用，再迁移，可以提高迁移效率
+* 迁移过程中，使用status时刻查看迁移状态
+* 当集群较大时，可能会出现某个节点均衡失败的问题，一般重新开始执行均衡即可
+* 如果迁移对程序影响较大，可以只执行fix-layout，只修复目录哈希分布，不会实际迁移数据，此时新文件会存储在新节点或者brick上
+#### 8、限额quota
+
+开启/关闭系统配额：
+```
+gluster volume quota <VOLNAME> enable | disable
+```
+设置/修改目录配额，此次的DIR为volume的相对路径：
+```
+gluster volume quota <VOLNAME> limit-usage <DIR> <HARD_LIMIT>
+```
+查看配额：
+```
+gluster volume quota <VOLNAME> list [<DIR>]
+```
+eg：
+开启限额quota
+```
+[root@glusterfs-node2 ~]# gluster v quota replica2 enable
+volume quota : success
+[root@glusterfs-node2 ~]# gluster v info
+Volume Name: replica2
+Type: Replicate
+Volume ID: e041e77e-0b24-4290-a451-ba14acaded92
+Status: Started
+Snapshot Count: 0
+Number of Bricks: 1 x 2 = 2
+Transport-type: tcp
+Bricks:
+Brick1: glusterfs-node1:/glusterfs/replica/brick
+Brick2: glusterfs-node2:/glusterfs/replica/brick
+Options Reconfigured:
+---
+features.quota-deem-statfs: on 
+features.inode-quota: on
+features.quota: on
+---
+cluster.quorum-type: auto
+transport.address-family: inet
+nfs.disable: on
+performance.client-io-threads: off
+```
+设置目录配额
+```
+[root@glusterfs-node2 brick]# gluster volume quota replica2 limit-usage /test1/ 100
+volume quota : success
+[root@glusterfs-node2 brick]# gluster v quota replica2 list /test1
+Path                   Hard-limit  Soft-limit      Used  Available  Soft-limit exceeded? Hard-limit exceeded?
+-------------------------------------------------------------------------------------------------------------------------------
+/test1                 100Bytes     80%(80Bytes)   0Bytes 100Bytes
+```
+修改目录配额
+```
+[root@glusterfs-node2 brick]# gluster volume quota replica2 limit-usage /test1/ 100MB
+volume quota : success
+```
+查看配额
+```
+[root@glusterfs-node2 ~]# gluster v quota replica2 list
+```
+查看某一个目录的配额
+```
+[root@glusterfs-node2 brick]# gluster v quota replica2 list /test1
+Path                   Hard-limit  Soft-limit      Used  Available  Soft-limit exceeded? Hard-limit exceeded?
+-------------------------------------------------------------------------------------------------------------------------------
+/test1                 100.0MB     80%(80.0MB)   0Bytes 100.0MB              No                   No
+```
+#### 9、配置卷及优化
+```
+gluster volume set <VOLNAME> <KEY> <VALUE>
+gluster volume get <VOLNAME> <KEY>
+```
+常见配置：
+1.  设置 cache 大小, 默认32MB
+gluster volume set senyintvolume performance.cache-size 4GB
+
+2. 设置 io 线程, 太大会导致进程崩溃
+gluster volume set senyintvolume performance.io-thread-count 16
+
+3. 设置 网络检测时间, 默认42s
+gluster volume set senyintvolume network.ping-timeout 10
+
+4. 设置 写缓冲区的大小, 默认1M
+gluster volume set senyintvolume performance.write-behind-window-size 1024MB
+
+5. 设置 cluster.quorum-type, 默认none
+   none|auto|fixed,none:关闭，auto：半数以上，fixed：大于等于cluster.quorum-count设置的数量
+
+6. 设置 cluster.favorite-child-policy, 默认为none
+   mtime 以最新的mtime自动修复脑裂
+
+7. 设置nfs.disable，默认为 on
+   off|on  on:关闭nfs挂载，off:开启nfs挂载
+#### 10、gluster相关日志
+>相关日志，在`/var/log/glusterfs/`目录下，可根据需要查看；
+如`/var/log/glusterfs/brick/`下是各brick创建的日志；
+如`/var/log/glusterfs/cmd_history.log`是命令执行记录日志；
+如`/var/log/glusterfs/glusterd.log`是glusterd守护进程日志。
+
+### FAQ
+#### 1、客户端挂载报错Mount failed. Please check the log file for more details.
+查看日志`/var/log/glusterfs/replica-.log`
+日志输出如下：
+DNS resolution failed on host glusterfs-node1
+
+**客户端必须配置hosts文件才可以挂载**
+```
+[root@localhost ~]# cat /etc/hosts
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+192.168.189.131 glusterfs-node1
+192.168.189.132 glusterfs-node2
+```
+配置`hosts`后再次挂载正常
+```
+[root@localhost ~]# mount.glusterfs 192.168.189.132:/fuzhi /media/
+[root@localhost ~]# df -h
+glusterfs-node1:/fuzhi   5.0G   84M  5.0G   2% /media
+```
+#### 2、添加或者创建volume时失败volume create: replica2: failed: /gluster/brick1 is already part of a volume
+要添加的brick有glusterfs的信息，需要清除掉再创建或添加
+删除对应brick下的` .glusterfs`目录
+```
+setfattr -x trusted.glusterfs.volume-id brick
+setfattr -x trusted.gfid brick 
+```
+#### 3、扩展或者创建volume时volume add-brick: failed: The brick glusterfs-node1:/test-replica1 is a mount point. Please create a sub-directory under the mount point and use that as the brick directory. Or use 'force' at the end of the command if you want to override this behavior.
+```
+[root@glusterfs-node1 test-replica1]# gluster v add-brick replica2 glusterfs-node1:/test-replica1/ glusterfs-node1:/test-replica2
+volume add-brick: failed: The brick glusterfs-node1:/test-replica1 is a mount point. Please create a sub-directory under the mount point and use that as the brick directory. Or use 'force' at the end of the command if you want to override this behavior.
+```
+直接使用disk挂载点创建会报错
+在挂载点下创建目录再创建volume
+```
+[root@glusterfs-node1 test-replica1]# mkdir /test-replica{1..2}/brick
+[root@glusterfs-node1 test-replica1]# gluster v add-brick replica2 glusterfs-node1:/test-replica1/brick glusterfs-node1:/test-replica2/brick
+volume add-brick: success
+```
+#### 4、缩容、扩容或者删除volume时volume remove-brick start: failed: Removing bricks from replicate configuration is not allowed without reducing replica count explicitly
+```
+[root@glusterfs-node1 brick]# gluster v remove-brick test-replica4 glusterfs-node4:/test-replica4/brick/ start
+Running remove-brick with cluster.force-migration enabled can result in data corruption. It is safer to disable this option so that files that receive writes during migration are not migrated.
+Files that are not migrated can then be manually copied after the remove-brick commit operation.
+Do you want to continue with your current cluster.force-migration settings? (y/n) y
+volume remove-brick start: failed: Removing bricks from replicate configuration is not allowed without reducing replica count explicitly.
+```
+当remove brick时如果volume为replica volume，remove的brick必须为volume的倍数，否则报错
+#### 5、State: Peer in Cluster (Disconnected)对端节点未连接
+```
+[root@gluster2 peers]# gluster peer status
+Number of Peers: 1
+
+Hostname: gluster1
+Uuid: 04c65736-3be9-4e4f-95dc-2d164aa76767
+State: Peer in Cluster (Disconnected)
+[root@gluster1 peers]# gluster peer status
+Number of Peers: 1
+
+Hostname: gluster2
+Uuid: a17a13f8-515c-4d0d-9a3e-abdabad59e0d
+State: Peer in Cluster (Disconnected)
+```
+查看配置文件的uuid和hostname
+```
+cd 到/var/lib/gluterd/peers/下，查看对端节点uuid和hostname
+[root@gluster1 peers]# cd /var/lib/glusterd/peers/
+[root@gluster1 peers]# ls
+a17a13f8-515c-4d0d-9a3e-abdabad59e0d
+[root@gluster1 peers]# cat a17a13f8-515c-4d0d-9a3e-abdabad59e0d 
+uuid=a17a13f8-515c-4d0d-9a3e-abdabad59e0d
+state=3
+hostname1=gluster2
+[root@gluster2 peers]# cat 04c65736-3be9-4e4f-95dc-2d164aa76767 
+uuid=04c65736-3be9-4e4f-95dc-2d164aa76767
+state=3
+hostname1=gluster1
+在两台服务器上分别查看uuid，uuid正确
+[root@gluster2 peers]# gluster pool  list
+UUID					Hostname 	State
+04c65736-3be9-4e4f-95dc-2d164aa76767	gluster1 	Disconnected 
+a17a13f8-515c-4d0d-9a3e-abdabad59e0d	localhost	Connected 
+[root@gluster1 peers]# gluster pool list
+UUID					Hostname 	State
+a17a13f8-515c-4d0d-9a3e-abdabad59e0d	gluster2 	Disconnected 
+04c65736-3be9-4e4f-95dc-2d164aa76767	localhost	Connected 
+ ```
+ 查看/etc/hosts文件
+ ```
+[root@gluster1 peers]# cat /etc/hosts
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+192.168.189.200 gluster1
+192.168.189.201 gluster2
+查看主机ip，这两台主机修改过ip地址，hosts无法解析到正确ip，导致gluster对端未连接，修改hosts文件或者ip地址
+[root@gluster1 peers]# ifconfig 
+eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 192.168.189.102  netmask 255.255.255.0  broadcast 192.168.189.255
+再次查看节点状态，恢复正常
+[root@gluster1 peers]# gluster peer status
+Number of Peers: 1
+
+Hostname: gluster2
+Uuid: a17a13f8-515c-4d0d-9a3e-abdabad59e0d
+State: Peer in Cluster (Connected)
+[root@gluster2 peers]# gluster peer status
+Number of Peers: 1
+
+Hostname: gluster1
+Uuid: 04c65736-3be9-4e4f-95dc-2d164aa76767
+State: Peer in Cluster (Connected)
+```
+
+修改完ip地址后，查看volume状态
+```
+[root@gluster1 peers]# gluster v status
+Status of volume: fuzhi
+Gluster process                             TCP Port  RDMA Port  Online  Pid
+
+Brick gluster1:/data/brick1                 49153     0          Y       3544 
+Brick gluster2:/data1/brick1                N/A       N/A        N       N/A  
+Brick gluster2:/data/brick1                 N/A       N/A        N       N/A  
+Brick gluster2:/data2/brick1                N/A       N/A        N       N/A  
+Self-heal Daemon on localhost               N/A       N/A        N       N/A  
+Self-heal Daemon on gluster2                N/A       N/A        Y       3928 
+ 
+Task Status of Volume fuzhi
+------------------------------------------------------------------------------
+There are no active volume tasks
+gluster2节点上的状态都未N
+[root@gluster1 peers]# gluster volume heal fuzhi info
+Brick gluster1:/data/brick1
+Status: Connected
+Number of entries: 0
+
+Brick gluster2:/data1/brick1
+Status: Transport endpoint is not connected	#状态：传输终结点未连接 
+Number of entries: -
+
+Brick gluster2:/data/brick1
+Status: Transport endpoint is not connected
+Number of entries: -
+
+Brick gluster2:/data2/brick1
+Status: Transport endpoint is not connected
+Number of entries: -
+```
+重启gluster2节点的glusterd服务后恢复正常

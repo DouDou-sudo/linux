@@ -35,6 +35,10 @@ var ch = make(chan int, 8)
 var cloch = make(chan int, 1)
 
 func main() {
+	a1 := time.Now().Format("2006-01-02 15:04:05")
+	fmt.Println(time.Now().Format("2006-01-02 15:04:05"))
+	b, _ := time.ParseInLocation("2006-01-02 15:04:05", a1, time.Local)
+	fmt.Println(b)
 	c := make(chan int)
 	// close(c)
 	go func(c chan int) {

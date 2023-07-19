@@ -1,0 +1,85 @@
+两个1000Mb做bond6 Speed: 2000Mb/s
+bond6
+3: ens36: <BROADCAST,MULTICAST,SLAVE,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast master bond1 state UP group default qlen 1000
+    link/ether 00:0c:29:61:a4:19 brd ff:ff:ff:ff:ff:ff
+4: ens37: <BROADCAST,MULTICAST,SLAVE,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast master bond1 state UP group default qlen 1000
+    link/ether 00:0c:29:61:a4:23 brd ff:ff:ff:ff:ff:ff
+5: bond1: <BROADCAST,MULTICAST,MASTER,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 00:0c:29:61:a4:19 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.161.133/24 brd 192.168.161.255 scope global noprefixroute dynamic bond1
+       valid_lft 1312sec preferred_lft 1312sec
+    inet6 fe80::33e5:c557:7cc7:4171/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+拔掉ens36的网线后ens36和ens37的mac地址互换，bond地址还是ens36的实际mac
+拔掉ens37的网线后，所有mac都不会变，再插上网线重启网络也不会变
+3: ens36: <NO-CARRIER,BROADCAST,MULTICAST,SLAVE,UP> mtu 1500 qdisc pfifo_fast master bond1 state DOWN group default qlen 1000
+    link/ether 00:0c:29:61:a4:23 brd ff:ff:ff:ff:ff:ff
+4: ens37: <BROADCAST,MULTICAST,SLAVE,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast master bond1 state UP group default qlen 1000
+    link/ether 00:0c:29:61:a4:19 brd ff:ff:ff:ff:ff:ff
+5: bond1: <BROADCAST,MULTICAST,MASTER,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 00:0c:29:61:a4:19 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.161.133/24 brd 192.168.161.255 scope global noprefixroute dynamic bond1
+       valid_lft 1060sec preferred_lft 1060sec
+    inet6 fe80::33e5:c557:7cc7:4171/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+这个时候插上网线重启网络ens36和ens37的mac地址也不会变回实际的mac地址，还是互换的
+3: ens36: <BROADCAST,MULTICAST,SLAVE,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast master bond1 state UP group default qlen 1000
+    link/ether 00:0c:29:61:a4:23 brd ff:ff:ff:ff:ff:ff
+4: ens37: <BROADCAST,MULTICAST,SLAVE,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast master bond1 state UP group default qlen 1000
+    link/ether 00:0c:29:61:a4:19 brd ff:ff:ff:ff:ff:ff
+5: bond1: <BROADCAST,MULTICAST,MASTER,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 00:0c:29:61:a4:19 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.161.133/24 brd 192.168.161.255 scope global noprefixroute dynamic bond1
+       valid_lft 942sec preferred_lft 942sec
+    inet6 fe80::33e5:c557:7cc7:4171/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+当ens36的网线已经断过，mac互换了，已恢复正常。但此时ens37的网线断了，mac又会互换，此时ens36和ens37的mac都是实际mac
+3: ens36: <BROADCAST,MULTICAST,SLAVE,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast master bond1 state UP group default qlen 1000
+    link/ether 00:0c:29:61:a4:19 brd ff:ff:ff:ff:ff:ff
+4: ens37: <NO-CARRIER,BROADCAST,MULTICAST,SLAVE,UP> mtu 1500 qdisc pfifo_fast master bond1 state DOWN group default qlen 1000
+    link/ether 00:0c:29:61:a4:23 brd ff:ff:ff:ff:ff:ff
+6: bond1: <BROADCAST,MULTICAST,MASTER,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 00:0c:29:61:a4:19 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.161.133/24 brd 192.168.161.255 scope global noprefixroute dynamic bond1
+
+重启节点ens36和ens37的mac地址才会变回实际mac
+3: ens36: <BROADCAST,MULTICAST,SLAVE,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast master bond1 state UP group default qlen 1000
+    link/ether 00:0c:29:61:a4:19 brd ff:ff:ff:ff:ff:ff
+4: ens37: <BROADCAST,MULTICAST,SLAVE,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast master bond1 state UP group default qlen 1000
+    link/ether 00:0c:29:61:a4:23 brd ff:ff:ff:ff:ff:ff
+5: bond1: <BROADCAST,MULTICAST,MASTER,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 00:0c:29:61:a4:19 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.161.133/24 brd 192.168.161.255 scope global noprefixroute dynamic bond1
+       valid_lft 1744sec preferred_lft 1744sec
+    inet6 fe80::33e5:c557:7cc7:4171/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+
+
+结论：bond6模式下 bond的mac地址指定后就不会发生改变，两个网卡ip a查看的mac不一样，第一次谁为主bond 就是谁的mac
+cat /proc/net/bonding/bond1可以看到两个网卡的实际mac
+
+bond1
+
+3: ens36: <BROADCAST,MULTICAST,SLAVE,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast master bond1 state UP group default qlen 1000
+    link/ether 00:0c:29:61:a4:19 brd ff:ff:ff:ff:ff:ff
+4: ens37: <BROADCAST,MULTICAST,SLAVE,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast master bond1 state UP group default qlen 1000
+    link/ether 00:0c:29:61:a4:19 brd ff:ff:ff:ff:ff:ff
+6: bond1: <BROADCAST,MULTICAST,MASTER,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 00:0c:29:61:a4:19 brd ff:ff:ff:ff:ff:ff
+    inet6 fe80::33e5:c557:7cc7:4171/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+拔掉ens36或者ens37的网线，所有mac地址不会变，重启网络，所有mac地址还是不会变ens36,ens37,bond都是ens36的实际mac00:0c:29:61:a4:19
+3: ens36: <NO-CARRIER,BROADCAST,MULTICAST,SLAVE,UP> mtu 1500 qdisc pfifo_fast master bond1 state DOWN group default qlen 1000
+    link/ether 00:0c:29:61:a4:19 brd ff:ff:ff:ff:ff:ff
+4: ens37: <BROADCAST,MULTICAST,SLAVE,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast master bond1 state UP group default qlen 1000
+    link/ether 00:0c:29:61:a4:19 brd ff:ff:ff:ff:ff:ff
+9: bond1: <BROADCAST,MULTICAST,MASTER,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 00:0c:29:61:a4:19 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.161.133/24 brd 192.168.161.255 scope global noprefixroute dynamic bond1
+       valid_lft 1788sec preferred_lft 1788sec
+    inet6 fe80::33e5:c557:7cc7:4171/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+
+结论：bond1模式下bond 的mac地址指定后就不会发生改变，两个网卡ip a的mac一样，第一次谁为主bond 就是谁的mac
+cat /proc/net/bonding/bond1可以看到两个网卡的实际mac
+

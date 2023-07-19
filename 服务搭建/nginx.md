@@ -141,7 +141,7 @@ location的详细使用
 		#	root /data/nginx/html/pc;	/root:指导web的目录，在定义location时，文件绝对路径为root+location;	此处为/data/nginx/html/pc/about/index.html
 		#	index index.html;
 		#}
-		location /about {				
+		location /about {				/使⽤alias的时候uri后⾯如果加了斜杠则下⾯的路径配置必须加斜杠，否则403
 			alias /data/nginx/html/pc;	/定义路径别名,此处路径为alias的路径,文件绝对路径为alias；此处为/data/nginx/html/pc/index.html;		
 			index index.html;			
 			allow 192.168.189.201;		/四层访问控制，可以通过匹配客户源ip地址进行限制
@@ -283,6 +283,8 @@ server支持的参数
 			proxy_pass http://webserver;
 			#proxy_pass http://192.168.189.200:80/; #反向代理单台web服务器
 			proxy_set_header        X-Real-IP       $remote_addr; #添加客户端ip到报文头部
+			#proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;  #基本与remote_addr一样
+			#proxy_set_header X-Forwarded-For $remote_addr;
 		}
 
 	}
@@ -336,7 +338,7 @@ server支持的参数
 		index index.html;
 		proxy_pass http://192.168.189.203;
 	}
-	#http://192.168.189.203  不带斜线将访问的/web,等于访问后端服务器http://192.168.189.203:8080/web/index.html，
+	#http://192.168.189.203  不带斜线等于访问后端服务器http://192.168.189.203:8080/web/index.html，
 
 	后端web服务器
 	[root@centos web]# pwd
@@ -353,10 +355,33 @@ server支持的参数
 	
 	location /web {
 		index index.html;
-		proxy_pass http://192.168.10.82:80/;
+		proxy_pass http://192.168.189.203/;
 		}
-	#带斜线，等于访问后端服务器的http://192.168.7.103:80/index.html 内容返回给客户端
+	#http://192.168.189.203/  带斜线，等于访问后端服务器的http://192.168.189.203/index.html 内容返回给客户端
 	#测试
 	[root@k8snode2 conf.d]# curl www.bw.cn:8080/web/
 	node2
 
+反向代理指定location
+
+	server {
+    listen 80;
+    server_name www.zhangzhuo.cn;
+		location / {
+			root /data/nginx/html/cn;
+			index index.html;
+		}
+		location /web {
+			proxy_pass http://192.168.10.82:80/;  #注意有后⾯的/,有/表示访问代理服务器web目录是访问的后端的根目录，如果没有根访问web表示访问的后端/web目录
+		}
+	}
+	#访问带/的
+	[15:06:45 root@nginx ~]#curl http://www.zhangzhuo.cn/web/
+	web1 192.168.10.82
+	#访问不带/的
+	[15:07:32 root@nginx ~]#curl http://www.zhangzhuo.cn/web/
+	/var/www/html/web 192.168.10.82
+
+	#http日志
+	192.168.10.81 - - [27/Mar/2021:15:06:47 +0800] "GET // HTTP/1.0" 200 19 "-" "curl/7.61.1"
+	192.168.10.81 - - [27/Mar/2021:15:07:56 +0800] "GET /web/ HTTP/1.0" 200 32 "-" "curl/7.61.1"

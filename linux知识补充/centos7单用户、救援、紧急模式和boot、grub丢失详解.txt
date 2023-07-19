@@ -1,12 +1,14 @@
 一、单用户模式（rescue mode）runleve1，不需要介质
 grub加参数1/single，需要输入root密码
 二、救援模式，(rescue mode)需要安装介质
+systemctl rescue = systemctl isolate rescue.target(使用这两个命令无需安装介质可以直接进入rescue mode）
   1、从光盘启动
   2、Troubleshooting
   3、Rescue a Centos system
   4、选择第一项1）Continue
   5、此时系统根分区挂载在/mnt/sysimage/下，可以chroot /mnt/sysimage/切换到原系统
 三、紧急模式（emergency mode）（不需要安装介质）
+systemctl emergency = systemctl isolate emergency.target
 3.1 建议使用使用这种
     1、按e键，进入grub界面
     2、在linux16那行，找到ro，将ro改为rw，用init=/sysroot/bin/sh替换内核中的 rhgb quiet

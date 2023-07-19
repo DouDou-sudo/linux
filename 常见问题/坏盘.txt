@@ -1,0 +1,4 @@
+dmesg -T | grep -i err
+lsblk -no name,serial,mountpoint 
+less /var/log/messages | grep -i err
+less /var/log/messages | grep -i sector

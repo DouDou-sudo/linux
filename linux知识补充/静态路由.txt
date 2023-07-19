@@ -47,3 +47,7 @@ Destination      Gateway           Genmask         Flags Metric Ref    Use Iface
 Flags U代表它是一个直连路由，相当于在一个局域网内
           UG表示需要经过网关
 Gateway 0.0.0.0 意味着这是一条直连规则，即：凡是匹配到这条规则的包，直接经过本机的ens33网卡，通过二层网络直接发往目的主机
+添加临时ip
+ip a  add 10.0.0.1/24 dev ens33
+删除临时ip，也可以删除永久ip，删除永久ip的时候会warning，但是也可以删除
+ip a del 10.0.0.1/24 dev ens33

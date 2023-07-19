@@ -17,11 +17,10 @@ lvextend -l +100%FREE /dev/vgd5000/lvd5000
 缩容
 1、pvdisplay #找出要缩减的磁盘分区pe大小
 2、pvscan #计算扣除磁盘后剩余容量
-3、resize2fs /dev/vgd5000/lvd5000 4900M
 4、umount /dev/vgd5000/lvd5000
-5、resize2fs /dev/vgd5000/lvd5000 4900M
-6、mount /dev/vgd5000/lvd5000 /home/d5000/
-7、lvreduce -l -2559(要缩减的PE大小) /dev/vgd5000/lvd5000
+5、e2fsck -f强制检测文件系统(ext系列)
+6、resize2fs /dev/vgd5000/lvd5000 4900M
+7、lvreduce -l -2559(要缩减的PE大小) /dev/vgd5000/lvd5000或lvreduce -L -100M /dev/vgd5000/lvd5000
 8、pvdisplay #查看/dev/sdc的Allocated PE是否为空
 
 pvs -o+pvs_used 查看pv使用情况
@@ -29,7 +28,9 @@ pvs -o+pvs_used 查看pv使用情况
 pvs -o+pvs_used 查看pv使用情况
 10、vgreduce vgd5000 /dev/sdc
 11、pvremove /dev/sdc
+mount /dev/vgd5000/lvd5000 /home/d5000/
 
+删除lv和vg
 lvremove /dev/mapper/vg_test-lv_TEST
 vgremove vg_test
 

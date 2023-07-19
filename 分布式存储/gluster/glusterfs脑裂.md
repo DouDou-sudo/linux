@@ -1,0 +1,7 @@
+###glusterfs脑裂
+####1、双复制场景
+如果cluster.quorum-type是fixed且cluster.quorum-count为1，此时任一brick异常或者任一节点down机都不会影响client端读写，此时有高可用能力，但是易脑裂，可以在双复制一节点坏盘或者down机时临时处理，让client端可正常读写
+如果cluster.quorum-type是fixed且cluster.quorum-count为2，此时任一brick异常或者任一节点down机都会影响client端不能正常读写，此时没有高可用能力
+如果cluster.quorum-type是auto，第一个brick必须要active，也相当于没有高可用能力
+第一个brick异常，client端不能正常读写
+第二个brick异常，client可以正常读写
