@@ -2,3 +2,20 @@ dmesg -T | grep -i err
 lsblk -no name,serial,mountpoint 
 less /var/log/messages | grep -i err
 less /var/log/messages | grep -i sector
+-a : 包含所有设备，包括空设备；
+
+-d : 仅显示磁盘而不显示磁盘上的分区；
+
+-f : 显示设备的完整路径；
+
+-i : 显示设备的主设备号和次设备号；
+
+-l : 仅显示块设备的名称及其信息，不显示文件系统信息；
+
+-o : 格式化显示输出的指定列信息；
+
+-p : 打印出设备的路径而不是名称；
+
+-r : 使用 RAW 输出模式；
+
+-s : 指定需要显示的列。

@@ -1,0 +1,70 @@
+-a : 包含所有设备，包括空设备；
+
+-b：以字节单位显示设备大小
+
+-d : 仅显示磁盘而不显示磁盘上的分区；
+
+ -e：--exclude <列表> 根据主设备号排除设备(默认：内存盘)
+
+ -I：--include <列表> 只显示有指定主设备号的设备
+-l : 仅显示块设备的名称及其信息，不显示文件系统信息；
+
+-f : 输出文件系统信息；NAME，FSTYPE，LABEL UUID，MOUNTPOINT
+
+-i : 显示设备的主设备号和次设备号；
+
+-n：不显示标题
+
+-o : 格式化显示输出的指定列信息；
+
+-p : 打印完整设备路径；
+
+-r : 使用 RAW 输出模式；
+
+-s : 指定需要显示的列。
+
+ -S, --scsi           输出有关 SCSI 设备的信息
+
+        NAME  设备名
+       KNAME  internal kernel device name
+     MAJ:MIN  主:次 设备号
+      FSTYPE  文件系统类型
+  MOUNTPOINT  where the device is mounted
+       LABEL  filesystem LABEL
+        UUID  filesystem UUID
+   PARTLABEL  分区 LABEL
+    PARTUUID  分区 UUID
+          RA  read-ahead of the device
+          RO  只读设备
+          RM  removable device
+       MODEL  device identifier
+      SERIAL  disk serial number
+        SIZE  size of the device
+       STATE  设备的状态
+       OWNER  user name
+       GROUP  group name
+        MODE  device node permissions
+   ALIGNMENT  alignment offset
+      MIN-IO  minimum I/O size
+      OPT-IO  optimal I/O size
+     PHY-SEC  物理扇区大小
+     LOG-SEC  逻辑扇区大小
+        ROTA  rotational device
+       SCHED  I/O scheduler name
+     RQ-SIZE  request queue size
+        TYPE  device type
+    DISC-ALN  discard alignment offset
+   DISC-GRAN  discard granularity
+    DISC-MAX  discard max bytes
+   DISC-ZERO  忽略零数据
+       WSAME  write same max bytes
+         WWN  unique storage identifier
+        RAND  adds randomness
+      PKNAME  internal parent kernel device name
+        HCTL  Host:Channel:Target:Lun for SCSI
+        TRAN  device transport type
+         REV  device revision
+      VENDOR  device vendor
+
+
+lsblk -no name,serial,mountpoint 
