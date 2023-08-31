@@ -1,5 +1,5 @@
-Ò»¡¢µ¥ÓÃ»§Ä£Ê½£¨rescue mode£©runleve1£¬²»ĞèÒª½éÖÊ
-grub¼Ó²ÎÊı1/single£¬ĞèÒªÊäÈërootÃÜÂë
+Ò»¡¢µ¥ÓÃ»§Ä£Ê½runleve1£¬²»ĞèÒª½éÖÊ
+grubÔÚlinux16µÄ rhgb quietÇ°¼Ó²ÎÊı1/single£¬ĞèÒªÊäÈërootÃÜÂë
 ¶ş¡¢¾ÈÔ®Ä£Ê½£¬(rescue mode)ĞèÒª°²×°½éÖÊ
 systemctl rescue = systemctl isolate rescue.target(Ê¹ÓÃÕâÁ½¸öÃüÁîÎŞĞè°²×°½éÖÊ¿ÉÒÔÖ±½Ó½øÈërescue mode£©
   1¡¢´Ó¹âÅÌÆô¶¯
@@ -8,17 +8,27 @@ systemctl rescue = systemctl isolate rescue.target(Ê¹ÓÃÕâÁ½¸öÃüÁîÎŞĞè°²×°½éÖÊ¿ÉÒ
   4¡¢Ñ¡ÔñµÚÒ»Ïî1£©Continue
   5¡¢´ËÊ±ÏµÍ³¸ù·ÖÇø¹ÒÔØÔÚ/mnt/sysimage/ÏÂ£¬¿ÉÒÔchroot /mnt/sysimage/ÇĞ»»µ½Ô­ÏµÍ³
 Èı¡¢½ô¼±Ä£Ê½£¨emergency mode£©£¨²»ĞèÒª°²×°½éÖÊ£©
-systemctl emergency = systemctl isolate emergency.target
-3.1 ½¨ÒéÊ¹ÓÃÊ¹ÓÃÕâÖÖ
+systemctl emergency = systemctl isolate emergency.target(Ê¹ÓÃÕâÁ½¸öÃüÁîÎŞĞè°²×°½éÖÊ¿ÉÒÔÖ±½Ó½øÈëemergency mode£©
+3.1 ½¨ÒéÊ¹ÓÃÊ¹ÓÃ3.2»ò3.1
     1¡¢°´e¼ü£¬½øÈëgrub½çÃæ
     2¡¢ÔÚlinux16ÄÇĞĞ£¬ÕÒµ½ro£¬½«ro¸ÄÎªrw£¬ÓÃinit=/sysroot/bin/shÌæ»»ÄÚºËÖĞµÄ rhgb quiet
-    4¡¢°´ctrl+x
+    3¡¢°´ctrl+x
+    4¡¢ÇĞ»»µ½Ô­ÏµÍ³Ö´ĞĞ chroot /sysroot/
+    6¡¢passwd rootĞŞ¸ÄrootÃÜÂë£»³öÏÖÂÒÂë£¬ÊäÈëLANG=en
+    7¡¢Ö´ĞĞ touch /.autorelabel
+    8¡¢exit
+    9¡¢reboot
+3.2
+    1¡¢°´e¼ü£¬½øÈëgrub½çÃæ
+    2¡¢ÔÚlinux16ÄÇĞĞ£¬ ×îºó¼ÓÉÏrd.break
+    3¡¢°´ctrl+x
+    4¡¢mount -o rw,remount /sysroot
     5¡¢ÇĞ»»µ½Ô­ÏµÍ³Ö´ĞĞ chroot /sysroot/
     6¡¢passwd rootĞŞ¸ÄrootÃÜÂë£»³öÏÖÂÒÂë£¬ÊäÈëLANG=en
     7¡¢Ö´ĞĞ touch /.autorelabel
     8¡¢exit
     9¡¢reboot
-3.2 
+3.3 
     1¡¢°´e¼ü£¬½øÈëgrub½çÃæ
     2¡¢ÔÚlinux16ÄÇĞĞ£¬ÓÃ init=/bin/bash »ò init=/bin/sh Ìæ»»ÄÚºËÖĞµÄ rhgb quiet
     4¡¢°´ctrl+x
@@ -27,25 +37,45 @@ systemctl emergency = systemctl isolate emergency.target
     7¡¢Ö´ĞĞ touch /.autorelabel
     8¡¢exec /sbin/init ÖØÆôÌØ±ğÂı
 
-ËÄ¡¢grub.cfg¶ªÊ§»òËğ»µ
-4.1¡¢ÊÖ¶¯ÇÃÃüÁîÒıµ¼
+ËÄ¡¢grub.cfgÎÄ¼ş¶ªÊ§»òËğ»µ
+±¨´í£º¿ª»ú³öÏÖgrub >
+4.1¡¢ÊÖ¶¯ÇÃÃüÁîÒıµ¼£¬ÖØÆôºóÊÇgrub>½çÃæ¿ÉÒÔ³¢ÊÔÊÖ¶¯Òıµ¼£¬Èç¹ûÊÇgrub rescue>ĞèÒª½ø¾ÈÔ®Ä£Ê½£¬¿ÉÄÜÊÇbootÕû¸ö·ÖÇø»òÕß/boot/grub2Ä¿Â¼¶ªÊ§
     grub> ls 
     grub> set root=(hd0,msdos1)
-    grub>linux16 /vmlinuz-xxxxxx  root=/dev/mapper/centos-root # tab¼ü²¹È« £¬¸ù·ÖÇøÒÑÊµ¼ÊÎª×¼  UEFI½«linux16¸ÄÎªlinuxefi
-    grub> initrd16 /initramfs-xxxx # tab¼ü²¹È«  UEFI½«initrd16¸ÄÎªinitrdefi
+    grub>linux16 /vmlinuz-xxxxxx  root=/dev/mapper/centos-root # tab¼ü²¹È« £¬¸ù·ÖÇøÒÑÊµ¼ÊÎª×¼  UEFI½«linux16¸ÄÎªlinuxefi (Õı³£Çé¿öÖ´ĞĞÍêÒÔºóÎŞÈÎºÎÊä³ö²Å¶Ô)
+    grub> initrd16 /initramfs-xxxx # tab¼ü²¹È«  UEFI½«initrd16¸ÄÎªinitrdefi (Õı³£Çé¿öÖ´ĞĞÍêÒÔºóÎŞÈÎºÎÊä³ö²Å¶Ô)
     grub> boot½øÈëÏµÍ³
-    ½øÈëÏµÍ³ºóÊÖ¶¯´´½¨grub.cfgÎÄ¼ş
-    legacy:  grub2-mkconfig  -o   /boot/grub2/grub.cfg
+    ½øÈëÏµÍ³ºóÊÖ¶¯´´½¨grub.cfgÎÄ¼ş    
+    legacy:  
+	centos6: /boot/grub/Ä¿Â¼ÏÂÊÖ¶¯´´½¨»òÕß´ÓÆäËû·şÎñÆ÷¿½±´grub.cfgÔÙĞŞ¸Ä£¬Ä£°å¼ûÎÄÄ©
+	centos7: grub2-mkconfig -o /boot/grub2/grub.cfg
     UEFI:     grub2-mkconfig   -o   /boot/efi/EFI/KylinSecOS/grub.cfg
-4.2¡¢½ø¾ÈÔ®Ä£Ê½»òÕßgrub.cfg¶ªÊ§ºó»¹Ã»ÓĞÖØÆô£¬Ö±½Ó´´½¨grub.cfg
-    legacy:  grub2-mkconfig  -o   /boot/grub2/grub.cfg
+4.2¡¢²åÉÏ¹âÅÌ½øÈë¾ÈÔ®Ä£Ê½(chroot /mnt/sysimage/ÇĞ»»µ½Ô­ÏµÍ³)»òÕßgrub.cfg¶ªÊ§ºó»¹Ã»ÓĞÖØÆô£¬¿ÉÒÔÖ±½Ó´´½¨grub.cfg
+    legacy:  
+	centos6: /boot/grub/Ä¿Â¼ÏÂÊÖ¶¯´´½¨»òÕß´ÓÆäËû·şÎñÆ÷¿½±´grub.cfgÔÙĞŞ¸Ä£¬Ä£°å¼ûÎÄÄ©
+	centos7: grub2-mkconfig -o /boot/grub2/grub.cfg
     UEFI:     grub2-mkconfig   -o   /boot/efi/EFI/KylinSecOS/grub.cfg
+4.3¡¢ÖØÆô
+    exit
+    reboot
+Îå¡¢/boot/grub2Ä¿Â¼¶ªÊ§
+±¨´í£º¿ª»ú³öÏÖkernel panic - not syncing......Cail TraceÂÒÂë»òÕß¿ª»ú³öÏÖgrub rescue>
+5.1¡¢²åÉÏ¹âÅÌ½øÈë¾ÈÔ®Ä£Ê½(chroot /mnt/sysimage/ÇĞ»»µ½Ô­ÏµÍ³)
+5.2¡¢²é¿´boot¹ÒÔØµÄ·ÖÇø
+    df  -h²é¿´/bootµÄ¹ÒÔØ·ÖÇø
+    /dev/sda1                 1014M  196M  819M   20% /boot
+5.3¡¢°²×°grub£¬Éú³É/boot/grub2Ä¿Â¼ÏÂµÄÎÄ¼ş
+    centos6: grub-install /dev/sda
+    centos7: grub2-install --boot-directory=/boot /dev/sda1 (±¨errorÕı³£ÏÖÏó£¬¿´/boot/grub2Ä¿Â¼¼°ÏÂÃæµÄÎÄ¼şÓĞÃ»ÓĞÉú³É¼´¿É)
+	»òÕßgrub2-install --force --recheck --skip-fs-probe /dev/vda4Ç¿ÖÆ°²×°²»»á±¨error£¬Ö»ÓĞwarning
+5.4¡¢´´½¨grub.cfgÆô¶¯ÎÄ¼ş
+    ¼û4.2£¬4.3
 
-Îå¡¢bootÄ¿Â¼ÏÂµÄÎÄ¼ş¶ªÊ§
-1¡¢²åÉÏ¹âÅÌ½øÈë¾ÈÔ®Ä£Ê½
-2¡¢¸ü¸ÄrootÄ¿Â¼
-    chroot /mnt/sysimage
-3¡¢¹ÒÔØ¾µÏñ£¬ÅäÖÃyumÔ´£¬/etc/yum.repos.d/Ä¿Â¼ÏÂµÄÎÄ¼ş×îºÃÏÈÒÆ¶¯±¸·İµ½ÆäËûµØ·½
+
+Áù¡¢/bootÄ¿Â¼¶ªÊ§
+±¨´í£º¿ª»ú³öÏÖgrub rescue>
+6.1¡¢²åÉÏ¹âÅÌ½øÈë¾ÈÔ®Ä£Ê½(chroot /mnt/sysimage/ÇĞ»»µ½Ô­ÏµÍ³)
+6.2¡¢¹ÒÔØ¾µÏñ£¬ÅäÖÃyumÔ´£¬/etc/yum.repos.d/Ä¿Â¼ÏÂµÄÎÄ¼ş×îºÃÏÈÒÆ¶¯±¸·İµ½ÆäËûµØ·½
     mv /etc/yum.repos.d/  /opt/
     mount /dev/sr0 /media
     cat >>/etc/yum.repos.d/cd.repo <<EOF
@@ -55,15 +85,17 @@ systemctl emergency = systemctl isolate emergency.target
     > enable=1
     > EOF
     yum clean all && yum makecache
-4¡¢°²×°ÄÚºË
+6.3¡¢°²×°ÄÚºË£¬»áÉú³É/bootÄ¿Â¼ÏÂµÄÎÄ¼ş(°²×°±¨´íÊ¹ÓÃyum reinstall°²×°)
     yum install /media/Packages/kernel-xxx.rpm
-5¡¢ĞŞ¸Äboot
-    lsblk²é¿´/bootµÄ¹ÒÔØ·ÖÇø
-    /dev/sda1                 1014M  196M  819M   20% /boot
-    °²×°grub
-    grub2-install --boot-directory=/boot /dev/sda1
-    ´´½¨grub.cfgÆô¶¯ÎÄ¼ş
-    grub2-mkconfig -o /boot/grub2/grub.cfg
-6¡¢ÖØÆô
-    exit
-    reboot
+    »òÕß²»Åä×öyumÔ´£¬Ö®¼ärpm --forceÇ¿ÖÆ°²×°
+    rpm -ivh /mnt/KYLIN/kernel-2.6.* --forceµÈ´ı°²×°Íê³É
+6.4¡¢ĞŞ¸´grub£¬Éú³É/boot/grub2Ä¿Â¼ÏÂµÄÎÄ¼ş
+    ¼ûÎå
+
+
+centos6µÄgrub.confÄ£°å
+default=0
+timeout=3
+title Kylin 3
+	kernel	/vmlinuz-2.6.32-754.23.1.ky3.kb1.pg.x86_64	ro	root=/dev/mapper/VolGroup-LogVol01 quiet
+	initrd /initramfs-2.6.32-754.23.1.ky3.kb1.pg.x86_64.img

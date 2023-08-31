@@ -18,7 +18,7 @@ yum	install glusterfs-server  glusterfs glusterfs-fuse glusterfs-rdma -y
  ```
 #### 3、启动glusterd服务并设置开机自启
 ```
-systemctl start --now glusterd
+systemctl enable --now glusterd
 ```
 #### 4、设置主机名并写入hosts文件
 ```
@@ -130,12 +130,74 @@ yum -y install glusterfs glusterfs-fuse glusterfs-cli glusterfs-libs glusterfs-c
 192.168.189.131 glusterfs-node1
 192.168.189.132 glusterfs-node2
 ```
-挂载server提供的卷
+挂载server提供的卷，支持高可用，即使挂载点down机，只要集群正常，仍然可以正常使用
 ```
 mount -t glusterfs  <server>:/<volume>  <mountdir>
 ```
 ```
-[root@localhost ~]# mount.glusterfs 192.168.189.132:/fuzhi /media/
+[root@localhost ~]# mount.glusterfs 192.168.189.132:/replcia2 /media/
+```
+#### 3、以nfs-ganesha方式挂载
+gluster默认没有打开nfs挂载方式，需要在服务端打开
+打开nfs挂载
+```
+gluster volume set replica2  nfs.disable  off
+```
+打开后，需要重启下volume才能生效,如果stop前已挂载volume，stop volume后client会卸载volume，start volume会自动挂载上volume
+```
+gluster v stop replica2
+gluster v start replica2
+```
+安装nfs-ganesha依赖包
+```
+yum install -y nfs-ganesha nfs-ganesha-gluster
+```
+修改配置文件
+```
+[root@glusterfs-node1 /]# grep -Ev "#|^$" /etc/ganesha/ganesha.conf 
+EXPORT
+{
+	Export_Id=1 ;
+	Path = "/glu";				//指定nfs共享目录的位置，该目录必现存在，客户端挂载使用的就是glusterfs volume下的该目录，配额对nfs挂载不生效，
+	Pseudo = "/glu-pseudo";
+	Disable_ACL =True;
+	Protocols = "3","4";
+	Access_Type = RW;
+	Squash = No_root_squash;
+	Sectype="sys";
+	Transports = "UDP","TCP";
+	FSAL {						//定义的是准备导出的gluster的volume
+		Name = "GLUSTER";		//是应该导出卷的卷格式GLUSTER
+		Hostname="glusterfs-node1";	//是主机名 ，不同主机是不同的
+		Volume = "replica2";			//是gluster的卷名
+	}
+}
+```
+重启nfs-ganesha服务
+`systemctl restart nfs-ganesha`
+查看gluster volume下的目录，如果没有通过glusterfs-client创建该目录
+```
+[root@glusterfs-client ~]# df -h
+glusterfs-node2:/replica2  5.0G  584M  4.5G  12% /media
+[root@glusterfs-client ~]# mkdir glu
+[root@glusterfs-client ~]# ls -l /media/
+drwxr-xr-x 2 root root         6 Aug 14 16:31 glu
+```
+**客户端**
+安装nfs相关依赖包
+`yum install -y nfs-utils`
+查看nfs共享目录
+```
+[root@glusterfs-client nfs]# showmount -e glusterfs-node1
+Export list for glusterfs-node1:
+/glu (everyone)
+```
+进行挂载
+```
+[root@glusterfs-client ~]# mount.nfs 192.168.189.131:/glu /nfs/  
+[root@glusterfs-client ~]# df -h
+Filesystem                 Size  Used Avail Use% Mounted on
+192.168.189.131:/glu       5.0G  583M  4.5G  12% /nfs
 ```
 ***
 创建卷之前先了解一下glusterfs卷的常见模式
@@ -437,18 +499,18 @@ transport.address-family: inet
 nfs.disable: on
 performance.client-io-threads: off
 ```
-设置目录配额
+设置目录配额,默认单位为Bytes,volume下必须存在此目录，此处的/为volume的/，不是操作系统的/
 ```
-[root@glusterfs-node2 brick]# gluster volume quota replica2 limit-usage /test1/ 100
+[root@glusterfs-node2 brick]# gluster volume quota replica2 limit-usage /test1 100
 volume quota : success
 [root@glusterfs-node2 brick]# gluster v quota replica2 list /test1
 Path                   Hard-limit  Soft-limit      Used  Available  Soft-limit exceeded? Hard-limit exceeded?
 -------------------------------------------------------------------------------------------------------------------------------
 /test1                 100Bytes     80%(80Bytes)   0Bytes 100Bytes
 ```
-修改目录配额
+修改目录配额，KB，MB，GB...
 ```
-[root@glusterfs-node2 brick]# gluster volume quota replica2 limit-usage /test1/ 100MB
+[root@glusterfs-node2 brick]# gluster volume quota replica2 limit-usage /test1 1GB
 volume quota : success
 ```
 查看配额
@@ -460,7 +522,13 @@ volume quota : success
 [root@glusterfs-node2 brick]# gluster v quota replica2 list /test1
 Path                   Hard-limit  Soft-limit      Used  Available  Soft-limit exceeded? Hard-limit exceeded?
 -------------------------------------------------------------------------------------------------------------------------------
-/test1                 100.0MB     80%(80.0MB)   0Bytes 100.0MB              No                   No
+/test1                    1.0GB     80%(819.2MB)   0Bytes   1.0GB              No                   No
+```
+客户端挂载
+```
+[root@glusterfs-client ~]#`mount.glusterfs glusterfs-node1:/replica2/test1 /opt/
+[root@glusterfs-client ~]# df -h
+glusterfs-node1:replica2/test1  1.0G     0  1.0G   0% /opt
 ```
 #### 9、配置卷及优化
 ```
@@ -488,6 +556,11 @@ gluster volume set senyintvolume performance.write-behind-window-size 1024MB
 
 7. 设置nfs.disable，默认为 on
    off|on  on:关闭nfs挂载，off:开启nfs挂载
+
+8. 设置network.ping-timeout，默认为42秒
+   glusterfs client挂载时挂载任一一个server端的ip都可以，即使该server down机，只要集群正常就不影响client的使用。
+   当挂载对应server节点down机时，会有一个默认切换时间，为network.ping-timeout，默认为42s，时间过长，可以修改为3s。
+   sudo gluster volume set $volname network.ping-timeout 3
 #### 10、gluster相关日志
 >相关日志，在`/var/log/glusterfs/`目录下，可根据需要查看；
 如`/var/log/glusterfs/brick/`下是各brick创建的日志；

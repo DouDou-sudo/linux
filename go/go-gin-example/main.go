@@ -2,6 +2,12 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+
+	"github.com/EDDYCJY/go-gin-example/pkg/setting"
+	"github.com/EDDYCJY/go-gin-example/routers"
+	"github.com/gin-gonic/gin"
 	// "github.com/EDDYCJY/go-gin-example/models"
 	// "github.com/EDDYCJY/go-gin-example/pkg/gredis"
 	// "github.com/EDDYCJY/go-gin-example/pkg/logging"
@@ -25,30 +31,26 @@ import (
 // @license.url https://github.com/EDDYCJY/go-gin-example/blob/master/LICENSE
 
 func main() {
-	i := 1
-	defer func() {
-		i++
-	}()
-	fmt.Print(i)
-	// gin.SetMode(setting.ServerSetting.RunMode)
 
-	// routersInit := routers.InitRouter()
-	// readTimeout := setting.ServerSetting.ReadTimeout
-	// writeTimeout := setting.ServerSetting.WriteTimeout
-	// endPoint := fmt.Sprintf(":%d", setting.ServerSetting.HttpPort)
-	// maxHeaderBytes := 1 << 20
+	gin.SetMode(setting.ServerSetting.RunMode)
 
-	// server := &http.Server{
-	// 	Addr:           endPoint,
-	// 	Handler:        routersInit,
-	// 	ReadTimeout:    readTimeout,
-	// 	WriteTimeout:   writeTimeout,
-	// 	MaxHeaderBytes: maxHeaderBytes,
-	// }
+	routersInit := routers.InitRouter()
+	readTimeout := setting.ServerSetting.ReadTimeout
+	writeTimeout := setting.ServerSetting.WriteTimeout
+	endPoint := fmt.Sprintf(":%d", setting.ServerSetting.HttpPort)
+	maxHeaderBytes := 1 << 20
 
-	// log.Printf("[info] start http server listening %s", endPoint)
+	server := &http.Server{
+		Addr:           endPoint,
+		Handler:        routersInit,
+		ReadTimeout:    readTimeout,
+		WriteTimeout:   writeTimeout,
+		MaxHeaderBytes: maxHeaderBytes,
+	}
 
-	// server.ListenAndServe()
+	log.Printf("[info] start http server listening %s", endPoint)
+
+	server.ListenAndServe()
 
 	// If you want Graceful Restart, you need a Unix system and download github.com/fvbock/endless
 	//endless.DefaultReadTimeOut = readTimeout

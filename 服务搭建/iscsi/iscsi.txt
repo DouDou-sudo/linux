@@ -31,7 +31,7 @@ step4:service iscsi start
 step5:iscsiadm -m discovery -t sendtargets -p 40.10.1.1:3260  //模拟多路径映射两个磁盘，
 	iscsiadm -m discovery -t sendtargets -p 40.10.1.2:3260 
 //IP地址是存储自身的IP地址
-step6:iscsiadm -m node -T iqn.2007-04.acme.com:h3c:200realm.rhel5 -p 40.10.1.1:3260 -l  //IP地址是存储自身的IP地址
+step6:iscsiadm -m node -T iqn.2007-04.acme.com:h3c:200realm.rhel5 -p 40.10.1.1:3260 -l  //IP地址是存储服务端自身的IP地址
 	iscsiadm -m node -T iqn.2007-04.acme.com:h3c:200realm.rhel5 -p 40.10.1.2:3260 -l
 step7:iscsiadm -m session
 step8:fdisk -l就能看见存储了

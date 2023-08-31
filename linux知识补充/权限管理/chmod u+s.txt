@@ -27,8 +27,8 @@ passwd命令就有s权限，当有s权限时，其他用户才可以更改成功
 重新输入新的 密码：
 passwd: 鉴定令牌操作错误
 2、
-3、sticky高级权限
-让用户只能删除移动自己的文件或目录，对于不属于自己的文件或目录，没权限删除或移动(不包括root用户)
+3、sticky高级权限，只针对目录生效
+让用户只能删除移动自己所属的文件或目录，对于不属于自己的文件或目录，没权限删除或移动(不包括root用户)，即使权限为777
 [root@ceph-node2 ~]# chmod o+t /tmp/
 [root@ceph-node2 tmp]# ll -ad /tmp/
 drwxrwxrwt. 17 root root 4096 May 15 16:13 /tmp/

@@ -385,3 +385,83 @@ server支持的参数
 	#http日志
 	192.168.10.81 - - [27/Mar/2021:15:06:47 +0800] "GET // HTTP/1.0" 200 19 "-" "curl/7.61.1"
 	192.168.10.81 - - [27/Mar/2021:15:07:56 +0800] "GET /web/ HTTP/1.0" 200 32 "-" "curl/7.61.1"
+
+### 负载均衡常见典型故障
+
+如果后台服务连接超时，Nginx是本身是有机制的，如果出现一个节点down掉的时候，Nginx会更据你具体负载均衡的设置，将请求转移到其他的节点上，但是，如果后台服务连接没有down掉，但是返回错误异常码了如:504、502、500,这个时候你需要加一个负载均衡的设置，如下：proxy_next_upstream http_500 | http_502 | http_503 | http_504 |http_404;意思是，当其中一台返回错误码404,500...等错误时，可以分配到下一台服务器程序继续处理，提高平台访问成功率。
+
+解决方案
+遇到如下状态码的机器，跳过请求的下发，直接下发到其他正常的服务器
+
+	proxy_next_upstream error timeout http_500 http_502 http_503 http_504;
+
+	upstream lb.zls.com {
+			server 172.16.1.7:9999;
+			server 172.16.1.8:9999;
+			server 172.16.1.9:9999;
+	}
+	server {
+			listen 80;
+			server_name lb.zls.com;
+
+			location /{
+					proxy_pass http://lb.zls.com;
+					proxy_next_upstream error timeout http_500 http_502 http_503 http_504;
+					include proxy_params;
+			}
+	}
+
+### 4层代理
+stream模块和http模块同级
+在nginx1.9.0之后才有的stream模块，./configure --with-http_ssl_module --with-stream然后make && make install安装，使用nginx -v查看ssl和stream模块是否安装成功
+在http模块外添加stream模块，用于四层代理配置
+nginx
+
+	http {
+		...
+	}
+
+	stream {
+		...
+	}
+在stream模块中添加uptream定义上游服务器
+nginx
+
+	http {
+		...
+	}
+
+	stream {
+		upstream backend1 {
+			server 192.168.80.101:8080;
+			server 192.168.80.102:8080;
+		}
+		upstream backend2 {
+			server 192.168.80.24:8081;
+		}
+		server {
+			listen 12345;
+			proxy_pass backend1;
+		}
+		server {
+			listen 8082;
+			proxy_pass backend2;
+		}
+	}
+定义2个上游服务器192.168.80.101:8080和192.168.80.102:8080
+nginx代理服务器监听12345端口
+将nginx代理服务器12345端口接收到的tcp流量代理至上游服务器
+几层代理指的是nginx代理的是域名还是ip+端口。
+代理的是域名，配置在http模块，也就是http {server {listen 8081;server_name www.baidu.com;} location / {...}...}就是7层代理
+代理的是ip+端口，配置在stream模块，也就是stream {server {listen 8081;proxy_pass ip:port;}}
+### nginx反向代理后，服务端如何将响应发送给客户端
+在服务端log上看到的X-Forwarded-For是客户端的ip，并不代表服务端会把响应就给这个ip，服务端会把响应给和它建立连接的ip，也就是nginx 的ip
+假设客户端的ip为1.1.1.1，nginx的ip为2.2.2.2，服务端的ip为3.3.3.3。
+当你客户端要访问此服务器提供的服务时，客户端其实访问的是2.2.2.2，但它以为是服务器，其实是nginx。当nginx收到客户端发来的请求后，会与客户端建立一个连接，1.1.1.1---->2.2.2.2（端口省略掉了哈），同时根据反向代理的配置，会用自己的ip跟服务器建立另一个连接，2.2.2.2--->3.3.3.3，并把客户端数据给服务器。当服务器收到nginx发来的数据后，服务器其实只知道nginx，不知道客户端。所以服务器处理完数据后，会把响应给nginx。nginx收到从连接2.2.2.2--->3.3.3.3收到响应后，会把响应交给另一个连接1.1.1.1--->2.2.2.2，然后通过这个连接把数据交给客户端。
+客户端收到响应后，处理即可。
+
+后台服务器看到的数据来源都是nginx，不是真实客户端。采用X-Forwarded-For,这是http header的一种，就是nginx会从客户端侧连接1.1.1.1--->2.2.2.2把客户端的ip和端口放到此字段，交给服务器.
+服务端收到数据，真实客户端的ip和端口是放在http协议里的，而数据发送方也就是nginx的ip和端口是分别放在ip和tco协议里的
+当回复数据时，数据会给发送方也就是nginx，由nginx再给客户端
+
+nginx代理服务器就会成为瓶颈，可以按照业务类型部署多个nginx
