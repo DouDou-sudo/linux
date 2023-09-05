@@ -80,3 +80,4 @@ host列的值为%，更改localhost为%
     [root@centos ~]# mysql -uroot -pqwer1234
     mysql: [Warning] Using a password on the command line interface can be insecure.
     Welcome to the MySQL monitor.  Commands end with ; or \g.
+

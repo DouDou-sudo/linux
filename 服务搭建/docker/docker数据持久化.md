@@ -8,13 +8,14 @@ docker提供了三种持久化数据的方式：
 如果没有显式创建，一个卷会在最开始挂载时被创建。当容器停止时，卷仍然存在。多个容器可以通过read-write或read-only的方式使用同一个卷。
 注意:
 
+    容器挂载volume时，即使volume不存在也可以正常挂载，docker会创建一个同名volume，甚至可以不知道volume，docker会随机生成一个volume
     只有在显式删除时，卷才会被删除。​如果将一个空卷挂载到容器中一个存有文件或目录的目录中，这些文件或目录会被拷贝到空卷中；如果将一个非空卷挂载到容器中一个存有文件或目录的目录中，这些文件或目录会被隐藏。​
 
 使用
 
     创建：​​docker volume create​​ 卷名(创建后可以在/var/lib/docker/volumes/目录下查找到对应目录)
 
-    删除某个卷：​​docker volume rm 卷名​​
+    删除某个卷：​​docker volume rm 卷名​​，删除volume前应先删除使用该volume的容器
 
     删除所有未使用的卷：​​docker volume prune​​
 
@@ -119,6 +120,24 @@ eg
     进入容器尝试在挂载目录下创建文件
     root@99d30e601b28:/usr/share/nginx/html# touch 1
     touch: cannot touch '1': Read-only file system
+
+除了local本地创建volume，还支持远程网络存储创建，比如:nfs(主机需要安装nfs-clinet)
+
+    $ docker volume create -d local \
+    --opt type=nfs \
+    --opt o=addr=[nfs_address] \
+    --opt device=:[nfs-directory] \
+    [volume-name]
+    $ docker volume create --help
+    Usage:	docker volume create [OPTIONS] [VOLUME]
+
+    Create a volume
+
+    Options:
+    -d, --driver string   Specify volume driver name (default "local")
+        --label list      Set metadata for a volume
+    -o, --opt map         Set driver specific options (default map[])
+
 
 二、bind mount
 主机中的文件或目录通过全路径被引用。在使用绑定挂载时，这些目录或文件不一定要已经存在。

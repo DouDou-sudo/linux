@@ -11,6 +11,11 @@
 只有0个或多个空格的行
 [root@gluster2 ~]# grep "^[[:space:]]*$" /etc/rc.d/init.d/functions | wc -l
 91
+匹配最后一列
+[root@node1 bx2]# awk -F: 'NR==2{print $0}' passwd
+bin:x:1:1:bin:/bin:/sbin/nologin
+[root@node1 bx2]# awk -F: 'NR==2{print $NF}' passwd
+/sbin/nologin
 算数比较运算符
 -eq 等于
 -ne 不等于
