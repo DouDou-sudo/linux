@@ -138,7 +138,7 @@ eg
         --label list      Set metadata for a volume
     -o, --opt map         Set driver specific options (default map[])
 
-
+    $ docker volume create -d local  zabbix_agent == $ docker volume create zabbix_agent
 二、bind mount
 主机中的文件或目录通过全路径被引用。在使用绑定挂载时，这些目录或文件不一定要已经存在。
 

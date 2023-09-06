@@ -69,5 +69,5 @@ clientÍ¨¹ýn(n>1024)¶Ë¿ÚÈ¥Á¬½ÓserverµÄ21¶Ë¿Ú(ftpµÄ·þÎñ¶Ë¿Ú)£¬client¿ªÊ¼¼àÌýn+1¶Ë¿
 ±»¶¯Ä£Ê½£º
 clientÍ¨¹ýn(n>1024)¶Ë¿ÚÈ¥Á¬½ÓserverµÄ21¶Ë¿Ú(ftpµÄ·þÎñ¶Ë¿Ú)£¬clientÌá½»PASVÃüÁî¸øserver£¬server¿ª·ÅN(N>1024)¶Ë¿Ú£¬²¢¸æÖªclient£¬clientÊ¹ÓÃn+1¶Ë¿ÚºÍserverµÄN¶Ë¿Ú½¨Á¢Á¬½Ó£¬½øÐÐÍ¨ÐÅ
 
-Èç¹û°Ñserver¶Ë·ÅÔÚ·À»ðÇ½»òÕßnat·þÎñÆ÷µÄ±³ºó£¬²ÉÓÃÖ÷¶¯Ä£Ê½µÄclientÖ»ÄÜ½¨Á¢Á¬½Ó¶øÎÞ·¨½øÐÐÎÄ¼þ´«Êä£¬´ËÊ±Ö»ÄÜÊ¹ÓÃ±»¶¯Ä£Ê½Á¬½Ó
+Èç¹û°Ñserver¶Ë·ÅÔÚ·À»ðÇ½»òÕßnat·þÎñÆ÷µÄ±³ºó£¬²ÉÓÃ±»¶¯Ä£Ê½µÄclientÖ»ÄÜ½¨Á¢Á¬½Ó¶øÎÞ·¨½øÐÐÎÄ¼þ´«Êä£¬´ËÊ±Ö»ÄÜÊ¹ÓÃ±»¶¯Ä£Ê½Á¬½Ó
 Ê¹ÓÃ±»¶¯»¹ÊÇÖ÷¶¯ÔÚclient¶ËÑ¡Ôñ
