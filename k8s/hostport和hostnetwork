@@ -1,4 +1,4 @@
-hostnetwork，pod使用的是宿主机的网络地址，即pod ip就是宿主机的ip，pod直接使用宿主机的网络根namesace
+hostnetwork，pod使用的是宿主机的网络地址，即pod ip就是宿主机的ip，pod直接使用宿主机的网络根namespace
 hostport就是暴露pod所在节点ip+port给外部访问，使用DNAT机制将hostport指定的端口映射到容器的端口之上
 
 1、hostnetwork:

@@ -1,6 +1,6 @@
 一、kubernetes的服务调用
 
-服务的访问分为俩种形式分别是服务之间的调用(南北流量)，用户流量的访问(东西流量)，k8s中提供的南北流量的解决方法是使用service，东西流量的解决方案是ingress。
+服务的访问分为俩种形式分别是服务之间的调用(南北流量)，用户流量的访问(东西流量)，k8s中提供的南北流量的解决方法是使用ingress，东西流量的解决方案是service。
 
 二、Service资源介绍
 Service主要用于Pod之间的通信，由于Pod是一种临时资源可能随时会被调度重建，重建后Pod的IP地址也会进行变化，由于Pod的IP地址不确定性，我们无法使用Pod的IP地址来进行服务的访问，所以k8s中加入了一个service资源用来解决Pod的访问。Service一般会通过选择器选择一个或一组Pod，之后通过iptables或者ipvs的方式进行代理，service的请求会被转发到自己所代理的Pod。service资源创建后只要不进行修改他的IP地址就不会变化相对来说他的IP地址是固定的，k8s中还引用了dns组件用来解析service资源的名称得到他的IP地址，所以集群中访问service，可以直接通过service的名称就是访问service了。
