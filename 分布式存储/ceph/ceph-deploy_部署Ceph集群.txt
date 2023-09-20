@@ -1,0 +1,224 @@
+1
+关闭防火墙及selinux
+
+2
+修改主机名并配置hosts(所有节点)
+
+3
+安装NTP服务(所有节点)
+
+4
+创建部署用户(所有节点)
+这里我采用ceph-server作为部署账户(名称不要用ceph，会产生冲突)。
+
+useradd -d /home/ceph -m ceph-server
+passwd ceph-server
+
+5
+cd /etc/sudoers.d
+touch ceph-server
+chmod 0440 /etc/sudoers.d/ceph-server
+
+cat /etc/sudoers.d/ceph-server
+ceph-server ALL = (root) NOPASSWD:ALL
+
+useradd -d /home/ceph-server -m ceph-server
+echo "123456" | passwd ceph-server --stdin
+echo "ceph-server ALL = (root) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/ceph-server
+sudo chmod 0440 /etc/sudoers.d/ceph-server
+
+
+
+6
+设置ssh互信(部署节点)
+
+注意此处有第二个坑：当前我们是以root用户登录在ceph0节点上，但是ceph0节点的部署用户是ceph-server而不是root，所以此处也需要设置ceph-server@ceph0的ssh互信。
+
+7
+修改仓库源(所有节点)  安装ceph的源
+
+8
+安装ceph-deploy(部署节点)
+yum install ceph-deploy
+
+在各个节点上安装 ceph 包
+# yum -y install ceph ceph-radosgw
+
+
+9
+为了ceph-deploy能够识别主机名需要在要执行ceph-deploy命令的用户.ssh目录下添加一个配置文件(执行ceph-deploy命令的用户可以和部署用户不是同一个，我这里用root用户执行命令)：
+
+cd ~/.ssh/
+touch config
+vi config
+
+
+cat config
+Host ceph0
+   Hostname ceph0
+   User ceph-server
+Host ceph1
+   Hostname ceph1
+   User ceph-server
+Host ceph2
+   Hostname ceph2
+   User ceph-server
+
+
+10
+
+安装Ceph软件到指定节点
+方式1
+yum install ceph-mon ceph-radosgw ceph-mds ceph-mgr ceph-osd ceph-common -y  （在三个节点上将Ceph的安装包都部署上，在三个节点上分别执行下面的命令即可）
+
+方式2
+ceph-deploy install --no-adjust-repos  ceph01 ceph02 ceph03
+ceph-deploy install ceph0 ceph1 ceph2
+
+
+找一个合适的位置创建一个文件夹，用来保存ceph-deploy工具生成的配置文件以及日志文件，我这里选取/root/ceph-deploy/，
+以下命令皆在此目录中执行：
+
+方式1
+ceph-deploy new ceph0 ceph1 ceph2
+
+正确无误的话目录下会生成一个ceph.conf文件
+注意：如果需要指定网络，创建命令跟以下参数
+
+--cluster-network
+--public-network
+
+方式2
+需要指定cluster-network（集群内部通讯）和public-network（外部访问Ceph集群）
+ceph-deploy new --cluster-network 192.168.168.0/24 --public-network 192.168.168.0/24 cephnode-01
+
+11
+创建集群(部署节点 mon)
+
+ceph-deploy mon create-initial
+
+
+配置文件就是生成的ceph.conf，而密钥是ceph.client.admin.keyring，当使用ceph客户端连接至ceph集群时需要使用的密默认密钥，这里我们所有节点都要复制，命令如下:
+ceph-deploy admin  ceph01 ceph02 ceph03
+ceph-deploy --overwrite-conf admin cephnode-01 cephnode-02 cephnode-03
+
+ceph -s
+
+12
+创建osd，请先检查挂载磁盘的状态，建议使用一块干净的磁盘或分区。执行以下命令：
+ceph-deploy osd create --data /dev/vdc ceph0
+ceph-deploy osd create --data /dev/vdc ceph1
+ceph-deploy osd create --data /dev/vdc ceph2
+
+检查osd状态
+ceph health
+
+ceph osd tree
+=================================================================================================================================
+提示no active mgr，也就是说没有osd守护进程，执行命令：
+
+ceph-deploy mgr create ceph0 ceph1 ceph2
+
+安装ceph-mgr-dashboard，在mgr的所有节点上安装
+yum install ceph-mgr-dashboard -y
+
+ceph mgr module enable dashboard
+
+vim /home/cephadmin/my-cluster/ceph.conf
+# 内容如下
+[mon]
+mgr initial modules = dashboard
+
+
+# 推送配置
+ceph-deploy --overwrite-conf config push  ceph01 ceph02 ceph03
+# 重启mgr
+systemctl restart ceph-mgr@cephadmin ceph-mgr@ceph01 ceph-mgr@ceph02 ceph-mgr@ceph03
+
+Web登录配置
+默认情况下，仪表板的所有HTTP连接均使用SSL/TLS进行保护：
+ceph config-key set mgr/dashboard/server_port 8080 # 设置端口为8080
+ceph config-key set mgr/dashboard/server_addr 192.168.3.189 # 设置绑定ip
+ceph config set mgr mgr/dashboard/ssl false # 因为是内网使用，所以关闭ssl
+# 重启一下dashboard
+ceph mgr module disable dashboard
+ceph mgr module enable dashboard
+ceph dashboard set-login-credentials admin Xuexi123 # 设置用户名密码
+
+=================================================================================================================================
+
+
+13
+创建对象存储(部署节点)
+执行命令：
+
+ceph-deploy rgw create ceph0
+
+14
+创建一个存储池，官方推荐少于5个osd设置pg_num为128：
+ceph osd pool create testPool 128
+
+本地新建一个文件后上传至对象存储：
+rados put testFile ../testFile --pool=testPool
+
+查看存储池内文件，若存在刚刚上传的文件即为成功：
+rados -p testPool ls
+testFile
+
+查看文件保存路径：
+ceph osd map testPool testFile
+
+
+=================================================================================================================================
+
+修改ceph配置中的时间偏差阈值
+
+1、vim /etc/ceph/ceph.conf 
+
+在global下面添加
+
+mon clock drift allowed = 2
+mon clock drift warn backoff = 30
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

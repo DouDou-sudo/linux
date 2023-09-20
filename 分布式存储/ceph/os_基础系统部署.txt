@@ -1,0 +1,59 @@
+
+# 配置主机名
+hostnamectl set-hostname ceph-1
+hostnamectl set-hostname ceph-2
+hostnamectl set-hostname ceph-3
+ 
+# 更新到最新
+yum update -y
+ 
+ 
+# 关闭selinux
+setenforce 0
+sed -i 's#SELINUX=enforcing#SELINUX=disabled#g' /etc/selinux/config
+ 
+
+关闭swap分区
+swapoff -a
+sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+
+
+# 关闭防火墙
+
+systemctl stop firewalld
+systemctl disable firewalld
+iptables -F && iptables -X && iptables -F -t nat && iptables -X -t nat
+iptables -P FORWARD ACCEPT
+
+ 
+# 配置免密
+ssh-keygen -f /root/.ssh/id_rsa -P ''
+ssh-copy-id -o StrictHostKeyChecking=no 192.168.1.25
+ssh-copy-id -o StrictHostKeyChecking=no 192.168.1.26
+ssh-copy-id -o StrictHostKeyChecking=no 192.168.1.27
+ 
+ 
+# 查看磁盘
+[root@ceph-1 ~]# lsblk
+NAME        MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda           8:0    0  100G  0 disk 
+├─sda1        8:1    0    1G  0 part /boot
+└─sda2        8:2    0   99G  0 part 
+  ├─cs-root 253:0    0 61.2G  0 lvm  /
+  ├─cs-swap 253:1    0  7.9G  0 lvm  [SWAP]
+  └─cs-home 253:2    0 29.9G  0 lvm  /home
+sdb           8:16   0  100G  0 disk 
+[root@ceph-1 ~]# 
+ 
+# 配置hosts
+cat > /etc/hosts <<EOF
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+ 
+ 
+192.168.1.25 ceph-1
+192.168.1.26 ceph-2
+192.168.1.27 ceph-3
+EOF
+
+

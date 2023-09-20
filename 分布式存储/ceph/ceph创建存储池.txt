@@ -1,0 +1,228 @@
+
+# 列出存储池
+ceph osd lspools
+# 创建存储池
+osd pool default pg num = 100
+osd pool default pgp num = 100
+# 创建存储此
+ceph osd pool create test 2
+#################
+确定 pg_num 取值是强制性的，因为不能自动计算。下面是几个常用的值：
+
+少于 5 个 OSD 时可把 pg_num 设置为 128
+OSD 数量在 5 到 10 个时，可把 pg_num 设置为 512
+OSD 数量在 10 到 50 个时，可把 pg_num 设置为 4096
+OSD 数量大于 50 时，你得理解权衡方法、以及如何自己计算 pg_num 取值
+自己计算 pg_num 取值时可借助 pgcalc 工具
+#######################
+
+
+# 删除存储池
+ceph osd pool delete test test --yes-i-really-really-mean-it
+# 重命名存储池
+ceph osd pool rename {current-pool-name} {new-pool-name}
+# 查看存储池统计信息
+rados df # 要查看某存储池的使用统计信息
+# 拍下存储池的快照
+ceph osd pool mksnap {pool-name} {snap-name}
+# 删除存储池的快照
+ceph osd pool rmsnap {pool-name} {snap-name}
+# 调整存储池选项值
+cph osd pool set {pool-name} {key} {value} 
+
+
+# http://docs.ceph.org.cn/rados/operations/pools/
+
+
+===============================================================================================================
+===============================================================================================================
+===============================================================================================================
+
+在指定的osd上创建pool池
+
+
+1. 获取当前的CRUSH map,并且反编译它：
+
+[root@ceph1 ~]# ceph osd getcrushmap -o crushmap_compiled_file
+
+got crush map from osdmap epoch 938
+
+[root@ceph1 ~]# crushtool -d crushmap_compiled_file -o crushmap_decompiled_file
+
+
+
+2.编辑vi crushmap_decompiled_file  CRUSH map 文件，在root default后添加以下的内容：
+
+在root default部分后添加以下内容：
+
+root test {
+
+id -5          # do not change unnecessarily
+
+# weight 0.070
+
+alg straw
+
+hash 0  # rjenkins1
+
+item osd.1 weight 0.010
+
+item osd.4 weight 0.010
+
+item osd.7 weight 0.010
+
+}
+
+
+
+3. CRUSH map的rules部分添加如下的规则常见CRUSH rules
+
+rule test_pool {
+
+ruleset 1
+
+type replicated
+
+min_size 1
+
+max_size 10
+
+step take test
+
+step chooseleaf firstn 0 type osd
+
+step emit
+
+}
+
+
+
+
+4.编译，并将其诸如会ceph集群
+
+[root@ceph1 ~]# crushtool -c crushmap_decompiled_file -o crushmapdump-compiled
+
+[root@ceph1 ~]# ceph osd setcrushmap -i crushmapdump-compiled
+
+set crush map
+
+
+
+
+5.新的CRUSH map 被应用到ceph集群后，检查OSD tree，查看其排列，会看到test根bucket
+
+[root@ceph1 ~]# ceph osd tree
+
+ID WEIGHT  TYPE NAME      UP/DOWN REWEIGHT PRIMARY-AFFINITY
+
+-5 0.02998 root test
+
+1 0.00999    osd.1          up  1.00000          1.00000
+
+4 0.00999    osd.4          up  1.00000
+
+7 0.00999    osd.7          up  1.00000          1.00000
+
+-1 0.06898 root default
+
+-2 0.02299    host ceph1
+
+0 0.00499        osd.0      up  1.00000          1.00000
+
+1 0.00499        osd.1      up  1.00000          1.00000
+
+2 0.00499        osd.2      up  1.00000          1.00000
+
+9 0.00899        osd.9      up  1.00000          1.00000
+
+-3 0.02299    host ceph2
+
+3 0.00499        osd.3    up      0          1.00000
+
+4 0.00499        osd.4    up        0          1.00000
+
+5 0.00499        osd.5    up        0          1.00000
+
+10 0.00899        osd.10    up      0          1.00000
+
+-4 0.02299    host ceph3
+
+6 0.00499        osd.6      up  1.00000          1.00000
+
+7 0.00499        osd.7      up  1.00000          1.00000
+
+8 0.00499        osd.8      up  1.00000          1.00000
+
+11 0.00899        osd.11      up  1.00000          1.00000
+
+
+
+
+6. 创建和验证test-pool
+
+1） 创建test-pool
+
+[root@ceph1 ~]# ceph osd pool create test-pool 8 8
+
+pool 'test-pool' created
+
+2） 验证test-pool。注意他的crush_ruleset为0，使用的是默认值
+
+[root@ceph1 ~]# ceph osd dump | grep -i test-pool
+
+pool 15 'test-pool' replicated size 2 min_size 1 crush_ruleset 0 object_hash rjenkins pg_num 8 pgp_num 8 last_change 1030 flags hashpspool stripe_width 0
+
+3） 修改其crush_ruleset值为1，这会使得它将被创建在test上
+
+[root@ceph1 ~]# ceph osd pool set test-pool crush_ruleset 1
+
+set pool 15 crush_ruleset to 1
+
+4） 验证存储池，注意crushing_ruleset值的变化：
+
+[root@ceph1 ~]# ceph osd dump | grep -i test-pool
+
+pool 15 'test-pool' replicated size 2 min_size 1 crush_ruleset 1 object_hash rjenkins pg_num 8 pgp_num 8 last_change 1033 flags hashpspool stripe_width 0
+
+
+
+
+7. 添加对象到存储池中进行测试
+
+1) 由于是新建的，里边没有任何的东西
+
+[root@ceph1 ~]# rados -p test-pool ls
+
+2）使用rados的put命令添加对象到存储池中
+
+[root@ceph1 ~]# rados -p test-pool put dummy_object1 /etc/hosts
+
+3） 使用rados list命令列出存储池中的对象
+
+[root@ceph1 ~]# rados -p test-pool ls
+
+dummy_object1
+
+4） 验证对象是否被正确放置到了osd中
+
+[root@ceph1 ~]# ceph osd map test-pool dummy_object1
+
+osdmap e1066 pool 'test-pool' (15) object 'dummy_object1' -> pg 15.71968e96 (15.6) -> up ([7,1], p7) acting ([7,1], p7)
+
+看到结果被放到了7，1中，结果正常
+
+
+===============================================================================================================
+===============================================================================================================
+===============================================================================================================
+
+
+
+
+
+
+
+
+
+
+

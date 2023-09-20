@@ -1,0 +1,55 @@
+
+配置yum源，由于网络环境因素，因此将yum源统一配置到国内阿里云，加快rpm的安装配置，需要配置CentOS的基础源、EPEL源和Ceph源
+
+# 删除默认yum源并配置阿里yum源
+rm -f /etc/yum.repos.d/*.repo
+wget http://mirrors.aliyun.com/repo/Centos-7.repo  -P /etc/yum.repos.d/
+# 安装EPEL源
+wget http://mirrors.aliyun.com/repo/epel-7.repo -P /etc/yum.repos.d/
+
+
+配置Ceph源
+
+cat > /etc/yum.repos.d/ceph.repo <<EOF
+[noarch] 
+name=Ceph noarch 
+baseurl=https://mirrors.aliyun.com/ceph/rpm-nautilus/el7/noarch/ 
+enabled=1 
+gpgcheck=0 
+
+[x86_64] 
+name=Ceph x86_64 
+baseurl=https://mirrors.aliyun.com/ceph/rpm-nautilus/el7/x86_64/ 
+enabled=1 
+gpgcheck=0
+EOF
+
+
+
+
+安装依赖包
+安装Ceph-deploy部署工具，默认EPEL源提供的ceph-deploy版本是1.5，务必确保安装版本为2.0.1或之上版本，否则安装过程中会有很多问题
+
+# 更新yum源
+yum update -y
+
+# 安装工具包、python-setuptools一定要安装、不然会报错的
+yum install -y chrony conntrack ipset jq iptables curl sysstat libseccomp wget socat git python-setuptools
+
+# 安装ceph-deploy部署工具
+yum install ceph-deploy -y
+
+#校验版本
+ceph-deploy --version
+
+
+
+
+
+
+
+
+
+
+
+

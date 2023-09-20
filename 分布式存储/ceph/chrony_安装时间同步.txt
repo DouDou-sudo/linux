@@ -1,0 +1,36 @@
+ 
+# 服务端
+yum install chrony -y
+cat > /etc/chrony.conf << EOF 
+pool ntp.aliyun.com iburst
+driftfile /var/lib/chrony/drift
+makestep 1.0 3
+rtcsync
+allow 192.168.1.0/24
+local stratum 10
+keyfile /etc/chrony.keys
+leapsectz right/UTC
+logdir /var/log/chrony
+EOF
+ 
+systemctl restart chronyd ; systemctl enable chronyd
+ 
+# 客户端
+yum install chrony -y
+cat > /etc/chrony.conf << EOF 
+pool 192.168.1.25 iburst
+driftfile /var/lib/chrony/drift
+makestep 1.0 3
+rtcsync
+keyfile /etc/chrony.keys
+leapsectz right/UTC
+logdir /var/log/chrony
+EOF
+ 
+systemctl restart chronyd ; systemctl enable chronyd
+ 
+#使用客户端进行验证
+chronyc sources -v
+
+
+

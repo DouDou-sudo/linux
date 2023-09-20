@@ -1,0 +1,128 @@
+1
+(ceph-mon)[root@Node-160 /]# ceph -s
+    cluster 8a946765-1bb5-40bc-a0bc-4cd830aee2a4
+     health HEALTH_ERR
+            clock skew detected on mon.192.168.1.159, mon.192.168.1.160
+            1 full osd(s)
+            1 near full osd(s)
+            full flag(s) set
+            Monitor clock skew detected 
+     monmap e1: 3 mons at {192.168.1.158=192.168.1.158:6789/0,192.168.1.159=192.168.1.159:6789/0,192.168.1.160=192.168.1.160:6789/0}
+            election epoch 16, quorum 0,1,2 192.168.1.158,192.168.1.159,192.168.1.160
+     osdmap e321: 13 osds: 13 up, 13 in
+            flags nearfull,full,sortbitwise,require_jewel_osds
+      pgmap v2886234: 624 pgs, 11 pools, 1706 GB data, 383 kobjects
+            5121 GB used, 2061 GB / 7183 GB avail
+                 624 active+clean
+  client io 365 kB/s rd, 436 op/s rd, 0 op/s wr
+
+2
+  (ceph-mon)[root@Node-158 ceph]# ceph osd df
+ID WEIGHT  REWEIGHT SIZE  USE   AVAIL %USE  VAR  PGS 
+ 0 1.00000  1.00000  552G  298G  254G 53.97 0.91 144 
+ 2 1.00000  1.00000  552G  319G  233G 57.79 0.98 145 
+ 1 0.89999  1.00000  552G  329G  223G 59.60 1.01 148 
+ 4 1.00000  1.00000  552G  323G  229G 58.53 0.99 144 
+ 3 1.04999  1.00000  552G  311G  241G 56.37 0.95 135 
+ 5 1.00000  1.00000  552G  372G  179G 67.46 1.14 166 
+ 6 1.00000  1.00000  552G  381G  171G 68.97 1.17 167 
+ 7 0.79999  1.00000  552G  345G  207G 62.50 1.06 132 
+ 8 1.00000  1.00000  552G  349G  202G 63.29 1.07 146 
+ 9 0.75000  1.00000  552G  360G  192G 65.16 1.10 126 
+10 1.04999  1.00000  552G  303G  249G 54.89 0.93 141 
+11 1.09999  1.00000  552G  249G  302G 45.23 0.77 139 
+12 1.00000  1.00000  552G  298G  254G 53.99 0.91 139 
+              TOTAL 7183G 4242G 2941G 59.06          
+MIN/MAX VAR: 0.77/1.17  STDDEV: 6.23
+
+3
+命令暂时强制集群恢复读写
+ceph osd unset full
+
+4
+临时调整osd full的阈值
+ceph tell osd.* injectargs '--mon-osd-full-ratio 0.98'
+
+如果调完权重peering后发现recovery卡住或者直接提高osd写入阈值的情况下，会调整osd full ratio的阈值保持能够写入
+ceph tell mon.* injectargs "--mon-osd-full-ratio 0.96" //默认0.95
+ceph tell osd.* injectargs "--mon-osd-full-ratio 0.96"
+ceph osd unpause
+
+5
+数据满了，临时的解决方案：
+
+5.1
+osd缺省的weight值为1，调整以后数据会向weigh值高的osd上重新分布，
+把一些比较空闲的osd weight值调高，接收数据,使用率高的osd weight调低，释放数据
+
+ceph osd crush weight osd.10 1.04  调高
+ceph osd crush weight osd.7 0.79   调低
+
+5.2
+调整每个osd的weigh值，使数据重新分布  osd.10 是使用率少的osd
+(ceph-mon)[root@Node-158 ceph]# ceph osd crush reweight osd.10 1.05 调高
+reweighted item id 10 name 'osd.10' to 1.05 in crush map
+
+6
+统计各osd上所有pg数：
+ceph pg dump | awk '
+ /^pg_stat/ { col=1; while($col!="up") {col++}; col++ }
+ /^[0-9a-f]+\.[0-9a-f]+/ { match($0,/^[0-9a-f]+/); pool=substr($0, RSTART, RLENGTH); poollist[pool]=0;
+ up=$col; i=0; RSTART=0; RLENGTH=0; delete osds; while(match(up,/[0-9]+/)>0) { osds[++i]=substr(up,RSTART,RLENGTH); up = substr(up, RSTART+RLENGTH) }
+ for(i in osds) {array[osds[i],pool]++; osdlist[osds[i]];}
+}
+END {
+ printf("\n");
+ printf("pool :\t"); for (i in poollist) printf("%s\t",i); printf("| SUM \n");
+ for (i in poollist) printf("--------"); printf("----------------\n");
+ for (i in osdlist) { printf("osd.%i\t", i); sum=0;
+ for (j in poollist) { printf("%i\t", array[i,j]); sum+=array[i,j]; poollist[j]+=array[i,j] }; printf("| %i\n",sum) }
+ for (i in poollist) printf("--------"); printf("----------------\n");
+ printf("SUM :\t"); for (i in poollist) printf("%s\t",poollist[i]); printf("|\n");
+}'
+
+
+7
+ceph df 知道 default.rgw.buckets.data 的pool id是23，通过一个更简单命令得到23号pool在各osd上的pg数排序：
+
+ceph pg dump|grep '^23\.'|awk -F ' ' '{print $1, $15}'|awk -F "[ ]|[[]|[,]|[]]" '{print $3, $4}'|tr -s ' ' '\n'|sort|uniq -c|sort -n
+
+8
+调整pg的命令：
+ceph osd reweight-by-pg 105 default.rgw.buckets.data
+
+9
+由于每次手动观察比较麻烦，可以通过计算每次调整后的个osd上pg数的方差来判断效果，如果每次反差在减小，说明分布相对更均匀一些：
+
+ceph pg dump|grep '^23\.'|awk -F ' ' '{print $1, $15}'|awk -F "[ ]|[[]|[,]|[]]" '{print $3, $4}'|tr -s ' ' '\n'|sort|uniq -c|sort -r|awk '{printf("%s\n", $1)}'|awk '{x[NR]=$0;s+=$0;n++} END{a=s/n;for(i in x) {ss += (x[i]-a)^2} sd = sqrt(ss/n); print "SD = "sd}'
+dumped all in format plain
+SD = 8.71607
+
+10
+weight的权重和磁盘的容量有关系：
+一般定义1TB为1.0 ；500G为0.5
+
+11
+ceph osd reweight-by-utilization     reweight-by-utilization 按利用率调整 OSD 的权重
+ceph osd reweight-by-pg              reweight-by-pg 按归置组分布情况调整 OSD 的权重
+
+12
+#查看osd使用情况
+# ceph osd df tree
+ ceph osd df tree | awk '/osd\./{print $NF" "$4 }'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

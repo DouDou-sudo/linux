@@ -1,0 +1,120 @@
+
+一  拓展 mon 节点
+
+1、在mon节点安装ceph-mon
+
+  centos:
+[root@ceph-mon2 ~]# yum install ceph-common ceph-mon
+
+
+2、在部署节点添加mon节点
+
+  添加mon2
+
+cephadmin@ceph-deploy:~/ceph-cluster$ pwd
+/home/cephadmin/ceph-cluster
+ 
+cephadmin@ceph-deploy:~/ceph-cluster$ ceph-deploy mon add ceph-mon2
+
+添加mon3
+
+cephadmin@ceph-deploy:~/ceph-cluster$ pwd
+/home/cephadmin/ceph-cluster
+ 
+cephadmin@ceph-deploy:~/ceph-cluster$ ceph-deploy mon add ceph-mon3
+
+
+
+3、验证ceph-mon状态
+
+cephadmin@ceph-deploy:~/ceph-cluster$ ceph quorum_status
+ 
+cephadmin@ceph-deploy:~/ceph-cluster$ ceph quorum_status --format json-pretty
+
+ceph -s
+
+ceph mon stat
+ceph mon dump
+
+4 把配置同步到其他节点
+ceph-deploy的集群初始化目录需要更新ceph.conf配置文件，将扩展的mon节点ip，更新到ceph.conf配置文件中
+检查各个ceph集群节点的ceph.conf，是否已经添加了后续扩展的mon节点ip，如果没有添加，则使用ceph-deploy下发配置
+
+cephadmin@ceph-deploy:~/ceph-cluster$ ceph-deploy --overwrite-conf config push ceph-node1 ceph-node2 ceph-node3 ceph-node4 ceph-mgr1 ceph-mgr2 ceph-mon2 ceph-mon3 ceph-mon1
+
+每个节点重启mon
+systemctl restart ceph-mon.target
+
+ceph mon dump
+
+
+注意：
+
+  1、扩展mon节点一般为奇数个
+
+  2、扩展点后需要检查ceph.conf集群配置文件，如果mon_host 只指定了一个mon节点ip，那么就不能够实现真正的高可用，如果该mon节点发生宕机，整个ceph集群将无法使用
+
+
+二  拓展 mgr 节点
+
+ 1、在mgr节点安装ceph-mgr
+
+  CentOS
+
+[root@ceph-mgr2 ~]# yum install ceph-mgr -y
+
+
+2、ceph-deploy部署节点创建mgr
+
+cephadmin@ceph-deploy:~/ceph-cluster$ pwd
+/home/cephadmin/ceph-cluster
+ 
+cephadmin@ceph-deploy:~/ceph-cluster$ ceph-deploy mgr create ceph-mgr2
+
+推送ceph admin秘钥和集群配置文件到mgr2节点
+cephadmin@ceph-deploy:~/ceph-cluster$ ceph-deploy admin ceph-mgr2
+
+3、验证mgr状态
+
+root@ceph-mgr2:~# systemctl status ceph-mgr@ceph-mgr2.service
+ceph -s
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

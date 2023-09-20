@@ -1,0 +1,27 @@
+
+
+1.安装epel源
+[root@node1 ~]# yum -y install epel-release
+
+
+2.安装ceph源
+[root@node1 ~]# yum search release-ceph
+上次元数据过期检查：0:57:14 前，执行于 2023年02月14日 星期二 14时22分00秒。
+================= 名称 匹配：release-ceph ============================================
+centos-release-ceph-nautilus.noarch : Ceph Nautilus packages from the CentOS Storage SIG repository
+centos-release-ceph-octopus.noarch : Ceph Octopus packages from the CentOS Storage SIG repository
+centos-release-ceph-pacific.noarch : Ceph Pacific packages from the CentOS Storage SIG repository
+centos-release-ceph-quincy.noarch : Ceph Quincy packages from the CentOS Storage SIG repository
+[root@node1 ~]# yum -y install centos-release-ceph-pacific.noarch
+
+
+3.安装cephadm
+[root@node1 ~]# yum -y install cephadm
+
+4.安装ceph-common
+[root@node1 ~]# yum -y install ceph-common
+
+
+[root@node1 ~]# cephadm bootstrap --mon-ip 172.24.1.6 --allow-fqdn-hostname --initial-dashboard-user admin --initial-dashboard-password redhat --dashboard-password-noupdate
+
+

@@ -1,0 +1,52 @@
+
+
+OSD 离线问题分析
+
+如果是环境因素的问题导致 OSD 离线的话，这时候通常表现为心跳超时，异常类型主要分为网络异常、磁盘异常、磁盘压力太大 OSD 自杀。主要从监控角色节点上的 ceph.log 可以看到部分的信息，其次可以从离线 OSD 日志里面也可以得到部分信息。
+
+grep -rnE "FAILED assert|suicide|Seg|link|dummy io|osd_max_markdown_count|returned: -5" ceph-osd.$id.log 如果有相关关键字，说明进程crash了
+
+a）FAILED assert 关键字：一般是由于某些assert条件不满足，触发了逻辑bug
+
+b）suicide 关键字: 一般是内部线程超时超过设置阈值（默认150s），导致OSD进程主动退出
+
+   可以通过grep "water level" ceph-osd.$id.log 来查看水位
+
+c）Seg 关键字：程序访问了非法内存导致crash
+
+d）link 关键字：网卡down导致，通过grep "NIC Link is Down" /var/log/messages 来确认
+
+e）dummy io 关键字：说明store层很忙或者慢，60s内未完成一个4k的写操作，
+
+此时要查看页面上该 osd 故障时间段 数据盘利用率
+
+f）osd_max_markdown_count 关键字：osd 在一段时间内被 markdown 多次，导致osd进程退出，此时一般是网络问题导致osd被频繁mark down
+
+ 
+
+g）returned: -5 关键字：一般是磁盘硬件问题此时可以通过 grep "critical medium error" /var/log/messages来确认
+
+
+
+
+网络问题
+
+当存在网卡下线造成的网络异常时，整个服务器上所有 OSD 都会检测到该现象并离线，因此在 3.2 以上的版本在 ceph.log 会显示 osd.x "mark down" 或者被其他的 OSD 报收到了 "refuse" 消息，这时候 mon 会直接将 OSD 设置为离线。
+
+grep -rnE "stuck, cost|send msg delay|recv stuck" ceph-osd.$id.log
+
+如果有相关关键字，大概率说明网络有问题
+
+a）  stuck, cost 关键字：说明ping消息包在网络上消耗太多时间（默认大于1s会打印）
+
+b）  send msg delay 关键字：网络发送 ping消息包延迟，一般认为是网络发送慢导致
+
+c）  recv stuck 关键字：网络收包慢导致
+
+出现上述现象，说明osd之间网络问题，可以使用 ping -f $ip 查看丢包率
+
+查看 /var/log/messages 里面有没有相应的网卡 Down 事件
+
+OSD 如果有检测到网卡 Down，那么会有相关的错误，其中 hb_front_server_messager 表示 public 网络，hb_back_server_messager 表示 cluster 网络，link 1 表示正常，link 0 表示出问题。
+
+ 

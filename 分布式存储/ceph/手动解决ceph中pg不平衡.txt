@@ -1,0 +1,266 @@
+1
+版本要求： 12.2.x版本以上   osdmaptool  ceph osd pg-upmap-items
+社区开发出了一个工具osdmaptool，这个工具允许我们对指定的osdmap进行运算，结合ceph osd pg-upmap-items命令实现单个pg级别的人为迁移
+
+2
+ceph features  #查看ceph特征
+ceph osd set-require-min-compat-client luminous --yes-i-really-mean-it     #设置集群仅支持 Luminous（或者L之后的）客户端
+
+======================================================================================================
+======================================================================================================
+1.
+利用ceph osd getmap 获取最新得osdmap
+
+ceph osd getmap -o  {osdmap_filename}             
+
+例子：ceph osd getmap -o osdmap.bin
+
+然后我们查看一下此时集群中rgw的data pool的pg分布情况
+
+osdmaptool --test-map-pgs --pool 6 ./osdmap.bin
+
+2.
+osdmaptool --upmap-pool [poolname] [osdmapfile] --upmap [outfilename]
+
+osdmaptool {osdmap_filename} --upmap out.txt [--upmap-pool <pool>] [--upmap-max <max-count>] [--upmap-deviation <max-deviation>]                         #获取当前集群数据均衡后的优化信息
+
+例子:  osdmaptool --upmap-pool default.rgw.buckets.data osdmap.bin --upmap upmap.txt  --upmap-max 99  --upmap-deviation 1
+
+说明
+
+upmap-pool ：指定需要优化均衡的存储池名
+
+upmap-max：指定一次优化的数据条目，默认100，可根据环境业务情况调整该值，一次调整的条目越多，数据迁移会越多，可能对环境业务造成影响。
+
+max-deviation：最大偏差值，默认为0.01（即1％）。如果OSD利用率与平均值之间的差异小于此值，则将被视为完美。
+
+查看可以优化的结果
+
+cat upmap.txt
+
+3.
+source 一下导出得upmap方案
+
+source upmap.txt       #执行优化
+
+set 6.7 pg_upmap_items mapping to [118->152]
+
+set 6.8 pg_upmap_items mapping to [107->117]
+
+set 6.b pg_upmap_items mapping to [92->147,169->117]
+
+set 6.10 pg_upmap_items mapping to [180->80]
+
+set 6.17 pg_upmap_items mapping to [171->131,110->152,180->81]
+
+set 6.18 pg_upmap_items mapping to [99->96]
+
+set 6.1d pg_upmap_items mapping to [171->134,91->167]
+
+set 6.20 pg_upmap_items mapping to [107->109]
+
+set 6.21 pg_upmap_items mapping to [107->109]
+
+set 6.24 pg_upmap_items mapping to [120->108]
+
+set 6.25 pg_upmap_items mapping to [11->156]
+
+set 6.2c pg_upmap_items mapping to [104->108]
+
+set 6.2e pg_upmap_items mapping to [169->113,100->96]
+
+set 6.48 pg_upmap_items mapping to [107->117]
+
+set 6.4a pg_upmap_items mapping to [107->117]
+
+set 6.4b pg_upmap_items mapping to [177->124]
+
+set 6.4c pg_upmap_items mapping to [91->94]
+
+set 6.58 pg_upmap_items mapping to [126->123]
+
+set 6.60 pg_upmap_items mapping to [118->112]
+
+set 6.63 pg_upmap_items mapping to [92->90,177->124,104->112]
+
+set 6.66 pg_upmap_items mapping to [177->129]
+
+set 6.6c pg_upmap_items mapping to [101->175]
+
+set 6.6d pg_upmap_items mapping to [34->35]
+
+set 6.79 pg_upmap_items mapping to [110->106]
+
+set 6.7a pg_upmap_items mapping to [120->116]
+
+set 6.7d pg_upmap_items mapping to [91->94]
+
+set 6.7e pg_upmap_items mapping to [92->94,118->172]
+
+set 6.8b pg_upmap_items mapping to [169->113,92->90,177->127]
+
+set 6.9e pg_upmap_items mapping to [92->94]
+
+set 6.a3 pg_upmap_items mapping to [107->117]
+
+set 6.b5 pg_upmap_items mapping to [92->147,107->117]
+
+set 6.b7 pg_upmap_items mapping to [171->131]
+
+set 6.b9 pg_upmap_items mapping to [110->172]
+
+set 6.ba pg_upmap_items mapping to [180->81]
+
+set 6.bb pg_upmap_items mapping to [92->94]
+
+set 6.c8 pg_upmap_items mapping to [107->119]
+
+set 6.ca pg_upmap_items mapping to [107->117]
+
+set 6.d2 pg_upmap_items mapping to [92->90,169->113,179->112,177->127,171->134]
+
+set 6.d4 pg_upmap_items mapping to [11->156]
+
+set 6.d7 pg_upmap_items mapping to [110->108,171->134]
+
+set 6.dd pg_upmap_items mapping to [91->94]
+
+set 6.e0 pg_upmap_items mapping to [107->139]
+
+set 6.e3 pg_upmap_items mapping to [92->94]
+
+set 6.e6 pg_upmap_items mapping to [179->108,101->96]
+
+set 6.e8 pg_upmap_items mapping to [171->131,99->96]
+
+set 6.ec pg_upmap_items mapping to [104->108]
+
+set 6.ed pg_upmap_items mapping to [34->35]
+
+set 6.fe pg_upmap_items mapping to [150->124,92->94]
+
+set 6.ff pg_upmap_items mapping to [43->42]
+
+set 6.105 pg_upmap_items mapping to [120->152]
+
+set 6.10a pg_upmap_items mapping to [138->178]
+
+set 6.10b pg_upmap_items mapping to [169->113]
+
+set 6.110 pg_upmap_items mapping to [92->147,126->127]
+
+set 6.11c pg_upmap_items mapping to [179->108]
+
+set 6.137 pg_upmap_items mapping to [104->112]
+
+set 6.13a pg_upmap_items mapping to [120->152]
+
+set 6.13e pg_upmap_items mapping to [92->147,150->127]
+
+set 6.148 pg_upmap_items mapping to [107->117]
+
+set 6.150 pg_upmap_items mapping to [126->124]
+
+set 6.152 pg_upmap_items mapping to [92->89,179->152,169->139,100->175]
+
+set 6.15c pg_upmap_items mapping to [179->112]
+
+set 6.15e pg_upmap_items mapping to [92->89,150->128]
+
+set 6.160 pg_upmap_items mapping to [126->129]
+
+set 6.161 pg_upmap_items mapping to [107->115]
+
+set 6.162 pg_upmap_items mapping to [149->115]
+
+set 6.16e pg_upmap_items mapping to [169->113,179->116]
+
+set 6.174 pg_upmap_items mapping to [34->35]
+
+set 6.17d pg_upmap_items mapping to [150->127]
+
+set 6.185 pg_upmap_items mapping to [91->94]
+
+set 6.18c pg_upmap_items mapping to [179->112,103->175]
+
+set 6.190 pg_upmap_items mapping to [126->123]
+
+set 6.192 pg_upmap_items mapping to [179->152,177->124]
+
+set 6.19d pg_upmap_items mapping to [171->131]
+
+set 6.19e pg_upmap_items mapping to [92->89,150->124]
+
+set 6.1a0 pg_upmap_items mapping to [107->117,118->106]
+
+set 6.1a1 pg_upmap_items mapping to [103->96]
+
+set 6.1a8 pg_upmap_items mapping to [171->178]
+
+set 6.1ac pg_upmap_items mapping to [101->175]
+
+set 6.1b9 pg_upmap_items mapping to [110->108]
+
+set 6.1bd pg_upmap_items mapping to [171->131,150->123]
+
+set 6.1c9 pg_upmap_items mapping to [177->124,104->106]
+
+set 6.1cb pg_upmap_items mapping to [92->147,169->113]
+
+set 6.1cc pg_upmap_items mapping to [179->112]
+
+set 6.1d2 pg_upmap_items mapping to [179->152,169->115,177->128]
+
+set 6.1d7 pg_upmap_items mapping to [171->134,180->85]
+
+set 6.1dd pg_upmap_items mapping to [149->119]
+
+set 6.1e0 pg_upmap_items mapping to [118->152]
+
+set 6.1ed pg_upmap_items mapping to [34->35]
+
+set 6.1ee pg_upmap_items mapping to [169->139,138->134]
+
+set 6.1f5 pg_upmap_items mapping to [179->108,107->117]
+
+set 6.1fa pg_upmap_items mapping to [180->153]
+
+set 6.1ff pg_upmap_items mapping to [43->42]
+
+
+
+4
+查看变化我们看到pg多的osd在向pg少的osd转移pg
+
+ceph pg map 6.b
+osdmap e10488 pg 6.b (6.b) -> up [98,147,117,135,177,81,116] acting [98,92,113,134,127,81,116]
+
+ceph osd df | grep -w " 92  "
+92   hdd 7.27698  0.84999 7.3 TiB 6.4 TiB 6.4 TiB  56 KiB  19 GiB 859 GiB 88.47 1.72  36     up
+
+ceph osd df | grep -w "147 "
+147   hdd 7.27698  1.00000 7.3 TiB 1.2 TiB 1.2 TiB 1.7 MiB 4.1 GiB 6.0 TiB 16.87 0.33   4     up
+
+======================================================================================================
+======================================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

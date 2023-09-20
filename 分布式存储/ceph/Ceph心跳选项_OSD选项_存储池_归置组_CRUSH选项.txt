@@ -1,0 +1,36 @@
+
+Ceph 存储集群2-配置：心跳选项、OSD选项、存储池、归置组和 CRUSH 选项
+https://www.yii666.com/article/597840.html
+
+
+Ceph日常运维管理和排错 
+https://www.yii666.com/article/597843.html
+
+
+要查看 osd.0的配置，您可以登录到包含 osd.0 的节点并执行以下命令:
+[root@osd ~]# ceph daemon osd.0 config show
+
+
+对于其他选项，请指定守护程序和 help。
+示例
+[root@osd ~]# ceph daemon osd.0 help
+
+
+Ceph日常运维管理总结：
+https://blog.51cto.com/u_12593421/6462714
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
