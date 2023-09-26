@@ -114,6 +114,7 @@ parameters:
   pool: replicapool
   #The value of "clusterNamespace" MUST be the same as the one in which your rook cluster exist
   clusterNamespace: rook-ceph
+
 定义了一个block-service的storageclass，存储插件是rook-ceph
 创建这个storageclas
 $ kubectl create -f sc.yaml
@@ -130,6 +131,8 @@ spec:
   resources:
     requests:
       storage: 30Gi
+
+
 在这个PVC里添加了一个storageclassname的字段:block-service
 当我们通过 kubectl create 创建上述 PVC 对象之后，Kubernetes 就会调用ROOK-ceph 的 API，创建出一块Persistent Disk。然后，再使用这个 Persistent Disk 的信息，自动创建出一个对应的 PV 对象。
 

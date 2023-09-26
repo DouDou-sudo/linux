@@ -30,9 +30,13 @@ vim /etc/exports
 7、执行命令查看共享目录
 [root@centos home]# exportfs 
 /home/818_data	<world>
+或者
+[root@glusterfs-node1 ~]# showmount -e localhost
+Export list for localhost:
+/glu (everyone)
 
 客户端
-1、查看是否安装rpcbind服务
+1、查看是否安装rpcbind和nfs_utils服务
   rpm –qa | grep rpcbind nfs-utils
 2、安装rpcbind服务
   yum install rpcbind –y
@@ -58,6 +62,16 @@ vim /etc/exports
 2.NFS服务器中：nfsstat -s
 
 中的Server nfs v4确定NFS版本的确是4。
+
+rw: Read-write，表示可读写权限
+ro: Read-only，表示只读权限
+sync: 请求或写入数据时，数据同步写入到NFS Server的硬盘后才返回。优点：数据安全不会丢，缺点，性能比不启用该参数要差
+async: 写入数据会先写到内存缓冲区，直到硬盘有空档才会再写入磁盘，这样会提升写入效率！风险为若服务器宕机或不正常关机，会损失缓冲区中未写入磁盘的数据
+no_root_squash: 访问NFS Server共享目录的用户如果是root的话，它对该共享目录具有root权限。
+root_squash: 如果访问NFS Server共享目录的用户是root，则它的权限将被映射成匿名用户，同时它的UID和GID通常会变成nfsnobody账号身份
+all_squash：不管访问NFS Server共享目录的用户身份如何，它的权限都将被映射成匿名用户，同时它的UID和GID都会变成nfsnobody账号身份。
+anonuid：指定用户uid
+anongid：指定用户gid
 
 安全配置
 客户端默认是通过nfsnobody用户访问共享目录，该用户系统默认创建，不利于安全
@@ -103,7 +117,7 @@ FAQ：
 1、给了客户端读写权限了，但是客户端创建文件，仍然提示权限不足
 /data/bbs 192.168.189.135(rw,sync)
 touch: 无法创建"1": 权限不够
-解决：这是因为共享目录的权限导致，chmod 777 共享目录，就可以创建了
+解决：这是因为服务端共享目录的权限导致，chmod 777 共享目录，就可以创建了
 2、客户端使用root用户创建的文件权限为nfsnobody,
 原因：不修改设置，默认将root用户映射为nfsnobody
 3、创建文件后，文件的属主属组变为数字

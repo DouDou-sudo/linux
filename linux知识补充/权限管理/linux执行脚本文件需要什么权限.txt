@@ -1,0 +1,25 @@
+查看文件只需要r权限
+[root@centos ~]# ll -a /opt/ceshi
+-rw-r--r-- 1 root root 0 Sep 21 09:34 /opt/ceshi
+[test@centos ~]$ cat /opt/ceshi 
+123
+修改文件只需要w权限
+[root@centos ~]# ll -ad /opt/ceshi 
+-rw-r---w- 1 root root 4 Sep 21 09:34 /opt/ceshi
+[test@centos ~]$ echo "abc" >> /opt/ceshi 
+[test@centos ~]$ cat /opt/ceshi 	#想查看文件没有权限
+cat: /opt/ceshi: Permission denied
+执行文件需要r权限和x权限，只要x权限不能执行文件
+[root@centos ~]# cat /opt/ceshi 
+#!/bin/bash
+echo "1"
+echo "2"
+[root@centos ~]# ll -ad /opt/ceshi		
+-rw-r----x 1 root root 30 Sep 21 09:37 /opt/ceshi
+[test@centos ~]$ bash /opt/ceshi 		#只要x权限，不能执行脚本文件
+bash: /opt/ceshi: Permission denied
+[root@centos ~]# ll -ah /opt/ceshi 		#添加r权限r+x,就可以执行脚本文件
+-rw-r--r-x 1 root root 30 Sep 21 09:37 /opt/ceshi
+[test@centos ~]$ sh /opt/ceshi 
+1
+2

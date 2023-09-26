@@ -1,10 +1,76 @@
+getfattr
+  -n, --name=name       获取指定扩展属性name的value
+  -d, --dump              获取所有扩展属性的value
+  -e, --encoding=...      指定编码格式("text","hex","base64"),文本，十六进制，base64编码
+  -m pattern, --match=pattern  只包含名称与正则表达式模式匹配的属性
+  -h, --no-dereference    不要遵循符号链接。如果pathname是符号链接，则检查符号链接本身，而不是链接引用的文件。
+  -R, --recursive         递归列出所有文件和目录的属性
+  -L, --logical           遵循符号链接
+  -P  --physical          跳过所有符号链接
+      --absolute-names    不要去掉前面的斜杠字符(' / ')，默认行为是去掉前导斜杠字符
+      --version           print version and exit
+      --help              this help text
+
+列举属性相关
+1、列出所有value值
+attr -lq filename/path # 列举属性name值，不包含命名空间 
+  eg：
+    [root@glusterfs-node1 brick1]# attr -lq /root/anaconda-ks.cfg
+    selinux
+    flavor
+attr -l filename/path # 列举属性，不包含命名空间 
+    [root@glusterfs-node1 brick1]# attr -l /root/anaconda-ks.cfg 
+    Attribute "selinux" has a 34 byte value for /root/anaconda-ks.cfg
+    Attribute "flavor" has a 4 byte value for /root/anaconda-ks.cfg
+
+2、列出指定命令空间的属性(name)的value值
+getfattr -n namespace.name filename/path 
+  eg:
+    [root@glusterfs-node1 brick1]# getfattr -n user.flavor /root/anaconda-ks.cfg  #user为命名空间，flavor为属性name名。必须知道并指定命名空间和name名
+    getfattr: Removing leading '/' from absolute path names
+    # file: root/anaconda-ks.cfg
+    user.flavor="test"
+
+3、列出所有命令空间，name，value
+getfattr -d -m ".*"  filename/path # 列举所有属性，包含命名空间
+  eg：
+    [root@glusterfs-node1 brick1]# getfattr -d -m ".*" /root/anaconda-ks.cfg
+    getfattr: Removing leading '/' from absolute path names
+    # file: root/anaconda-ks.cfg
+    security.selinux="system_u:object_r:admin_home_t:s0"
+    user.flavor="test"
+
+4、列出所有命令空间，name，value并使用十六进制输出value
+getfattr -d -m . -e hex filename/path # 列举所有属性，并使用十六进制输出
+  eg：
+    [root@glusterfs-node1 brick1]# getfattr -d -m . -e hex /root/anaconda-ks.cfg
+    getfattr: Removing leading '/' from absolute path names
+    # file: root/anaconda-ks.cfg
+    security.selinux=0x73797374656d5f753a6f626a6563745f723a61646d696e5f686f6d655f743a733000
+    user.flavor=0x74657374
+命名空间：security,user
+属性name值：selinux,flavor
+vaule值："system_u:object_r:admin_home_t:s0","test"
+
+5、根据正则表达式列出匹配到的value值
+getfattr -d -m "pattern"  filename/path 
+  eg：
+    [root@glusterfs-node1 brick1]# getfattr -d -m "user.*" /root/anaconda-ks.cfg 
+    getfattr: Removing leading '/' from absolute path names
+    # file: root/anaconda-ks.cfg
+    user.flavor="test"
+
 setfattr
 setfattr -n name path   	新增标注
 setfattr -x name  path 	取消标注
-getfattr -n user.foo test	读取
-attr -lq test # 列举属性，不包含命名空间 
-getfattr -d -m ".*"  test # 列举所有属性，包含命名空间
 
-getfattr -d -m . -e hex filename
+设置属性相关
+1、attr设置属性，采用默认的user命名空间，-s指定属性name值，-V指定value值
+attr -s name -V value filename/path 
+  eg：attr -s flavor -V vanilla /root/anaconda-ks.cfg
+2、setfattr设置属性，-n指定namespace和name，-v指定value。(namespace必须已存在，否则会报错setfattr: /root/anaconda-ks.cfg: Operation not supported)
+setfattr -n namespace.name -v value
 
-getfattr -d -m "trusted.afr.*" -e hex filename
+使用扩展属性的文件，cp或者scp移动到其他分区会节点时，会丢失扩展属性
+为避免丢失扩展属性,您必须使用支持保留它们的工具,例如rsync命令。
+$ rsync --archive --xattrs ~/example.txt /tmp/

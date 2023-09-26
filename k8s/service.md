@@ -189,7 +189,7 @@ spec:              #具体定义信息
 NAME   TYPE           CLUSTER-IP   EXTERNAL-IP          PORT(S)   AGE
 dep    ExternalName   <none>       www.dev.pcep.cloud   <none>    5s
 #测试
-/ # curl dep
+/ # curl www.dev.pcep.cloud
 {"message":"no route and no API found with those values"}
 
 3.5 NodePort
