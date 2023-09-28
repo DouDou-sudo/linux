@@ -271,6 +271,18 @@ gluster volume create NEW-VOLNAME [stripe COUNT] [replica COUNT] [transport tcp 
 ```
 # gluster volume create  <VOLNAME>  replica 3 arbiter 1 host1:brick1 host2:brick2 host3:brick3`
 ```
+  #### 8、冗余卷(EC卷)
+冗余卷，会把一份数据切分成多份，然后计算得到冗余码，并存储到各节点中，在损坏一定的比例数据下，数据也不会损坏。类似于raid5，6。
+```
+# gluster volume create <VOLUME> disperse 3  host1:brick1 host2:brick2 host3:brick3
+gluster v info
+Volume Name: test-disperse  
+Type: Disperse  
+Volume ID: 0390d729-b6d8-4edd-bb72-bd28c3ec7472  
+Status: Started  
+Snapshot Count: 0  
+Number of Bricks: 1 x (2 + 1) = 3  
+```
 ### 四、glusterfs常用命令
  #### 1、启停/查看glusterd服务,设置开机自启
  ```
