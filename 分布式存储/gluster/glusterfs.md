@@ -138,6 +138,7 @@ mount -t glusterfs  <server>:/<volume>  <mountdir>
 [root@localhost ~]# mount.glusterfs 192.168.189.132:/replcia2 /media/
 ```
 #### 3、以nfs-ganesha方式挂载
+**服务端**
 gluster默认没有打开nfs挂载方式，需要在服务端打开
 打开nfs挂载
 ```
@@ -207,14 +208,14 @@ Filesystem                 Size  Used Avail Use% Mounted on
 
 ```
  gluster volume create NEW-VOLNAME [replica COUNT] [transport tcp | rdma | tcp, rdma] NEW-BRICK
- ```
+```
  eg:
- ```
+```
 gluster volume create test-volume3 replica 2 transport tcp server1:/data/brick1/test1/ server2:/data/brick1/test1/
- ```
- #### 2、分布式卷（Distribute）
+```
+#### 2、哈希卷（Distribute）
 每一个brick只存储副本的一部分，以文件为单位。
- ```
+```
  gluster volume create NEW-VOLNAME [transport tcp | rdma | tcp, rdma] NEW-BRICK
  ```
  eg:
@@ -233,7 +234,7 @@ testfile1  testfile10  testfile2  testfile3  testfile4  testfile6  testfile8
 [root@glusterfs-node2 ~]#  ls /data0/gluster/data1/
 testfile5  testfile7  testfile9
 ```
- #### 3、条带卷（Strip）
+#### 3、条带卷（Strip）
 条带卷将数据条带化，切割成若干等份，分别存储在不同的brick里面。减少了负载加速了文件存取的速度
  ```
  gluster volume create NEW-VOLNAME [stripe COUNT] [transport tcp | rdma | tcp, rdma] NEW-BRICK...
@@ -254,24 +255,24 @@ server端查看
 [root@lvs ~]# du -sh /data0/gluster/data3/root.tar.gz
 70M     /data0/gluster/data3/root.tar.gz
 ```
- #### 4、分布式复制卷
+#### 4、分布式复制卷
  ```
  gluster volume create NEW-VOLNAME [replica COUNT] [transport tcp | rdma | tcp, rdma] NEW-BRICK...
  ```
- #### 5、分布式条带卷
+#### 5、分布式条带卷
  ```
 gluster volume create NEW-VOLNAME [stripe COUNT] [transport tcp | rdma | tcp, rdma] NEW-BRICK...
  ```
- #### 6、条带复制卷
+#### 6、条带复制卷
  ```
 gluster volume create NEW-VOLNAME [stripe COUNT] [replica COUNT] [transport tcp | rdma | tcp, rdma] NEW-BRICK...
  ```
-  #### 7、仲裁卷
+#### 7、仲裁卷
   如果是副本为3的仲裁器卷，其中第三个brick 充当仲裁器brick。 该配置具有防止发生裂脑的机制。
 ```
 # gluster volume create  <VOLNAME>  replica 3 arbiter 1 host1:brick1 host2:brick2 host3:brick3`
 ```
-  #### 8、冗余卷(EC卷)
+#### 8、冗余卷(EC卷)
 冗余卷，会把一份数据切分成多份，然后计算得到冗余码，并存储到各节点中，在损坏一定的比例数据下，数据也不会损坏。类似于raid5，6。
 ```
 # gluster volume create <VOLUME> disperse 3  host1:brick1 host2:brick2 host3:brick3
@@ -283,8 +284,8 @@ Status: Started
 Snapshot Count: 0  
 Number of Bricks: 1 x (2 + 1) = 3  
 ```
-### 四、glusterfs常用命令
- #### 1、启停/查看glusterd服务,设置开机自启
+### 四、glusterfs常用命令及操作
+#### 1、启停/查看glusterd服务,设置开机自启
  ```
 systemctl start glusterd
 systemctl stop glusterd
@@ -292,7 +293,7 @@ systemctl status glusterd
 systemctl enable glusterd
 systemctl list-unit-files | grep glusterd
  ```
- #### 2、查看卷信息
+#### 2、查看卷信息
 ```
 gluster volume list    #列出集群中的所有卷：
 gluster volume info [all] <VOLNAME> #查看集群中的卷信息：
@@ -406,6 +407,11 @@ Brick2: glusterfs-node2:/glusterfs/replica/brick1
 >on distribute only volumes仅哈希卷不允许迁移替换
 ```
 gluster volume replace-brick <VOLNAME> <SOURCE-BRICK> <NEW-BRICK> {commit force}
+```
+>注意：new-brick要求未被其他gluster使用并且和源brick大小一致
+```
+gluster volume replace-brick replica2 192.168.189.132:/gluster1/brick1 192.168.189.132:/gluster/brick1 commit force
+迁移完成后，源brick就不会再存储新写入的数据
 ```
 #### 7、均衡volume
 >一般add-brick扩容后才需要均衡卷
@@ -530,6 +536,8 @@ volume quota : success
 [root@glusterfs-node2 ~]# gluster v quota replica2 list
 ```
 查看某一个目录的配额
+
+	gluster volume quota <VOLNAME> list <PATH>
 ```
 [root@glusterfs-node2 brick]# gluster v quota replica2 list /test1
 Path                   Hard-limit  Soft-limit      Used  Available  Soft-limit exceeded? Hard-limit exceeded?
@@ -541,6 +549,26 @@ Path                   Hard-limit  Soft-limit      Used  Available  Soft-limit e
 [root@glusterfs-client ~]#`mount.glusterfs glusterfs-node1:/replica2/test1 /opt/
 [root@glusterfs-client ~]# df -h
 glusterfs-node1:replica2/test1  1.0G     0  1.0G   0% /opt
+```
+移除配额
+```
+gluster volume quota <VOLNAME> remove <PATH>
+```
+当超出配额的hard-limit时，不能写
+```
+当超出soft-limit时，list查看Soft-limit exceeded?为yes
+[root@glusterfs-node1 brick1]# gluster volume quota replica2 list 
+                  Path                   Hard-limit  Soft-limit      Used  Available  Soft-limit exceeded? Hard-limit exceeded?
+-------------------------------------------------------------------------------------------------------------------------------
+/glu                                       1.0GB     80%(819.2MB)  830.0MB 194.0MB             Yes                   No
+当超出hard-limit时，list查看Soft-limit exceeded?和Hard-limit exceeded?都为yes
+[root@glusterfs-node1 brick1]# gluster volume quota replica2 list 
+                  Path                   Hard-limit  Soft-limit      Used  Available  Soft-limit exceeded? Hard-limit exceeded?
+-------------------------------------------------------------------------------------------------------------------------------
+/glu                                       1.0GB     80%(819.2MB)    1.0GB  0Bytes             Yes                  Yes
+超出配额，再继续写入，会提示已超出配额
+[root@ceph-node1 glu]# echo "123"> Kylin
+-bash: Kylin: Disk quota exceeded
 ```
 #### 9、配置卷及优化
 ```
@@ -554,22 +582,22 @@ gluster volume set senyintvolume performance.cache-size 4GB
 2. 设置 io 线程, 太大会导致进程崩溃
 gluster volume set senyintvolume performance.io-thread-count 16
 
-3. 设置 网络检测时间, 默认42s
-gluster volume set senyintvolume network.ping-timeout 10
+3. 设置 日志输出级别，默认为INFO
+gluster volume set senyintvolume cluster.daemon-log-level INFO
 
-4. 设置 写缓冲区的大小, 默认1M
+1. 设置 写缓冲区的大小, 默认1M
 gluster volume set senyintvolume performance.write-behind-window-size 1024MB
 
-5. 设置 cluster.quorum-type, 默认none
+1. 设置 cluster.quorum-type, 默认none
    none|auto|fixed,none:关闭，auto：半数以上，fixed：大于等于cluster.quorum-count设置的数量
 
-6. 设置 cluster.favorite-child-policy, 默认为none
+2. 设置 cluster.favorite-child-policy, 默认为none
    mtime 以最新的mtime自动修复脑裂
 
-7. 设置nfs.disable，默认为 on
+3. 设置nfs.disable，默认为 on
    off|on  on:关闭nfs挂载，off:开启nfs挂载
 
-8. 设置network.ping-timeout，默认为42秒
+4. 设置network.ping-timeout，默认为42秒
    glusterfs client挂载时挂载任一一个server端的ip都可以，即使该server down机，只要集群正常就不影响client的使用。
    当挂载对应server节点down机时，会有一个默认切换时间，为network.ping-timeout，默认为42s，时间过长，可以修改为3s。
    sudo gluster volume set $volname network.ping-timeout 3
@@ -673,7 +701,9 @@ a17a13f8-515c-4d0d-9a3e-abdabad59e0d	gluster2 	Disconnected
 ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
 192.168.189.200 gluster1
 192.168.189.201 gluster2
+```
 查看主机ip，这两台主机修改过ip地址，hosts无法解析到正确ip，导致gluster对端未连接，修改hosts文件或者ip地址
+```
 [root@gluster1 peers]# ifconfig 
 eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
         inet 192.168.189.102  netmask 255.255.255.0  broadcast 192.168.189.255
@@ -727,3 +757,144 @@ Status: Transport endpoint is not connected
 Number of entries: -
 ```
 重启gluster2节点的glusterd服务后恢复正常
+#### 6、双复制一个节点的磁盘损坏
+节点：gluster1、gluster2
+gluster1节点的brick硬盘损坏
+移除gluster1的brick,将副本数变为1，即可恢复业务，也可以修改cluster.quorum-type为fixed且cluster.quorum-count为1也可以立即恢复业务。
+###### 1）初始状态
+```
+[root@gluster2 ~]# gluster volume status
+Status of volume: fuzhi
+Gluster process                             TCP Port  RDMA Port  Online  Pid
+------------------------------------------------------------------------------
+Brick gluster1:/data/brick1                 49153     0          Y       3047 
+Brick gluster2:/data/brick1                 49155     0          Y       1617 
+Self-heal Daemon on localhost               N/A       N/A        Y       1634 
+Self-heal Daemon on gluster1                N/A       N/A        Y       3064 
+ 
+Task Status of Volume fuzhi
+------------------------------------------------------------------------------
+There are no active volume tasks
+```
+###### 2）移除brick
+```
+[root@gluster2 ~]# gluster volume remove-brick fuzhi replica 1 gluster2:/data/brick1/ force
+```
+###### 3）查看当前状态
+```
+[root@gluster2 ~]# gluster volume status
+Status of volume: fuzhi
+Gluster process                             TCP Port  RDMA Port  Online  Pid
+------------------------------------------------------------------------------
+Brick gluster1:/data/brick1                 49153     0          Y       3047 
+ 
+Task Status of Volume fuzhi
+------------------------------------------------------------------------------
+There are no active volume tasks
+```
+###### 4）添加新的brick
+```
+[root@gluster2 ~]# gluster volume add-brick fuzhi replica 2 gluster2:/data1/brick1/
+Replica 2 volumes are prone to split-brain. Use Arbiter or Replica 3 to avoid this. See: http://docs.gluster.org/en/latest/Administrator%20Guide/Split%20brain%20and%20ways%20to%20deal%20with%20it/.
+Do you still want to continue?
+ (y/n) y
+volume add-brick: failed: /data1/brick1 is already part of a volume
+```
+brick添加失败，该brick已是卷的一部分，对于硬盘原有做过gluster，该硬盘的brick1下仍存在原有的brick信息，将原有信息删除
+###### 5）删除原有brick相关信息
+```
+[root@gluster2 ~]# rm -rf /data1/brick1/
+```
+###### 6）重新添加brick
+```
+[root@gluster2 data1]# gluster volume add-brick fuzhi replica 2 gluster2:/data1/brick1/
+Replica 2 volumes are prone to split-brain. Use Arbiter or Replica 3 to avoid this. See: http://docs.gluster.org/en/latest/Administrator%20Guide/Split%20brain%20and%20ways%20to%20deal%20with%20it/.
+Do you still want to continue?
+ (y/n) y
+volume add-brick: success
+```
+###### 7）查看当前状态
+```
+[root@gluster2 data1]# gluster volume status
+Status of volume: fuzhi
+Gluster process                             TCP Port  RDMA Port  Online  Pid
+------------------------------------------------------------------------------
+Brick gluster1:/data/brick1                 49153     0          Y       3047 
+Brick gluster2:/data1/brick1                49155     0          Y       2063 
+Self-heal Daemon on localhost               N/A       N/A        Y       2080 
+Self-heal Daemon on gluster1                N/A       N/A        Y       3493 
+ 
+Task Status of Volume fuzhi
+------------------------------------------------------------------------------
+There are no active volume tasks
+```
+#### 7、双复制场景单一节点故障分析
+>当client和server端已建立连接后且cluster.quorum-type是auto时
+
+* 任一节点或者双节点glusterd服务stop(glusterd被kill掉)不影响client端
+* 任一节点的glusterfsd进程被kill掉，有一半几率会导致client不能读写，与挂载时写的哪个serverIP无关系，当节点恢复后，client会自动恢复正常，无需其他操作
+
+此时第一个brick必须要active，也相当于没有高可用能力
+第一个brick异常，client端不能正常读写
+第二个brick异常，client可以正常读写
+
+> 当cluster.quorum-type是fixed且cluster.quorum-count为1
+
+* 此时任一brick异常或者任一节点down机都不会影响client端读写，此时有高可用能力，但是易脑裂，可以在双复制一节点坏盘或者down机时临时处理，让client端可正常读写
+* 如果cluster.quorum-type是fixed且cluster.quorum-count为2，此时任一brick异常或者任一节点down机都会影响client端不能正常读写，此时没有高可用能力
+  
+客户端不能读写时报错
+```
+[root@ceph-node1 ~]# cd /replica 
+-bash: cd: /replica: Transport endpoint is not connected
+```
+#### 8、glusterfs是否支持多副本？
+创建4副本
+```
+[root@glusterfs-node1 brick]# gluster v create test-replica4 replica 4 glusterfs-node1:/test-replica1/brick/ glusterfs-node1:/test-replica2/brick/ glusterfs-node1:/test-replica3/brick/ glusterfs-node1:/test-replica4/brick/ force
+volume create: test-replica4: success: please start the volume to access data
+
+[root@glusterfs-node1 brick]# gluster v status test-replica4  
+Volume test-replica4 is not started
+```
+启动test-replica4 volume
+```
+[root@glusterfs-node1 brick]# gluster v start test-replica4
+volume start: test-replica4: success
+```
+查看volume状态
+```
+[root@glusterfs-node1 brick]# gluster v status test-replica4 
+Status of volume: test-replica4
+Gluster process                             TCP Port  RDMA Port  Online  Pid
+------------------------------------------------------------------------------
+Brick glusterfs-node1:/test-replica1/brick  49155     0          Y       5202 
+Brick glusterfs-node1:/test-replica2/brick  49156     0          Y       5222 
+Brick glusterfs-node1:/test-replica3/brick  49157     0          Y       5242 
+Brick glusterfs-node1:/test-replica4/brick  49158     0          Y       5262 
+Self-heal Daemon on localhost               N/A       N/A        Y       5283 
+Self-heal Daemon on glusterfs-node2         N/A       N/A        Y       4466 
+ 
+Task Status of Volume test-replica4
+------------------------------------------------------------------------------
+There are no active volume tasks
+[root@glusterfs-node1 brick]# gluster v info test-replica4 
+ 
+Volume Name: test-replica4
+Type: Replicate
+Volume ID: dd9cc607-8ef9-4c6b-ba63-492fadadd084
+Status: Started
+Snapshot Count: 0
+Number of Bricks: 1 x 4 = 4
+Transport-type: tcp
+Bricks:
+Brick1: glusterfs-node1:/test-replica1/brick
+Brick2: glusterfs-node1:/test-replica2/brick
+Brick3: glusterfs-node1:/test-replica3/brick
+Brick4: glusterfs-node1:/test-replica4/brick
+Options Reconfigured:
+transport.address-family: inet
+nfs.disable: on
+performance.client-io-threads: off
+```
+可以看到gluster支持多副本(3副本以上)
