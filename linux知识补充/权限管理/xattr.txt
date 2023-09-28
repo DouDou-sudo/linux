@@ -69,7 +69,11 @@ setfattr -x name  path 	取消标注
 attr -s name -V value filename/path 
   eg：attr -s flavor -V vanilla /root/anaconda-ks.cfg
 2、setfattr设置属性，-n指定namespace和name，-v指定value。(namespace必须已存在，否则会报错setfattr: /root/anaconda-ks.cfg: Operation not supported)
-setfattr -n namespace.name -v value
+setfattr -n namespace.name -v value filename/path 
+
+删除属性
+setfattr -x namespace.name filename/path 
+setfattr -x user.flavor anaconda-ks.cfg 
 
 使用扩展属性的文件，cp或者scp移动到其他分区会节点时，会丢失扩展属性
 为避免丢失扩展属性,您必须使用支持保留它们的工具,例如rsync命令。
