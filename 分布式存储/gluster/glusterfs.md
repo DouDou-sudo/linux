@@ -1,8 +1,8 @@
 [toc]
 ### 一、glusterfs服务端部署
 初装配置
-|主机名	                  |Ip地址	        |盘符|
----|:--:|---:
+|主机名	 |Ip地址 |盘符|
+---|:---:|---:
 glusterfs-node1	  |  192.168.189.131	|    /dev/sdb
 glusterfs-node2 	|192.168.189.132	 |   /dev/sdb
 glusterfs-client	|192.168.189.150	
@@ -554,7 +554,7 @@ glusterfs-node1:replica2/test1  1.0G     0  1.0G   0% /opt
 ```
 gluster volume quota <VOLNAME> remove <PATH>
 ```
-当超出配额的hard-limit时，不能写
+当超出配额的hard-limit时，clinet端不能写
 ```
 当超出soft-limit时，list查看Soft-limit exceeded?为yes
 [root@glusterfs-node1 brick1]# gluster volume quota replica2 list 
