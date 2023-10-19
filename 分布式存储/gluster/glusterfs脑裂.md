@@ -19,6 +19,13 @@
 2. 元数据脑裂：brick中元数据不同
 3. GFID脑裂：副本brick上的文件GFID不同，或者副本上的文件类型不同，文件类型不同无法修复，GFID可以修复，GFID脑裂对外表现为目录脑裂
 
+常见脑裂修复命令
+
+gluster v heal \<volume\> info  查看待修复的文件
+gluster v heal \<volume\> info split-brain 查看需要手动干预的文件
+gluster v heal \<volume\> full  不能修复脑裂，直接从建康的brick拷贝数据到被修复的brick，只是进行full-heal修复
+
+
 
 #### 1、gluster cli修复data/metadata split-brain
 >data/metadata的split-brain，\<FILE\>可以以指定gfid的方式标识,
@@ -171,7 +178,7 @@ glusterfs-node1	  |  192.168.189.131	|    /dev/sdb
 glusterfs-node2 	|192.168.189.132	 |   /dev/sdb
 glusterfs-client	|192.168.189.150	
 
-**example1：**
+#### example1，使用latest-mtime进行脑裂修复
 ##### 1、手动制造脑裂
 ###### 1）修改quorum-type和quorum-count
 将cluster.quorum-type改为fixed，cluster.quorum-count改为1
@@ -357,7 +364,7 @@ Mon Oct  9 23:24:29 CST 2023
 drwxr-xr-x 3 root root 16 Oct  9 21:49 /glusterfs/replica/brick1/stbn
 ```
 
-**example2：**
+#### example2，使用setfattr修复split-brain
 ##### 1、脑裂情况
 ```shell
 [root@glusterfs-node1 ~]# gluster v heal replica2 info
@@ -420,4 +427,95 @@ Sun Oct  8 16:53:58 CST 2023
 [root@glusterfs-node2 ~]# cat /glusterfs/replica/brick1/l/p/date 
 Sun Oct  8 16:53:55 CST 2023
 
+```
+
+#### example3,每个brick下都有最新的mtime文件，使用latest-mtime修复
+>这种情况下会统一按照指定目录的latest-mtime去修复，不会检查目录下的文件的mtime是否为最新，即使目录的mtime是最新但下面的文件的mtime不是最新的，也会统一按照这个目录为源对其他brick进行内容替换，所以使用latest-mtime进行修复时，直接指定目录，可能会导致修复后的文件不是最新内容，导致丢失数据
+cluster.favorite-child-policy为mtime也会有这样的问题
+
+##### 1、手动制造脑裂
+略
+查看脑裂后的文件和目录的mtime和内容，可以看到opt/目录的latest-mtime为node2，opt/year的latest-mtime为node1，opt/date的latest-mtime为node2
+```shell
+[root@glusterfs-node1 ~]# stat /glusterfs/replica/brick1/opt/
+  File: ‘/glusterfs/replica/brick1/opt/’
+  Size: 30        	Blocks: 8          IO Block: 4096   directory
+Device: 810h/2064d	Inode: 12583224    Links: 2
+Access: (0755/drwxr-xr-x)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2023-10-09 22:35:45.381886704 +0800
+Modify: 2023-10-09 22:35:05.754329017 +0800
+Change: 2023-10-09 22:35:05.759745577 +0800
+ Birth: -
+[root@glusterfs-node1 ~]# stat /glusterfs/replica/brick1/opt/year 
+  File: ‘/glusterfs/replica/brick1/opt/year’
+  Size: 5         	Blocks: 16         IO Block: 4096   regular file
+Device: 810h/2064d	Inode: 12583226    Links: 2
+Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2023-10-09 22:34:57.452908171 +0800
+Modify: 2023-10-09 22:34:57.457241419 +0800
+Change: 2023-10-09 22:34:57.458324731 +0800
+ Birth: -
+[root@glusterfs-node1 ~]# stat /glusterfs/replica/brick1/opt/date 
+  File: ‘/glusterfs/replica/brick1/opt/date’
+  Size: 29        	Blocks: 16         IO Block: 4096   regular file
+Device: 810h/2064d	Inode: 12583229    Links: 2
+Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2023-10-09 22:35:05.754329017 +0800
+Modify: 2023-10-09 22:35:05.759745577 +0800
+Change: 2023-10-09 22:35:05.759745577 +0800
+ Birth: -
+[root@glusterfs-node1 ~]# cat /glusterfs/replica/brick1/opt/year 
+2023
+[root@glusterfs-node1 ~]# cat /glusterfs/replica/brick1/opt/date 
+Tue Oct 10 00:16:01 CST 2023
+
+```
+```shell
+[root@glusterfs-node2 ~]# stat /glusterfs/replica/brick1/opt/
+  File: ‘/glusterfs/replica/brick1/opt/’
+  Size: 30        	Blocks: 8          IO Block: 4096   directory
+Device: 810h/2064d	Inode: 12582976    Links: 2
+Access: (0755/drwxr-xr-x)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2023-10-09 22:35:02.263576466 +0800
+Modify: 2023-10-09 22:35:07.557723813 +0800
+Change: 2023-10-09 22:35:07.558807125 +0800
+ Birth: -
+[root@glusterfs-node2 ~]# stat /glusterfs/replica/brick1/opt/year 
+  File: ‘/glusterfs/replica/brick1/opt/year’
+  Size: 5         	Blocks: 16         IO Block: 4096   regular file
+Device: 810h/2064d	Inode: 12582977    Links: 2
+Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2023-10-09 22:34:52.311186108 +0800
+Modify: 2023-10-09 22:33:48.400055064 +0800
+Change: 2023-10-09 22:33:48.400055064 +0800
+ Birth: -
+[root@glusterfs-node2 ~]# stat /glusterfs/replica/brick1/opt/date 
+  File: ‘/glusterfs/replica/brick1/opt/date’
+  Size: 29        	Blocks: 16         IO Block: 4096   regular file
+Device: 810h/2064d	Inode: 12582981    Links: 2
+Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2023-10-09 22:35:07.440726081 +0800
+Modify: 2023-10-09 22:35:07.445059330 +0800
+Change: 2023-10-09 22:35:07.448309267 +0800
+ Birth: -
+[root@glusterfs-node2 ~]# cat /glusterfs/replica/brick1/opt/year 
+1900
+[root@glusterfs-node2 ~]# cat /glusterfs/replica/brick1/opt/date 
+```
+##### 2、修复脑裂
+>以latest-mtime的opt/目录进行修复，可以发现，
+opt/目录和date文件是以latest-mtime进行修复的，
+但是year文件不是以latest-mtime进行修复的，而是以latest-mtime的opt/下的year文件进行修复的
+所以指定latest-mtime指定目录时，
+```shell
+[root@glusterfs-node1 ~]# gluster v heal replica2 split-brain latest-mtime /opt
+GFID split-brain resolved for file /opt
+[root@glusterfs-node1 ~]# cat /glusterfs/replica/brick1/opt/year 
+1900
+[root@glusterfs-node1 ~]# cat /glusterfs/replica/brick1/opt/date 
+Tue Oct 10 00:16:27 CST 2024
+[root@glusterfs-node2 ~]# cat /glusterfs/replica/brick1/nh/date 
+Mon Oct  9 23:52:17 CST 2024
+[root@glusterfs-node2 ~]# cat /glusterfs/replica/brick1/nh/year 
+1900
 ```

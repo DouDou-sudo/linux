@@ -75,7 +75,7 @@ ansible-playbook <filename.yml> ... [options]
 Handlers本质是task list ，类似于MySQL中的触发器触发的行为，其中的task与前述的task并没有本质上的不同，主要用于当关注的资源发生变化时，才会采取一定的操作。而Notify对应的action可用于在每个play的最后被触发，这样可避免多次有改变发生时每次都执行指定的操作，仅在所有的变化发生完成后一次性地执行指定操作。在notify中列出的操作称为handler，也即notify中调用handler中定义的操作
 注意
     如果多个task通知了相同的handlers， 此handlers仅会在所有tasks结束后运行一 次
-    只有notify对应的task发生改变了才会通知handlers， 没有改变则不会触发handlers
+    只有notify对应的task发生改变了才会通知handlers， 没有改变或者执行失败则不会触发handlers
 
 [root@k8smaster playbook]# cat nginx.yml
 #重复执行只有nginx.conf文件变化才会执行restart nginx和wall
@@ -363,8 +363,8 @@ http {
     - name: create group {{ nginx_user }}
       group: name={{ nginx_user }} state=present gid=80 system=yes
     - name: create user {{ nginx_user }}
-      user: name={{ nginx_user }} state=present create_home=no group=nginx uid=80 system=yes home=/data/html shell=/sbin/nolo
-gin    - name: mkdir nginx in html
+      user: name={{ nginx_user }} state=present create_home=no group=nginx uid=80 system=yes home=/data/html shell=/sbin/nologin    
+    - name: mkdir nginx in html
       file: path=/data/html group=nginx owner=nginx state=directory
     - name: install nginx
       yum: name=nginx

@@ -1,3 +1,0 @@
-家目录的权限给太高，给755权限即可
-centos5 配置ssh免密需要指定公钥
-ssh-copy-id -i  /home/d5000/zhongwei/.ssh/id_dsa.pub d5000@198.51.1.83

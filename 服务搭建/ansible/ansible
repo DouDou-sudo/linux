@@ -30,7 +30,7 @@ Ansible 的配置文件 /etc/ansible/ansible.cfg ,其中大部分的配置内容
 #host_key_checking = False # 检查对应服务器的host_key，建议取消注释
 #log_path=/var/log/ansible.log #日志文件，建议启用
 #module_name = command   #默认模块，可以修改为shell模块
-优化ansible执行速度
+优化ansible执行速度,修改配置文件如下，还可以关闭sshd的反向解析(UseDNS no)，palybook关闭fact数据功能(gather_facts: no)
 [root@k8smaster ansible]# grep -Ev "^#|^$" ansible.cfg
 [defaults]
 host_key_checking = False
@@ -171,7 +171,9 @@ PLAY RECAP *********************************************************************
 注意：此模块不具有幂等性
 [root@k8smaster playbook]# ansible test -m command -a 'chdir=/etc cat os-release'
 [root@k8smaster playbook]# ansible test -m command -a 'ls'
-chdir 为执行命令的目录，也就是工作目录，不写chdir时。默认为/root目录
+create  #一个文件名，当该文件存在，则该命令不执行
+chdir   #在执行指令之前，先切换到该指定的目录，不写chdir时。默认为/root目录
+removes #删除一个文件名，当该文件不存在，则该选项不执行
 
 4.2 shell模块
 功能：和command相似，用shell执行命令,支持各种符号,比如:*,$, >
@@ -228,11 +230,13 @@ test line2
 参数介绍
 src  #复制目标文件或目录位置
 dest #复制到目的的位置
-content #生成文件
+content #用于替代"src",可以直接设定指定文件的值
 owner  #复制到目的地的文件所有者
 group  #复制到目的地的文件所有组
 mode   #复制到目的地的文件权限
-backup #文件存在是否备份
+directory_mode #递归的设定目录的权限，默认为系统默认权限
+backup #文件存在是否备份 yes|no
+force  #如果目标主机包含该文件，但内容不同，如果设置为yes，则强制覆盖，如果为no，则只有当目标主机的目标位置不存在该文件时，才复制。默认为yes
 
 4.5 fetch模块
 功能：从远程主机提取文件至ansible的主控端，copy相反，目前不支持目录
@@ -264,7 +268,7 @@ fstab
 [15:41:26 root@ansible ~]#ansible all -m file -a 'path=/root/zhang state=directory owner=zhang group=zhang recurse=yes'
 
 path  #目标文件或目录位置
-state #文件的类型 touch：创建普通文件 absent 删除 directory：目录 link：软连接 
+state #文件的类型 touch：创建普通文件 absent 删除 directory：创建目录 link：软连接 hard：硬连接 
 owner #所属用户
 group #所属组
 mode  #文件权限
@@ -317,6 +321,7 @@ format 压缩方法
 [root@k8smaster ~]# ansible all -m cron -a 'minute=*/1 weekday=1-5 name="log" job=/root/hostname.sh disabled=no'
 删除任务
 [root@k8smaster ~]# ansible all -m cron -a 'name=log state=absent'
+backup：对远程主机上的原任务计划内容修改之前做备份
 
 4.11 yum和apt模块
 功能：
@@ -335,6 +340,8 @@ format 压缩方法
 [16:26:58 root@web1 ~]#ansible web2 -m service -a 'name=apache2 state=stopped'
 #重启
 [16:27:54 root@web1 ~]#ansible web2 -m service -a 'name=apache2 state=restarted'
+state   #started:启动，stopped：停止，restarted：重启
+enabled #开机自启 yes|no
 
 4.13 user模块
 功能：管理用户
@@ -353,7 +360,7 @@ shell  #用户默认使用那个shell
 system  #是否是系统用户
 create_home #是否创建家目录
 home #家目录位置
-remove #删除用户时，把用户相关目录也删除
+remove #删除用户时，把用户相关目录也删除 yes|no
 
 4.14 Group 模块
 功能：管理组
