@@ -2,6 +2,8 @@ dmesg -T | grep -i err
 lsblk -no name,serial,mountpoint 
 less /var/log/messages | grep -i err
 less /var/log/messages | grep -i sector
+
+lsblk 【options】
 -a : 包含所有设备，包括空设备；
 
 -d : 仅显示磁盘而不显示磁盘上的分区；
