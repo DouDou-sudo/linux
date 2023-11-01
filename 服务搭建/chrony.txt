@@ -36,6 +36,7 @@ makestep 1.0 3
 rtcsync
 logdir /var/log/chrony
 
+
 systemctl enable chronyd
 systemctl restart chronyd
 

@@ -20,10 +20,5 @@ ping –i 0.5 www.baidu.com 每隔0.5s发送一个包
 -s 1024 设置发送包的大小为1024
 -t 255  设置TTL值为255。TTL是生存时间的意思，没过一个路由，TTL就-1
 
-awk –F: ‘{print $(NF-1)}’ /etc/passwd 显示倒数第二列
-awk  -F: ‘{sum+=$4} END {print sum}’ /etc/passwd 第四列求和
-awk  -F: ‘{print $0}’ /etc/passwd 取整行
-awk  -F “|” ‘{print $1}’ /etc/passwd 以 | 为分隔符
-
 nslookup www.baidu.com  域名解析
 刷新DNS缓存 /etc/init.d/networking restart

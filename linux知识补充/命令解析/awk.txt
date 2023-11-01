@@ -4,18 +4,28 @@
 2、计算/etc/rc.d/init.d/functions和/etc/inittab文件的空白行之和
 [root@gluster2 ~]# a=`grep "^$" /etc/rc.d/init.d/functions | wc -l`;b=`grep "^$" /etc/inittab | wc -l`;let c=a+b;echo $c
 91
-3、匹配/etc/rc.d/init.d/functions文件
-空行
+3、匹配/etc/rc.d/init.d/functions文件的空行
 [root@gluster2 ~]# grep "^$" /etc/rc.d/init.d/functions | wc -l
 90
-只有0个或多个空格的行
+4、只有0个或多个空格的行
 [root@gluster2 ~]# grep "^[[:space:]]*$" /etc/rc.d/init.d/functions | wc -l
 91
-匹配最后一列
-[root@node1 bx2]# awk -F: 'NR==2{print $0}' passwd
-bin:x:1:1:bin:/bin:/sbin/nologin
+5、匹配最后一列
 [root@node1 bx2]# awk -F: 'NR==2{print $NF}' passwd
 /sbin/nologin
+6、匹配倒数第二列
+awk –F: ‘{print $(NF-1)}’ /etc/passwd
+7、第四列求和
+awk  -F: ‘{sum+=$4} END {print sum}’ /etc/passwd
+8、取整行
+[root@node1 bx2]# awk -F: 'NR==2{print $0}' passwd
+bin:x:1:1:bin:/bin:/sbin/nologin
+9、以 | 为分隔符
+awk  -F “|” ‘{print $1}’ /etc/passwd 
+10、匹配最后一行
+awk 'END{print  $0}' a
+sed  -n  '$p' a
+tail -n 1 a
 算数比较运算符
 -eq 等于
 -ne 不等于
@@ -44,11 +54,3 @@ bin:x:1:1:bin:/bin:/sbin/nologin
 -w
 -x
 -s file	是否有内容
-
-
-显示文件最后一行
-sed '$p' a
-awk 'END{print}' a
-tail -n 1 a
-
-

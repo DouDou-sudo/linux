@@ -1,0 +1,68 @@
+添加临时ip
+ip a  add 10.0.0.1/24 dev ens33
+删除临时ip，也可以删除永久ip，删除永久ip的时候会warning，但是也可以删除
+ip a del 10.0.0.1/24 dev ens33
+临时添加ip，当配置文件的BOOTPROTO为dhcp时会添加一个ip，当BOOTPROTO为none时会修改原来的ip为配置的ip，建议使用ip a add 添加临时ip
+ifconfig ens33 10.0.0.10/24
+
+nmcli做bond
+	1、#添加bonding接口
+	nmcli connection add type bond con-name bond0 ifname bond0 mode active-backup
+	2、#添加从属接口
+	nmcli connection add type bond-slave con-name slave_1 ifname eth1 master bond0
+	nmcli connection add type bond-slave con-name slave_2 ifname eth2 master bond0
+	#注：如没有为从属接口提供连接名con-name，则该名称是接口名称加类型构成
+	3、#配置ip
+	nmcli conn modify bond0 ipv4.address 192.168.161.100/24 ipv4.method manual gw4 192.168.161.1 conn.autoconnect yes ipv4.dns 223.5.5.5
+	4、#要启动绑定，则必须首先启动从属接口
+	nmcli connection up slave_1
+	nmcli connection up slave_2
+	5、#启动bonding接口
+	nmcli connection up bond0
+	6、#修改配置后执行如下命令会重新加载指定的配置文件
+	nmcli c up bond0
+
+nmcli conn add type [ethernet,bond, bond-slave,vlan,bridge,bridge-slave, team,team-slave,macvlan, ovs-bridge...] con-name ABC ifname ens33 #新增连接	
+nmcli conn add type ethernet con-name ens33 ifname ens33#新增连接	，每新增一个连接就会在/etc/sysconfig/network-scripts/添加一个ifcfg-[con-name]的文件
+
+nmcli conn modify [con-name]				#这的con-name是你起的connect名字，不是连接网口的名字,当修改时会去找/etc/sysconfig/network-scripts/ifcfg-[con-name]的文件，如果没有这个文件就会修改失败
+nmcli conn modify bond0 ipv4.address 192.168.161.100/24 ipv4.method manual gw4 192.168.161.1 可以把下面的这些[options]连着写
+
+nmcli c m bond0 mode 6				#修改bond的mode模式，可以直接写0，1，6
+
+nmcli c m bond0 ipv4.address 10.0.0.11/24		#修改ip
+nmcli c m bond0 +ipv4.address 10.0.0.100/24		#增加一个ip
+nmcli c m bond0 -ipv4.address 10.0.0.100/24		#删除一个ip
+
+nmcli c m ens33 ipv6.method [ignore, auto, dhcp, link-local, manual, shared]	#修改ipv6的method
+nmcli c m ens33 ipv4.method [auto, link-local, manual, shared, disabled]	#修改ipv4的method
+
+nmcli c m bond0 ipv4.gateway 192.168.161.101		#修改ipv4的网关
+nmcli c m bond0 gw4 192.168.161.99			#修改ipv4的网关
+
+nmcli c m bond0 ipv4.dns 223.5.5.5			#修改dns
+nmcli c m bond0 +ipv4.dns 223.5.5.5			#增加一个dns
+nmcli c m bond0 -ipv4.dns 223.5.5.5			#删除一个dns
+
+nmcli c m bond0 conn.autoconnect yes			#开机启动ONBOOT=yes/no
+
+nmcli connection reload（nmcli c r）			#重新加载所有连接的配置文件，执行命令被修改的文件没有被加载。。。。
+nmcli connection show（nmcli c）			#显示所有网络连接的信息
+nmcli c s --active（nmcli c s -a）			#只显示当前启动的连接
+nmcli c s ens33					#显示某一特定连接的详细信息
+nmcli c up ens33					#启动指定连接，会重新加载指定的配置文件，此命令会重启ens33
+nmcli c down ens33（nmcli c d ens33）			#关闭指定连接
+nmcli c delete ens33（nmcli c de ens33）		#删除指定连接,delete 不可简写为 d，否则与 down 冲突，但可以简写为 de
+
+----------------------------------------网络连接相关----------------------------------------------------------------
+nmcli networking（nmcli n）				#显示 NetworkManager 是否接管网络设置
+nmcli n connectivity(nmcli n c)			#网络连接状态共有五种：full、limited（连网，但无法上网）、portal（连网，但需要登陆认证后才能网）、none（没连网）和 unknown。
+nmcli n on					#开启所有的网络连接
+nmcli n off					#关闭所有的网络连接
+
+----------------------------------------网络接口设备相关----------------------------------------------------------------
+nmcli device status（nmcli d）			#显示所有网络接口设备的状态
+nmcli d show（nmcli d sh [ens33]）			#显示所有设备的详细信息，加上设备名显示某一特定设备
+nmcli d connect ens33（nmcli d c ens33）		#连接设备，如果ens33本来就处于连接状态，此命令会重启ens33
+nmcli d disconnect ens33（nmcli d d ens33）		#断开连接设备
+nmcli d reapply ens33（nmcli d r ens33）		#更新设备信息，只有在设备处于连接状态，才可以更新设备。更新设备也会重启连接。

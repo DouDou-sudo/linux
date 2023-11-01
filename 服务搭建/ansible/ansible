@@ -88,6 +88,17 @@ awk 'NR>2{print $1}' /etc/hosts  |while read line
 do
 	sshpass -p $pass ssh-copy-id -o stricthostkeychecking=no $line
 done
+或者使用ansible的authorized_key进行免密配置
+---
+- hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Set authorized key taken from file
+    authorized_key:
+      user: root
+      state: present
+      key: "{{ lookup('file', '/root/.ssh/id_rsa.pub') }}"
 
 3.2 测试ansible
 [root@k8smaster ~]# ansible all -m ping
@@ -340,8 +351,20 @@ backup：对远程主机上的原任务计划内容修改之前做备份
 [16:26:58 root@web1 ~]#ansible web2 -m service -a 'name=apache2 state=stopped'
 #重启
 [16:27:54 root@web1 ~]#ansible web2 -m service -a 'name=apache2 state=restarted'
-state   #started:启动，stopped：停止，restarted：重启
+state   #reloaded, restarted, started, stopped
 enabled #开机自启 yes|no
+
+systemd模块
+systemd用来替换service模块，service模块对centos7以上兼容，会自动重定向为systemctl服务管理命令
+ansible yu -m systemd -a "name=crond state=stopped"
+state=started,stopped,restarted,reloaded
+enabled: yes
+palybook多了一个daemon_reload用来表示是否重新加载配置
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    enabled: yes
+    name: crond
 
 4.13 user模块
 功能：管理用户
@@ -404,7 +427,7 @@ diff查看将oper...行替换为bxw
 ---
 > bin:x:1:1:bin:/bin:/sbin/nologin
 
-18 debug模块
+4.18 debug模块
 此模块可以输出被控端的信息
 利用debug输出主机名和ip
 [root@k8smaster playbook]# cat debug.yml 
@@ -417,7 +440,7 @@ diff查看将oper...行替换为bxw
       debug:
         msg: Host "{{ ansible_nodename }}" is "{{ ansible_default_ipv4.address }}"
 
-19 delegate_to模块
+4.19 delegate_to模块
 在对一组服务器 server_group1 执行操作过程中，需要在另外一台机器 A 上执行一个操作，比如在 A 服务器上添加一条 hosts 记录，这些操作必须要在一个 playbook 联动完成。也就是是说 A 服务器这个操作与 server_group1 组上的服务器有依赖关系。Ansible 默认只会在定义好的一组服务器上执行相同的操作，这个特性对于执行批处理是非常有用的。但如果在这过程中需要同时对另外 1 台机器执行操作时，就需要用到 Ansible 的任务委派功能（delegate_to）。使用 delegate_to 关键字可以委派任务到指定的机器上运行。在 playbook 的操作如下：
 
 - name: add host record 
@@ -460,4 +483,18 @@ ok: [192.168.189.202] => {
 PLAY RECAP ******************************************************************************************************************
 192.168.189.201            : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 192.168.189.202            : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+4.20 authorized_key模块
+---
+- hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: Set authorized key taken from file
+    authorized_key:
+      user: root
+      state: present
+      key: "{{ lookup('file', '/root/.ssh/id_rsa.pub') }}"
+
+
 

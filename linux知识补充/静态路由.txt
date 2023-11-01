@@ -4,35 +4,30 @@
 永久生效
  vim /etc/sysctl.conf
    net.ipv4.ip_forward=1
- 执行sysctl –p立即生效
+执行sysctl –p立即生效
 
-添加静态路由
+命令行添加静态路由
   route add –net 192.168.18.0 netmask 255.255.255.0 gw 192.168.31.100
   route add –net 192.168.18.0/24 gw 192.168.31.100
   route add –net 192.168.18.0/24 dev eth0
+
+命令行删除静态路由
+  route del –net 192.168.18.0 netmask 255.255.255.0
+
 添加一条从本机到192.168.18.0/24网段经过192.168.31.100网关的路由
 
-  vim /etc/sysconfig/network-scripts/route-eth0
-    192.168.18.0/24 via 192.168.31.100
-  Service network restart
-
-  vim /etc/sysconfig/static-routes
-    any net 192.168.18.0/24 gw 192.168.31.254
-  service network restart
-
-删除一条路由
- route del –net 192.168.18.0 netmask 255.255.255.0
-
-/etc/sysconfig/network-scripts/下
-创建 route-ens33
+路由配置相关的文件
+一、/etc/sysconfig/network-scripts/下创建 route-ens33
 	1)10.0.0.0/24 via 192.168.10.1
 	2)ADDRESS0=10.0.0.0
 	    NETMASK=255.255.255.0
 	    GATEWAY=192.168.10.1
+二、vim /etc/sysconfig/static-routes
+    any net 192.168.18.0/24 gw 192.168.31.254
 
-在ifcfg-ens33的配置文件中添加
+三、在ifcfg-ens33的配置文件中添加
 /usr/sbin/route  add -net 10.0.0.0/24  gw  192.0.0.254
-ifdown和ifup网口也不会丢失
+即使ifdown和ifup网口也不会丢失
 
 [root@k8snode1 ~]# route -n
 Kernel IP routing table
@@ -44,10 +39,6 @@ Destination      Gateway           Genmask         Flags Metric Ref    Use Iface
 172.17.0.0        0.0.0.0             255.255.0.0       U        0       0        0 docker0
 192.168.189.0    0.0.0.0           255.255.255.0   U      100     0        0 ens33
 
-Flags U代表它是一个直连路由，相当于在一个局域网内
+Flags  U代表它是一个直连路由，相当于在一个局域网内
           UG表示需要经过网关
 Gateway 0.0.0.0 意味着这是一条直连规则，即：凡是匹配到这条规则的包，直接经过本机的ens33网卡，通过二层网络直接发往目的主机
-添加临时ip
-ip a  add 10.0.0.1/24 dev ens33
-删除临时ip，也可以删除永久ip，删除永久ip的时候会warning，但是也可以删除
-ip a del 10.0.0.1/24 dev ens33

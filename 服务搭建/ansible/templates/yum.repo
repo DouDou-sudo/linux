@@ -1,0 +1,18 @@
+#ecloud BClinux el7 Packages
+[base]
+name=BCLinux-el7-Base
+baseurl=http://{{yum_server}}/bclinux/{{os_version}}/os/x86_64/
+enabled=1
+gpgcheck=0
+
+[updates]
+name=BCLinux-el7-Updates
+baseurl=http://{{yum_server}}/bclinux/{{os_version}}/updates/x86_64
+enabled=1
+gpgcheck=0
+
+[extras]
+name=BCLinux-el7-Extras
+baseurl=http://{{yum_server}}/bclinux/{{os_version}}/extras/x86_64
+enabled=1
+gpgcheck=0

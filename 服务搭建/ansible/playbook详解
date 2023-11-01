@@ -536,7 +536,10 @@ nide
 ---
 - hosts: all
   remote_user: root
-  serial: 1   #每次只处理一个主机
+#ansible的默认主机并发数为5，forks = 5，在5个主机上同时执行playbook里的tasks
+#当被控端小于5时不会等待上一个主机执行完再执行下一个主机
+#当被控端大于5时，先同时执行5台再批量同时执行后面的5台
+  serial: 1   #每次只处理一个主机，serial用于控制一个play内的主机并行数，这个并行数不能超过forks，超过后serial不生效
   serial: 50%  #每次只处理50%的主机
 
   tasks: 
@@ -637,13 +640,18 @@ k8smaster
       debug:
         msg: "{{ hostname }}"
 12、 使用Facts获取远程主机的源数据信息变量
+gather_facts: yes 需要获取远程主机的源数据信息变量时，此项必须为yes
 默认情况下ansible会在运行时自己获取，无需手动调用。
 #获取的变量较多这里介绍一些常用的
-"ansible_architecture": "x86_64"   #系统架构
-"ansible_hostname": "node-1"   #主机名称
-"ansible_distribution": "CentOS"  #系统类型
-"ansible_distribution_version": "7.8" #系统版本详细信息
-"ansible_distribution_major_version": "7" #系统具体大版本
+"ansible_architecture":    #系统架构"x86_64"
+"ansible_hostname":    #短主机名称"node-1"
+"ansible_distribution":  #系统类型"CentOS" 
+"ansible_distribution_version": #系统版本详细信息"7.8" 
+"ansible_distribution_major_version":  #系统具体大版本"7"
+"ansible_all_ipv4_addresses"  #ipv4地址
+"ansible_interfaces" #所有网络接口的名称列表
+"ansible_dns"   #dns服务器列表
+"ansible_kernel"  #当前运行的内核版本
 
 
 
