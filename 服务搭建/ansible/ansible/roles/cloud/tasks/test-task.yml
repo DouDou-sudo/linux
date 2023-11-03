@@ -1,0 +1,2 @@
+- name: test
+  template: src=http.conf.j2 dest=/root/http.conf

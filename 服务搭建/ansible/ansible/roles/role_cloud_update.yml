@@ -1,0 +1,6 @@
+---
+- hosts: cloud
+  gather_facts: no
+  remote_user: root
+  roles:
+    - role: cloud

@@ -1,0 +1,11 @@
+---
+- hosts: all
+  remote_user: root
+  gather_facts: no
+
+  vars:
+    file: test-{{ nodename }}
+
+  tasks:
+    - name: create hostname file
+      file: name=/root/{{ file }}.log state=touch

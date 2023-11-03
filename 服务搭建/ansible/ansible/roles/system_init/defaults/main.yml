@@ -1,0 +1,4 @@
+ntp_server: ["cn.pool.ntp.org"]
+dns_server: ["223.5.5.5"]
+yum_server: ["10.10.10.1"]
+os_version: el8.2

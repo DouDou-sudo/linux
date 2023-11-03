@@ -1,0 +1,4 @@
+- name: touch file is {{cloud_version}}
+  file: path=/root/{{ cloud_version.stdout }}-ky.log state=touch
+  when: cloud_version.stdout == "8.1.8"
+

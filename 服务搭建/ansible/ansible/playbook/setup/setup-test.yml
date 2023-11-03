@@ -1,0 +1,8 @@
+- hosts: all
+  gather_facts: yes
+  tasks:
+    - name: test setup
+      file:
+        path: /root/ky-test.txt
+        state: touch
+      when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "7"

@@ -1,0 +1,15 @@
+---
+- hosts: all
+  gather_facts: no
+  serial: 1
+  tasks:
+    - name: sleep 10 touch date file
+      #shell: sleep 10
+      shell: sleep 10;touch /media/`date +%T`.job1
+      async: 20
+      poll: 5
+    - name: touch date file
+      #shell: sleep 5
+      shell: touch /media/`date +%T`.job2
+      async: 3
+      poll: 1

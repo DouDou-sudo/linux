@@ -1,0 +1,7 @@
+- name: disbale swap
+  shell: swapoff -a
+  tags: disbale_swap
+
+- name: permanent disbale swap
+  shell: sed -i.bak '/swap/s/^/#/g' /etc/fstab
+  tags: permanent_disbale_swap

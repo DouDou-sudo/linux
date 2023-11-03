@@ -1,0 +1,15 @@
+---
+- hosts: all
+  remote_user: root
+  serial: 1
+  gather_facts: no
+  tasks:
+    - name: error
+      command: /bin/true
+      ignore_errors: yes    ##忽略error tasks的错误执行下一个tasks
+      notify: wall
+      tags: err-task
+  handlers:
+    - name: wall
+      shell: wall bxw
+      tags: wall-task

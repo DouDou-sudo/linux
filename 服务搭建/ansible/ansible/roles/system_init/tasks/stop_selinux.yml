@@ -1,0 +1,7 @@
+- name: stop selinux
+  shell: setenforce 0
+  tags: stop_selinux
+
+- name: permanent stop selinux
+  shell: sed -i '/SELINUX/s/^/#/g' /etc/selinux/config
+  tags: permanent_stop_selinux

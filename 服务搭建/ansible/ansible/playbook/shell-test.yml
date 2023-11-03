@@ -1,0 +1,9 @@
+---
+- hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: test many shell
+    shell: echo "abc" >> /root/abc
+    shell: echo "123" >> /root/123
+

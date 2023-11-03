@@ -1,0 +1,3 @@
+#- include: test-task.yml
+- include: check_version.yml
+- include: touch-register.yml

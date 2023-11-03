@@ -1,0 +1,18 @@
+1、当templates下的j2模板文件需要设定默认值时，如何设置
+1）可以采用defaults目录设定默认变量的方式
+defaults目录必须有一个main.yml文件，defaults目录下的变量优先级低于vars目录下的变量
+当vars目录下设定对应变量时会覆盖defaults目录下的变量，当vars没有设定变量时就会使用defaults下的变量
+2）也可以使用if判断变量是否被设定，建议使用第一种方法
+{% if dns_server is undefined %}
+nameserver 223.5.5.5
+{% else %}
+{% for dns in dns_server %}
+nameserver {{ dns }}
+{% endfor %}
+{% endif %}
+2、当templates下的j2模板文件使用for循环时，比如
+{% for dns in dns_server %}
+nameserver {{ dns }}
+{% endfor %}
+此时变量，必须使用列表的方式，不使用列表的方式会循环每个字符，不是字符串
+dns_server: ["8.8.8.8","223.5.5.5"]

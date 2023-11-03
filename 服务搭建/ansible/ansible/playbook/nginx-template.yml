@@ -1,0 +1,11 @@
+---
+- hosts: all
+  remote_user: root
+  
+
+  tasks:
+    - name: template index file
+      template: src=/etc/ansible/playbook/templates/index.html.j2 dest=/root/index.html
+    - name: print var
+      debug:
+        msg: "{{ nodename }}"

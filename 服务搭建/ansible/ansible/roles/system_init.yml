@@ -1,0 +1,6 @@
+---
+- name: system-init
+  hosts: host
+  gather_facts: false
+  roles:
+    - system_init

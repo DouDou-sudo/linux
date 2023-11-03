@@ -1,0 +1,25 @@
+---
+- hosts: host
+  gather_facts: no
+  tasks:
+    - name: job 1
+      shell: touch `date +%T`-job1
+      async: 5
+      poll: 0 
+    - name: job 2
+      shell: touch `date +%T`-job2
+      async: 5
+      poll: 0 
+  async_status:
+    name: 等待异步任务完成的标志任务
+    async_status:
+      jid: "{{ item.ansible_job_id }}"
+    register: async_result
+    until: async_result.finished
+    retries: 10
+    delay: 10
+    loop: "{{ ansible_play_batch }}"
+
+  # 打印异步任务的结果
+     - debug:
+           var: async_result.results

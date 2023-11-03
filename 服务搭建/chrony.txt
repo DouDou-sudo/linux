@@ -152,66 +152,38 @@ NTP
 默认配置在
 中，参考如下
 /etc/chrony.conf
-⽤于添加
-服务器
-# server 
- ntp 
+⽤于添加服务器server  ntp 
 server 0.centos.pool.ntp.org iburst
 server 1.centos.pool.ntp.org iburst
 server 2.centos.pool.ntp.org iburst
 server 3.centos.pool.ntp.org iburst
-记录系统时钟增益
-损失时间的速率
-# 
-/
+记录系统时钟增益，损失时间的速率
 driftfile /var/lib/chrony/drift
-允许跳跃式校时如果在前
-次校时中时间差⼤于
-# 
- 3 
- 1.0s
+允许跳跃式校时如果在前3次校时中时间差⼤于1.0s
 makestep 1.0 3
-同步时间⾄
-# 
- RTC
+同步时间⾄RTC
 rtcsync
 在⽀持它的所有接⼝上启⽤硬件时间戳。
-# 
-#hwtimestamp *
+hwtimestamp *
 增加调整系统时钟所需的最⼩可选源数。
-# 
 #minsources 2
 允许那些客户端访问
-# 
- NTP
 #allow 192.168.0.0/16
 即使未同步到时间源，也会提供时间。
-# 
 #local stratum 10
-指定
-认证的
-存在的⽂件
-# 
- NTP 
- key 
+指定认证的存在的⽂件 
 #keyfile /etc/chrony.keys
 为⽇志⽂件指定⽬录
-# 
 logdir /var/log/chrony
 选择要被记录的信息
-# 
-#log measurements statistics tracking
-Server
+#log measurements statistics tracking Server
 server hostname [option]…
-默认配置中默认使⽤四组官⽅的
-服务器
-NTP
+默认配置中默认使⽤四组官⽅的服务器NTP
 0.centos.pool.ntp.org
 1.centos.pool.ntp.org
 2.centos.pool.ntp.org
 3.centos.pool.ntp.org
-是为了缩短初始同步所花费的时间，该参数⼀般为
-的默认选项。
+是为了缩短初始同步所花费的时间，该参数⼀般为的默认选项。
 iburst
 server
 driftfile
@@ -224,65 +196,38 @@ makestep
 makestep threshold limit
 根据需要通过加速或减慢时钟来逐渐校正任何时间偏移。例如：
 makestep 1.0 3
-就表⽰当头三次校时，如果时间相差 
-, 则跳跃式校时。
-1.0s
+就表⽰当头三次校时，如果时间相差 1.0s, 则跳跃式校时。
+指令会将内核时间与进⾏同步
 rtcsync
-指令会将内核时间与
-进⾏同步
-rtcsync
-RTC（ Real_Time Clock）
-：实时时钟芯⽚
+RTC（ Real_Time Clock）：实时时钟芯⽚
 RTC
-allow / deny
-这⾥你可以指定⼀台主机、⼦⽹，或者⽹络以允许或拒绝
-连接到扮演时钟服务器的机器。例如
-NTP
+这⾥你可以指定⼀台主机、⼦⽹，或者⽹络以允许或拒绝连接到扮演时钟服务器的机器。例如
 allow 192.168.4.5
 deny 192.168/16
 commandkey
-如果在
-中指定
-参数，那么将 在
-中⽣成⼀个密码，或者也可以⾃⼰⼿动在
-中
-/etc/chrony.conf
+如果在中指定参数，那么将 在中⽣成⼀个密码，或者也可以⾃⼰⼿动在中
 generatecommandkey
 /etc/chrony.keys
 chrony.keys
-添加指定密码。
-后跟的数字就代表使⽤
+添加指定密码。后跟的数字就代表使⽤
 中的哪个密码，默认值为1。
 commandkey
 chrony.keys
 local stratum 10
-由于
-是层型结构，有顶端的服务器，多层的
-再到客户端，所以服务器从⾼到低级别可以设定为1-16。0层为⾼精度计时设
-NTP
-Relay Server
-备，从1层开始，每层设备的时间都向前⼀层设备同步时间。（
+由于是层型结构，有顶端的服务器，多层的再到客户端，所以服务器从⾼到低级别可以设定为1-16。0层为⾼精度计时设备，从1层开始，每层设备的时间都向前⼀层设备同步时间。（
 从
 同步时间，以此类推）
 stratum 2
 stratum 1
-为了减缓负荷和⽹络堵塞，原则上应该避免直接连接到级别为1的服务器。此处的就设置的是当前本地
-服务器的层数。
-NTP
-bindaddress
-将
-监听
-请求的
-绑定到计算机的本地地址。
+为了减缓负荷和⽹络堵塞，原则上应该避免直接连接到级别为1的服务器。此处的就设置的是当前本地服务器的层数。
+
+bindcmdaddress 0.0.0.0
+#bindcmdaddress ::1
+将监听请求的绑定到计算机的本地地址。
 chronyd
 NTP
 socket
-配置⽰例
-以下⽰例中 
-机器地址为 
-，
-为
-ntp server
+配置⽰例以下⽰例中 机器地址为 ，为ntp server
 10.91.156.174
 client
 10.47.119.96
@@ -294,34 +239,16 @@ NTP
 10.91.156.174
 修改配置⽂件
 /etc/chrony.conf
-配置本地作为
-服务器
+配置本地作为服务器
 # 
  ntp 
 server 127.0.0.1 iburst
 计算时间补偿
 # 
 driftfile /var/lib/chrony/drift
-如果前三次校时相差⼤于
-，则使⽤跳跃校时来校正时间
-# 
-1s
-makestep 1.0 3
-同步时间到
-# 
- RTC
-rtcsync
-⽇志存放在
-# 
- /var/log/chrony
+
 logdir /var/log/chrony
-bindaddress ::
-表⽰所有⼈都可访问本机提供的
-服务
-# 
-ntp
-allow
-重启服务
+
 [root@ntp-server ~]# systemctl restart chronyd
 查看
 服务器状态
@@ -332,9 +259,7 @@ Name/IP Address            NP  NR  Span  Frequency  Freq Skew  Offset  Std Dev
 ==============================================================================
 localhost                   2   0    65     +0.000   2000.000  -6105ns  4000ms
 NTP server
-设置
-将第⼆台
-的
+设置将第⼆台的
 设置为第⼀台机器
 10.47.119.96
 NTP server

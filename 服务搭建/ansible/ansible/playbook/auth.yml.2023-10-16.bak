@@ -1,0 +1,11 @@
+---
+- hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: install ssh key
+    authorized_key: 
+      user: root
+      key: "{{ lookup('file', '/root/.ssh/id_rsa.pub') }}"
+      #key: "{{lookup{'file','/root/.ssh/id_rsa.pib'}}}"
+      state: present
