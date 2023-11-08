@@ -1,0 +1,16 @@
+- name: yum install base
+  yum:
+    name: ['rsync', 'wget', 'vim', 'bash-completion', 'net-tools', 'wget', 'chrony', 'telnet']
+    state: present
+#  shell: yum install {{ item }} -y
+#  with_items:
+#   - rsync
+#    - wget
+#    - vim
+#    - bash-completion
+#    - net-tools
+#    - wget
+#    - chrony
+#    - telnet
+  ignore_errors: yes
+  tags: yum_install_base

@@ -1,4 +1,6 @@
 ntp_server: ["cn.pool.ntp.org"]
-dns_server: ["223.5.5.5"]
-yum_server: ["10.10.10.1"]
-os_version: el8.2
+dns_server: ["223.5.5.5","8.8.8.8"]
+#yum_server: ["10.10.10.1"]
+os_version: "el8.2"
+mirrors: ""
+yum_path: "ftp://192.168.189.100/os/x86_64"

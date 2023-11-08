@@ -1,0 +1,11 @@
+- name: copy update rpm
+#  when: cloud_version.stdout == "8.1.8"
+  copy:
+    src: {{ cloud_version.stdout }}/{{ item }}
+    dest: /opt/{{ cloud_version.stdout }}/{{ item }}
+  with_items:
+    - xxxxx.rpm
+    - xxxxx.rpm
+    - xxxxx.rpm
+    - xxxxx.rpm
+    - xxxxx.rpm

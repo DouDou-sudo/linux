@@ -2,5 +2,5 @@
 ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
 
 {% for yum in yum_server %}
-{{yum}} mirrors.bclinux.org
+{{ yum }} {{ mirrors }}
 {% endfor %}

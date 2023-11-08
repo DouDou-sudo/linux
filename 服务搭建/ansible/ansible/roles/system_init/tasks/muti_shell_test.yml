@@ -1,0 +1,2 @@
+- name: test muti shell
+  shell: touch /root/a;touch /root/b

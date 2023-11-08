@@ -15,13 +15,13 @@
 ## 192.168.100.1
 ## 192.168.100.10
 [host]
-192.168.189.160
+192.168.189.160 ansible_connection=ssh ansible_user="root" ansible_password="root.2020"
 [all:vars]
 nodename="kylin"
 processor_vcpus="32"
 [cloud]
 192.168.40.143 ansible_user=root ansible_password=kylinos-tc2
-#192.168.40.143 ansible_connection=ssh   ansible_user=root  ansible_password=kylinos-tc2
+192.168.40.143 ansible_connection=ssh   ansible_user=root  ansible_password=kylinos-tc2
 # Ex 2: A collection of hosts belonging to the 'webservers' group
 
 ## [webservers]

@@ -48,6 +48,11 @@
 如：
 
 * amd64
+* arm64
+* mips
+* mips64
+* ppc64
+* ppc64le
 * 386
 ###四、GOHOSTOS
 

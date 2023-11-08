@@ -1,3 +1,6 @@
 - name: create ssh key job
   shell: ssh-keygen -f /root/.ssh/id_rsa -P ''
   tags: create_ssh_key
+  run_once: true            
+  delegate_to: 127.0.0.1                              
+  ignore_errors: yes

@@ -433,9 +433,13 @@ diff查看将oper...行替换为bxw
 [root@k8smaster playbook]# cat debug.yml 
 ---
 - hosts: all
+  
   tasks:
-    - name: hello word
-      debug: 
+    - name: get variable
+      shell: hostname
+      register: name
+    - name: touch file is {{ name.stdout }}  
+      file: path=/root/{{ name.stdout }} state=touch: 
     - name: 主机名称与IP
       debug:
         msg: Host "{{ ansible_nodename }}" is "{{ ansible_default_ipv4.address }}"
@@ -448,7 +452,9 @@ diff查看将oper...行替换为bxw
 
  - name: add host record to center server 
   shell: 'echo "192.168.1.100 test.xyz.com " >> /etc/hosts'	#给指定的192.168.1.1添加一条hosts记录
-  run_once: true			#指定该task只能在某一台机器上执行一次，可以和delegate_to结合使用
+  run_once: true			#指定该task只能在某一台机器上执行一次，可以和delegate_to结合使用,
+                      #true,将任务标记为只在主机组中的一个主机上执行一次，ansible会选择一个主机来执行任务，而不是在每个主机上执行
+                      #false,任务将在主机组中的每个主机上执行，默认为false
   delegate_to: 192.168.1.1				#可以指定127.0.0.1（等于local_action）
 任务委派功能还可以用于以下场景：
 

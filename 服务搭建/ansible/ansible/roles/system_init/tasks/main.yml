@@ -1,5 +1,1 @@
-#- include: create_ssh_key.yml
-- include: config_hosts.yml
-- include: config_dns.yml
-- include: config_chrony.yml
 - include: config_yum_repo.yml
