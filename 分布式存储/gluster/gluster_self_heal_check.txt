@@ -1,0 +1,48 @@
+#!/bin/bash
+
+if [ ! -e /run/gluster/shared_storage/migrate_counts ]; then
+    touch /run/gluster/shared_storage/migrate_counts
+fi
+
+hostid=`cat /etc/default/sds_hostid`
+retinfo=`cat /run/gluster/shared_storage/migrate_counts |grep $hostid`
+
+if [[ ${retinfo} == '' ]];then
+    echo ${hostid} >> /run/gluster/shared_storage/migrate_counts
+fi
+
+total_count=`cat /etc/hosts |grep public |wc -l`
+current_count=`cat /run/gluster/shared_storage/migrate_counts|wc -l`
+
+if [[ `expr ${total_count} / 2` != ${current_count} ]] && [[ ${total_count} != ${current_count} ]];then
+    echo 'nodes is not to half or whole, no need to trigger data heal, skip...'
+    exit 0
+fi
+
+if [[ ${total_count} == ${current_count} ]];then
+     cli=`gluster volume set all cluster.op-version 70100`
+fi
+
+vol=$(sudo gluster v list | grep -Ev "sdsom_sql|gluster_shared_storage" 2>&1)
+for v in $vol;do
+
+    cli=`gluster v heal $v`
+    sleep 10
+    for i in `seq 1 360`
+    do
+  	n1=`sudo gluster v heal $vol statistics heal-count | grep "/gluster/brick-" | wc -l`
+  	n2=`sudo gluster v heal $vol statistics heal-count | grep "Number of entries: 0" | wc -l`
+  	if [ $n1 -eq $n2 ];then
+  		echo "Self-heal has completed!"
+  		exit 0
+  	else
+  		echo "$(date): Self-heal in progress..."
+  		echo `sudo gluster v heal $vol statistics heal-count | grep "Number of entries:" | awk '{print $4}'`
+  		sleep 10
+  		continue
+  	fi
+    done
+    echo "Self-heal is still in proceed! The check script has reached its maximal execution time (1h), please rerun this script."
+    echo "Run 'sudo gluster v heal $vol info' manually to confirm current process of self-heal."
+    exit 1  
+done

@@ -1,0 +1,11 @@
+- name: "bak original yum file to bak_dir"
+  shell: mkdir -p /etc/yum.repos.d/bak;mv /etc/yum.repos.d/* /etc/yum.repos.d/bak/
+  ignore_errors: yes
+- name: "Copy yum repo files to the remote"
+  template: src=yum.repo.j2 dest=/etc/yum.repos.d/yum.repo
+#  notify: yum makecache
+#- name: "curl aliyun yum repo file to the remote"
+#  shell: curl -o /etc/yum.repos.d/yum.repo https://mirrors.aliyun.com/repo/Centos-7.repo;curl -o /etc/yum.repos.d/epel-7.repo   https://mirrors.aliyun.com/repo/epel-7.repo
+#  notify: yum makecache
+#- name: yum makecache
+#  shell: yum clean all && yum makecache

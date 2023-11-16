@@ -1,0 +1,4 @@
+- name: "create ssh key"
+  shell: "[ -f /root/.ssh/id_rsa ] || ssh-keygen -f /root/.ssh/id_rsa -P ''"
+  tags: create_ssh_key
+#  ignore_errors: yes

@@ -1,0 +1,5 @@
+#- include: config_hosts.yml
+#- include: ssh_auth.yml
+- include: yum_instal_base.yml
+- include: create_ssh_key.yml
+- include: create_ssh_believe_sh.yml

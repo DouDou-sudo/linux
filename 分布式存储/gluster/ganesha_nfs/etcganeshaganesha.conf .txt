@@ -1,0 +1,92 @@
+[2023-11-09 11:36:26][PID:3010487] job_start
+###################################################
+#
+# EXPORT
+#
+# To function, all that is required is an EXPORT
+#
+# Define the absolute minimal export
+#
+
+#EXPORT
+#{
+	# Export Id (mandatory, each EXPORT must have a unique Export_Id)
+#	Export_Id = 77;
+
+	# Exported path (mandatory)
+#	Path = "/testvol";
+
+	# Pseudo Path (required for NFS v4)
+#	Pseudo = "/testvol";
+
+	# Required for access (default is None)
+	# Could use CLIENT blocks instead
+#	Access_Type = RW;
+
+	# Allow root access
+#	Squash = No_Root_Squash;
+
+	# Security flavor supported
+#	SecType = "sys";
+
+	# Exporting FSAL
+#	FSAL {
+#		Name = "GLUSTER";
+#		Hostname = localhost;
+#		Volume = "testvol";
+#	}
+#}
+#######################################################
+#Create this export block in a file which has the following parameters
+#in the global part. Or create a separate file with the export block
+#and include in the following block.
+
+NFS_Core_Param {
+    #Use supplied name other tha IP In NSM operations
+    NSM_Use_Caller_Name = true;
+    #Copy lock states into "/var/lib/nfs/ganesha" dir
+    Clustered = false;
+    Bind_addr = ::;
+    #By default port number '2049' is used for NFS service.
+    #Configure ports for MNT, NLM, RQuota services.
+    #The ports chosen here are from '/etc/sysconfig/nfs'
+    #NFS_Port = 2049;
+    MNT_Port = 4502;
+    # NLM_Port = 4503;
+    Rquota_Port = 4501;
+    Enable_NLM = false;
+    Nb_worker = 256;
+    RPC_Ioq_ThrdMax = 4096;
+}
+
+#CACHEINODE {
+#        Entries_HWMark = 25000;
+#}
+
+#LOG {
+#        Default_Log_Level = DEBUG;
+#
+#        Components {
+#                FSAL = DEBUG;
+#                NFS4 = DEBUG;
+#        }
+#}
+#
+#CACHEINODE {
+#        Dir_Max = 1;
+#        Dir_Chunk = 0;
+#        Cache_FDs = false;
+#        NParts = 1;
+#        Cache_Size = 1;
+#}
+
+
+EXPORT_DEFAULTS {
+	# To reflect nfsnobody
+#    Attr_Expiration_Time = 0;
+    Anonymous_uid = 65534;
+    Anonymous_gid = 65534;
+}
+
+%include /run/gluster/shared_storage/efs_01_export.d/INDEX.conf
+%include "/run/gluster/shared_storage/exports/ganesha_nfjdvol01cl04_migrate_test.conf"

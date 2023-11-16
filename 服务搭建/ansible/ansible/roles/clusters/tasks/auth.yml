@@ -1,0 +1,2 @@
+- name: Set authorized key taken from file
+  shell: sshpass -p {{ root_pass }} ssh-copy-id -o stricthostkeychecking=no {{ clusters_node }}

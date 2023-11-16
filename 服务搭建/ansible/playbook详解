@@ -284,7 +284,58 @@ group=bin
       register: name
     - name: touch file is {{ name.stdout }}  
       file: path=/root/{{ name.stdout }} state=touch
+4.8 set_fact注册变量，
+- name: check cloud version
+  shell: grep -o '8.1..' /etc/.kyinfo| uniq
+  register: cloud_version
+- name: create cloud_version variable
+  set_fact: 
+    version: "{{ cloud_version.stdout }}"
+- name: print variable
+  debug:
+    msg: "{{ version }}"
+4.9 当role比较复杂，需要引用其他role时，执行多个role时
+在tasks同级目录下创建roles，将其他role拷贝过来，使用import导入其他role，就不再需要重新写相关role的具体实现
+引用其他role
+[root@node1 gluster.infra]# pwd
+/etc/ansible/roles/gluster.infra
+[root@node1 gluster.infra]# tree
+├── roles
+│   └── firewall_config
+│   ├── backend_setup
+[root@node1 gluster.infra]#cat tasks/main.yml 
+---
+# tasks file for gluster.infra
+- name: Add firewall rules
+  import_role:
+    name: "gluster.infra/roles/firewall_config"
+  when: >
+     gluster_infra_fw_ports is defined or
+     gluster_infra_fw_services is defined
+  tags:
+    - firewall
 
+- name: Configure the bricks
+  import_role:
+    name: "gluster.infra/roles/backend_setup"
+  tags:
+    - backend_setup
+根据指定的hosts文件里面的groups执行不同的role
+[root@node1 ansible_roles_middleware]# cat setup.yml
+- hosts: all
+  tasks:
+    - import_role:
+        name: haproxy
+      when: inventory_hostname in groups['lb']
+
+    - import_role:
+        name: keepalived
+      when: inventory_hostname in groups['lb']
+
+    - import_role:
+        name: nginx
+      when: inventory_hostname in groups['nginx']
+[root@node1 ansible_roles_middleware]#
 5. tempalate模板
 模板是一个文本文件，可以做为生成文件的模版，并且模板文件中还可嵌套jinja语法
 template功能：可以根据和参考模块文件，动态生成相类似的配置文件

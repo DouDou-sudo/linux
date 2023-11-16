@@ -10,16 +10,20 @@ nameserver 223.5.5.5
 nameserver {{ dns }}
 {% endfor %}
 {% endif %}
+
 2、当templates下的j2模板文件使用for循环时，比如
 {% for dns in dns_server %}
 nameserver {{ dns }}
 {% endfor %}
 此时变量，必须使用列表的方式，不使用列表的方式会循环每个字符，不是字符串
 dns_server: ["8.8.8.8","223.5.5.5"]
+
 3、当使用systemd这些模块时，使用with_items
 变量{{ items }}需要在两边加上双引号"{{ item }}"
-4、handlers目录下的handler任务，notify被触发需要任务发生changed才会触发handler，否则不好触发handler
+
+4、handlers目录下的handler任务，notify被触发需要任务发生changed才会触发handler，否则不会触发handler
      handler被触发后会在整个playbook的最后才会执行，触发后不会立即执行
+
 5、当注册变量以后，是可以在整个playbook里识别到的
      当在when语句中使用变量时，不需要加上{{ variable }}，比如{{ ansible_nodename }}直接写ansible_nodename即可
      当在各个模块中，需要加上{{ variable }}，否则不会为识别变量的值，会直接识别为变量名

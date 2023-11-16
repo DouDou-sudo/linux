@@ -1,0 +1,15 @@
+for  i in `seq 1 90`
+do
+    n1=`sudo gluster v heal gluster_shared_storage info |grep "Number " | awk '{sum += $NF} END {print sum}'`
+    if [ $n1 -eq 0 ];then
+        echo "gluster_share_storage heal complete"
+        exit 0
+    else
+        echo "gluster_share_storage heal in progress"
+        sleep 10s
+        continue
+    fi
+done
+
+echo "gluster_share_storage heal is still in progress, please check it"
+exit 1

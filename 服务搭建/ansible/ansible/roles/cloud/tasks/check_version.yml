@@ -1,6 +1,9 @@
 - name: check cloud version
   shell: grep -o '8.1..' /etc/.kyinfo| uniq
   register: cloud_version
+- name: create cloud_version variable
+  set_fact: 
+    version: "{{ cloud_version.stdout }}"
 - name: print variable
   debug:
-    msg: "{{ cloud_version.stdout }}"
+    msg: "{{ version }}"

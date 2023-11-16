@@ -1,0 +1,22 @@
+变更前设置参数
+network.ping-timeout 8
+cluster.favorite-child-policy mtime		#自我修复时使用哪种策略去修复
+cluster.entry-self-heal off			#是否启用entry的自我修复
+cluster.metadata-self-heal off			#是否启用metadata的自我修复
+cluster.data-self-heal off			#是否启用data的自我修复
+cluster.heal-timeout 60			#自动愈合的检测间隔，默认600s
+performance.md-cache-pass-through true         x86_64
+default-soft-limit 100%
+soft-timeout 1800
+hard-timeout 60
+
+变更后设置参数
+cluster.heal-timeout 600
+network.ping-timeout 20
+cluster.shd-max-threads 1
+对于ARM集群，需要重新开启stat-prefetch为on并额外设置md-cache-pass-through为true
+performance.stat-prefetch on
+performance.md-cache-pass-through true
+soft-timeout 60
+hard-timeout 5
+default-soft-limit 80%

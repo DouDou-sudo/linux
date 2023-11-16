@@ -19,6 +19,9 @@
 [all:vars]
 nodename="kylin"
 processor_vcpus="32"
+[clusters]
+192.168.189.160 ansible_connection=ssh ansible_user="root" ansible_password="root.2020"
+192.168.189.100 ansible_connection=ssh ansible_user="root" ansible_password="root.2020"
 [cloud]
 192.168.40.143 ansible_user=root ansible_password=kylinos-tc2
 192.168.40.143 ansible_connection=ssh   ansible_user=root  ansible_password=kylinos-tc2

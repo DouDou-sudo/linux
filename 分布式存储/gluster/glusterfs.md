@@ -577,7 +577,7 @@ gluster volume get <VOLNAME> <KEY>
 ```
 常见配置：
 1.  设置 cache 大小, 默认32MB
-gluster volume set senyintvolume performance.cache-size 4GB
+gluster volume set senyintvolume performance.cache-size 128MB
 
 2. 设置 io 线程, 太大会导致进程崩溃
 gluster volume set senyintvolume performance.io-thread-count 16
@@ -585,22 +585,27 @@ gluster volume set senyintvolume performance.io-thread-count 16
 3. 设置 日志输出级别，默认为INFO
 gluster volume set senyintvolume cluster.daemon-log-level INFO
 
-1. 设置 写缓冲区的大小, 默认1M
+4. 设置 写缓冲区的大小, 默认1M
 gluster volume set senyintvolume performance.write-behind-window-size 1024MB
 
-1. 设置 cluster.quorum-type, 默认none
-   none|auto|fixed,none:关闭，auto：半数以上，fixed：大于等于cluster.quorum-count设置的数量
+5. 设置 cluster.quorum-type, 默认none
+   none|auto|fixed,none:关闭，auto：半数以上写入成功才会返回写入成功，fixed：大于等于cluster.quorum-count设置的数量写入成功才会返回
 
-2. 设置 cluster.favorite-child-policy, 默认为none
+6. 设置 cluster.favorite-child-policy, 默认为none
    mtime 以最新的mtime自动修复脑裂
 
-3. 设置nfs.disable，默认为 on
+7. 设置nfs.disable，默认为 on
    off|on  on:关闭nfs挂载，off:开启nfs挂载
 
-4. 设置network.ping-timeout，默认为42秒
+8. 设置network.ping-timeout，默认为42秒
    glusterfs client挂载时挂载任一一个server端的ip都可以，即使该server down机，只要集群正常就不影响client的使用。
-   当挂载对应server节点down机时，会有一个默认切换时间，为network.ping-timeout，默认为42s，时间过长，可以修改为3s。
-   sudo gluster volume set $volname network.ping-timeout 3
+   当挂载对应server节点down机时，会自动切换到其他的server，切换时会有一个默认检测超时时间，为network.ping-timeout，默认为42s，时间过长，可以修改为8s。
+   sudo gluster volume set $volname network.ping-timeout 8
+
+9. cluster.self-heal-daemon，集群自我修复daemon，on/off，默认为off
+10. cluster.entry-self-heal,cluster.metadata-self-heal,cluster.data-self-heal，对entry，metadata，data是否启用自我修复
+11. cluster.heal-timeout，自动愈合的检测间隔，默认600s
+12. cluster.stripe-block-size，条带卷中每个条带的大小
 #### 10、gluster相关日志
 >相关日志，在`/var/log/glusterfs/`目录下，可根据需要查看；
 如`/var/log/glusterfs/brick/`下是各brick创建的日志；

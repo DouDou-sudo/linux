@@ -1,0 +1,4 @@
+- name: backup hosts file
+  shell: "cp -rp /etc/hosts{,.bak-$(date +%Y-%m-%d-%H:%M:%S)}"
+- name: config hosts
+  template: src=hosts.j2 dest=/etc/hosts

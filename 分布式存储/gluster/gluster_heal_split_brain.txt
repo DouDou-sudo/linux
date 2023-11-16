@@ -1,0 +1,8 @@
+vol=$(sudo gluster v list | grep -Ev "sdsom_sql|gluster_shared_storage" 2>&1)
+for v in $vol;do
+  ret=`sudo gluster v heal $v info | grep brain`
+  if [[ $ret != '' ]];then
+      echo 'there has brain files, please let developers  tackle'
+      exit 1
+   fi
+done

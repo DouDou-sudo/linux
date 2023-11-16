@@ -1,0 +1,10 @@
+- include: create_ssh_key.yml
+- include: auth.yml
+- include: config_dns.yml
+#- include: config_hosts.yml
+- include: config_yum_repo.yml
+#- include: disbale_swap.yml
+- include: stop_unuse_service.yml
+- include: stop_selinux.yml
+- include: yum_instal_base.yml
+- include: config_chrony.yml

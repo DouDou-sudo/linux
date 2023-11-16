@@ -1,0 +1,8 @@
+- name: "create ssh believe sh to local"
+  template: src=ssh_believe.sh.j2 dest=/opt/ssh_believe_tmp.sh
+  delegate_to: 127.0.0.1
+- name: "exec ssh_believe_tmp.sh to all"
+  script: /opt/ssh_believe_tmp.sh
+- name: "delete ssh_believe_tmp.sh"
+  delegate_to: 127.0.0.1
+  file: path=/opt/ssh_believe_tmp.sh state=absent

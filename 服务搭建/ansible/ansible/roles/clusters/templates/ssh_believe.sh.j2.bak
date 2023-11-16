@@ -1,0 +1,29 @@
+#!/bin/bash
+#安装及检测sshpass
+rpm -q sshpass &>/dev/null || yum -y install sshpass
+#生成公私钥对
+[ -f /root/.ssh/id_rsa ] || ssh-keygen -f /root/.ssh/id_rsa -P ''
+#从hosts文件中读取ip地址，然后配置互信
+#pass=root.2020
+#直接指定hosts数组,然后遍历数组,需要手动编辑hosts数组
+#hosts=("192.168.189.160" "192.168.189.100")
+#for host in ${hosts[@]}
+#do
+#	sshpass -p $pass ssh-copy-id -o stricthostkeychecking=no $host
+#done
+#创建hosts文件然后遍历hosts文件
+#pass=root.2020
+#awk '{print $0}' hosts  |while read host
+#do
+#	sshpass -p $pass ssh-copy-id -o stricthostkeychecking=no $host
+#done
+#读取远端的/etc/hosts文件，然后遍历，需要备份远端的hosts文件，然后重新生成新的hosts文件
+#pass=root.2020
+#awk 'NR>2{print $1}' /etc/hosts | while read host
+#do
+#	sshpass -p $pass ssh-copy-id -o stricthostkeychecking=no $host
+#done
+#读取vars变量，for循环遍历读取变量在ansible_server生成脚本，然后在远端执行,在远端不留痕迹，通过vars读取密码和对应的host,不需要修改多余文件
+{% for node in clusters_node%}
+sshpass -p {{ pass }} ssh-copy-id -o stricthostkeychecking=no {{ node }}
+{% endfor %}

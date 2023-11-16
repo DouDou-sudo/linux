@@ -1,0 +1,15 @@
+- name: permanent stop selinux
+#  shell: sed -i '/SELINUX/s/enforcing/disabled/g' /etc/selinux/config
+  replace:
+    path: /etc/selinux/config
+    regexp: "^SELINUX=enforcing"
+    replace: "SELINUX=disabled"
+  tags: stop_selinux
+- name: get selinux variable
+  shell: getenforce 
+  register: variable_selinux
+- name: if selinux not disabled,temp stop selinux
+#  debug: 
+#    msg: "{{ variable_selinux.stdout }}"
+  shell: setenforce 0
+  when: variable_selinux.stdout == "Enforcing"

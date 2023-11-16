@@ -1,0 +1,148 @@
+[2023-11-09 11:19:26][PID:2829947] job_start
+ 
+Volume Name: gluster_shared_storage
+Type: Replicate
+Volume ID: 095a041d-d472-45a5-9de6-272ab7c10d76
+Status: Started
+Snapshot Count: 0
+Number of Bricks: 1 x 3 = 3
+Transport-type: tcp
+Bricks:
+Brick1: node0004:/var/lib/glusterd/ss_brick
+Brick2: node0005:/var/lib/glusterd/ss_brick
+Brick3: node0001:/var/lib/glusterd/ss_brick
+Options Reconfigured:
+nfs.nlm: off
+server.outstanding-rpc-limit: 256
+network.ping-timeout: 20
+client.bind-insecure: on
+cluster.granular-entry-heal: on
+storage.fips-mode-rchecksum: on
+transport.address-family: inet
+nfs.disable: on
+performance.client-io-threads: off
+nfs.export-volumes: OFF
+cluster.server-quorum-ratio: 51%
+ 
+Volume Name: nfjdvol01cl04
+Type: Distributed-Replicate
+Volume ID: f3e04c40-4afb-4649-a5d2-ffe09c41cf7c
+Status: Started
+Snapshot Count: 0
+Number of Bricks: 12 x 2 = 24
+Transport-type: tcp
+Bricks:
+Brick1: node0001:/gluster/brick-1/nfjdvol01cl04
+Brick2: node0002:/gluster/brick-5/nfjdvol01cl04
+Brick3: node0003:/gluster/brick-8/nfjdvol01cl04
+Brick4: node0004:/gluster/brick-13/nfjdvol01cl04
+Brick5: node0005:/gluster/brick-18/nfjdvol01cl04
+Brick6: node0006:/gluster/brick-21/nfjdvol01cl04
+Brick7: node0001:/gluster/brick-2/nfjdvol01cl04
+Brick8: node0002:/gluster/brick-6/nfjdvol01cl04
+Brick9: node0003:/gluster/brick-9/nfjdvol01cl04
+Brick10: node0004:/gluster/brick-14/nfjdvol01cl04
+Brick11: node0005:/gluster/brick-17/nfjdvol01cl04
+Brick12: node0006:/gluster/brick-22/nfjdvol01cl04
+Brick13: node0001:/gluster/brick-3/nfjdvol01cl04
+Brick14: node0002:/gluster/brick-7/nfjdvol01cl04
+Brick15: node0003:/gluster/brick-11/nfjdvol01cl04
+Brick16: node0004:/gluster/brick-15/nfjdvol01cl04
+Brick17: node0005:/gluster/brick-19/nfjdvol01cl04
+Brick18: node0006:/gluster/brick-23/nfjdvol01cl04
+Brick19: node0001:/gluster/brick-0/nfjdvol01cl04
+Brick20: node0002:/gluster/brick-4/nfjdvol01cl04
+Brick21: node0003:/gluster/brick-10/nfjdvol01cl04
+Brick22: node0004:/gluster/brick-12/nfjdvol01cl04
+Brick23: node0005:/gluster/brick-16/nfjdvol01cl04
+Brick24: node0006:/gluster/brick-20/nfjdvol01cl04
+Options Reconfigured:
+cluster.shd-max-threads: 1
+performance.parallel-readdir: off
+performance.readdir-ahead: off
+features.quota-deem-statfs: on
+features.inode-quota: on
+features.quota: on
+diagnostics.share-dump-interval: 60
+diagnostics.share-dump-inotify-thread: off
+storage.build-pgfid: on
+diagnostics.count-fop-hits: on
+diagnostics.latency-measurement: on
+performance.nfs.write-behind-window-size: 1073741824
+nfs.nlm: off
+performance.io-thread-count: 8
+network.ping-timeout: 20
+network.inode-lru-limit: 1048576
+server.outstanding-rpc-limit: 256
+client.event-threads: 8
+server.event-threads: 8
+nfs.event-threads: 32
+cluster.readdir-optimize: on
+disperse.eager-lock: off
+nfs.trusted-sync: on
+client.bind-insecure: on
+cluster.granular-entry-heal: disable
+storage.fips-mode-rchecksum: off
+transport.address-family: inet
+nfs.disable: on
+performance.client-io-threads: off
+cluster.metadata-self-heal: off
+cluster.data-self-heal: off
+cluster.entry-self-heal: off
+cluster.self-heal-window-size: 1
+cluster.eager-lock: off
+disperse.other-eager-lock: off
+cluster.consistent-metadata: on
+cluster.favorite-child-policy: mtime
+cluster.full-lock: no
+diagnostics.stats-dump-interval: 60
+performance.cache-size: 128MB
+performance.normal-prio-threads: 8
+performance.write-behind-window-size: 200MB
+performance.read-after-open: no
+performance.md-cache-timeout: 30
+network.frame-timeout: 300
+server.tcp-user-timeout: 21
+performance.write-behind: off
+performance.io-cache: disable
+performance.quick-read: off
+storage.reserve: 0
+cluster.server-quorum-type: none
+disperse.self-heal-window-size: 1
+performance.rda-cache-limit: 100MB
+cluster.use-anonymous-inode: no
+nfs.export-volumes: OFF
+nfs.export-dir: /migrate_test()
+cluster.heal-timeout: 600
+performance.md-cache-pass-through: true
+features.default-soft-limit: 80%
+features.soft-timeout: 60
+features.hard-timeout: 5
+cluster.server-quorum-ratio: 51%
+ 
+Volume Name: sdsom_sql
+Type: Replicate
+Volume ID: 02095dcd-4ea4-4240-995f-f376fda3ce2f
+Status: Started
+Snapshot Count: 0
+Number of Bricks: 1 x 3 = 3
+Transport-type: tcp
+Bricks:
+Brick1: node0001:/var/lib/glusterd/sdsom_sql
+Brick2: node0003:/var/lib/glusterd/sdsom_sql
+Brick3: node0002:/var/lib/glusterd/sdsom_sql
+Options Reconfigured:
+nfs.nlm: off
+server.outstanding-rpc-limit: 256
+network.ping-timeout: 20
+client.bind-insecure: on
+cluster.granular-entry-heal: on
+storage.fips-mode-rchecksum: on
+transport.address-family: inet
+nfs.disable: on
+performance.client-io-threads: off
+features.quota: on
+features.inode-quota: on
+features.quota-deem-statfs: on
+nfs.export-volumes: OFF
+cluster.server-quorum-ratio: 51%

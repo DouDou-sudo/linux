@@ -1,0 +1,44 @@
+[2023-11-09 11:40:23][PID:3052620] job_start
+EXPORT {
+    CLIENT {
+        Clients = 10.247.252.185;
+        Access_type = RW;
+    }
+    CLIENT {
+        Clients = 2409:8c85:5400:f01::a0;
+        Access_type = RW;
+    }
+    SecType = sys;
+    Pseudo = /0d1f15fa-faeb-427d-adfd-baa2c5face5f;
+    Squash = None;
+    FSAL {
+        Volume = nfjdvol01cl04;
+        Volpath = /share-0d1f15fa-faeb-427d-adfd-baa2c5face5f;
+        Hostname = localhost;
+        Name = GLUSTER;
+    }
+    Tag = "\"0d1f15fa-faeb-427d-adfd-baa2c5face5f\"";
+    Disable_ACL = true;
+    Path = /0d1f15fa-faeb-427d-adfd-baa2c5face5f;
+    Export_Id = 100;
+    Transports = UDP,TCP;
+    Protocols = 3,4;
+}
+
+[2023-11-09 11:42:43][PID:3077086] job_start
+EXPORT {
+    SecType = sys;
+    FSAL {
+        Volume = nfjdvol01cl04;
+        Volpath = /migrate_test;
+        Hostname = localhost;
+        Name = GLUSTER;
+    }   
+    Access_type = RW; 
+    Transports = TCP,UDP;
+    Path = /nfjdvol01cl04_migrate_test;
+    Export_Id = 18;
+    Pseudo = /nfjdvol01cl04_migrate_test;
+    Squash = None;
+    Protocols = 3,4;
+}

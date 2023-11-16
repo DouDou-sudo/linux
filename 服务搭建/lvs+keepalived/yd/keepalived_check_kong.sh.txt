@@ -1,0 +1,13 @@
+#!/bin/sh
+
+counter=\$(netstat -nlp |grep 31003 | wc -l)
+if [ "\${counter}" = "0" ]; then
+  #sleep 2
+  counter=\$(netstat -nlp |grep 31003 | wc -l)
+  if [ "\${counter}" != "0" ]; then
+    #echo "stop keepalived"
+    # /etc/init.d/keepalived stop
+    exit 0
+  fi
+  exit 1
+fi

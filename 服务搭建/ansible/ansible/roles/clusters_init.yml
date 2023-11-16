@@ -1,0 +1,6 @@
+---
+- name: clusters_init
+  hosts: clusters
+  gather_facts: false
+  roles:
+    - clusters

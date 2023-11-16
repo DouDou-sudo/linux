@@ -9,7 +9,7 @@
  由于网络拆分，客户端 1 失去与brick 2 的连接，客户端 2 失去与brick 1 的连接。
 从客户端 1 写入到brick 1，从客户端 2 转到brick 2
 
-* gluster进程下降或返回错误：
+* gluster进程异常或返回错误：
 服务器 1 关闭，服务器 2 启动：写入发生在服务器 2 上。
 服务器 1 启动，服务器 2 关闭（未发生修复/服务器 2 上的数据未在服务器 1 上复制）：写入发生在服务器 1 上。
 服务器 2 启动：服务器 1 和服务器 2 都有彼此独立的数据。
@@ -19,11 +19,43 @@
 2. 元数据脑裂：brick中元数据不同
 3. GFID脑裂：副本brick上的文件GFID不同，或者副本上的文件类型不同，文件类型不同无法修复，GFID可以修复，GFID脑裂对外表现为目录脑裂
 
-常见脑裂修复命令
+glustershd进程负责self-heal，不论有多少birck和volume都只要一个shd进程，当修复时只要上次修复完成才会进行下一次修复
+shd进程有两种self-heal crawls,一种是index heal,另外一种是full heal.每个文件在crawling时候，会执行metadata、data、entry的修复。metadata修复文件的属性、权限、mode。data的修复会修复文件内容;entry修复会修复entry里面的目录
 
-gluster v heal \<volume\> info  查看待修复的文件
-gluster v heal \<volume\> info split-brain 查看需要手动干预的文件
-gluster v heal \<volume\> full  不能修复脑裂，直接从建康的brick拷贝数据到被修复的brick，只是进行full-heal修复
+index heal触发时，glustershd进程读取每个brick下的.glusterfs/indices/xattrop这个目录下的目录，加锁触发修复。.glusterfs/indices/xattrop目录中包含了以"xattrop-"开头的目录。这个目录下的其他木库是以gfid开头的，这些是需要修复的数据
+[root@glusterfs-node2 .glusterfs]# gluster v heal replica2 info
+Brick glusterfs-node1:/glusterfs/replica/brick1
+/nh 
+/ - Is in split-brain
+/nh/year 
+/nh/date 
+Status: Connected
+Number of entries: 4
+
+Brick glusterfs-node2:/glusterfs/replica/brick1
+/nh 
+/ - Is in split-brain
+/nh/year 
+/nh/date 
+Status: Connected
+Number of entries: 4
+此时查看.glusterfs/indices/xattrop目录下的文件，除了xattrop-还有4个文件，find  -samefile查看可以发现这4个文件对应的GFID文件就是脑裂的4个文件
+[root@glusterfs-node1 xattrop]# ls
+00000000-0000-0000-0000-000000000001  08357fb2-bd73-4355-905a-0e53453bcf43  140f76f4-152c-45d7-b1b8-1d09f209bf52  5c6dff7e-27f2-488f-8235-3de6304c6672  xattrop-b96c2cf7-ac1e-45a8-829c-0940bad93bd8
+
+
+index heal的触发条件
+1. 每隔600s会触发一次，可以通过gluster volume xxx set cluster.heal-timeout {value}来设置
+2. 当客户端执行gluster volume heal {volume}会触发
+3. 当副本卷所在节点或者glusterfsd宕机后，又再次恢复过来会触发
+
+常见脑裂修复命令
+gluster v heal \<volume\>                  触发器为需要修复的文件索引自修复
+gluster v heal \<volume\> info             查看待修复的文件
+gluster v heal \<volume\> info split-brain 查看需要处于脑裂状态的文件，需要手动干预进行修复
+gluster v heal \<volume\> full             触发所有文件的自我修复。直接从建康的brick拷贝数据到被修复的brick，只是进行full-heal修复
+gluster v heal \<volume\> statistics       文件修复统计信息
+gluster v heal \<volume\> statistics heal-count 需要修复的文件数量
 
 
 
@@ -343,7 +375,7 @@ Volume heal failed.
 GFID split-brain resolved for file /stbn
 ```
 ###### 4）修复完成查看文件和权限
-修复以后，等待一会就会修复完成
+修复以后执行gluster v heal \<volume\>手动触发self-heal
 ```
 [root@glusterfs-node2 ~]# gluster v heal replica2 info 
 Brick glusterfs-node1:/glusterfs/replica/brick1
@@ -409,7 +441,7 @@ Sun Oct  8 16:53:21 CST 2023
 ```
 [root@glusterfs-node2 ~]# setfattr -n trusted.afr.replica2-client-0 -v 0x000000000000000000000000 /glusterfs/replica/brick1/
 ```
-###### 2）等待一会就会自动修复
+###### 2）修复以后执行gluster v heal \<volume\>手动触发self-heal
 ```shell
 [root@glusterfs-node2 ~]# gluster v heal replica2 info 
 Brick glusterfs-node1:/glusterfs/replica/brick1
