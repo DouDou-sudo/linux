@@ -3,4 +3,5 @@
   hosts: clusters
   gather_facts: false
   roles:
+    - system_init
     - clusters

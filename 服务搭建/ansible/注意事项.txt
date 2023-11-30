@@ -19,7 +19,7 @@ nameserver {{ dns }}
 dns_server: ["8.8.8.8","223.5.5.5"]
 
 3、当使用systemd这些模块时，使用with_items
-变量{{ items }}需要在两边加上双引号"{{ item }}"
+     变量{{ items }}需要在两边加上双引号"{{ item }}"
 
 4、handlers目录下的handler任务，notify被触发需要任务发生changed才会触发handler，否则不会触发handler
      handler被触发后会在整个playbook的最后才会执行，触发后不会立即执行
@@ -27,3 +27,20 @@ dns_server: ["8.8.8.8","223.5.5.5"]
 5、当注册变量以后，是可以在整个playbook里识别到的
      当在when语句中使用变量时，不需要加上{{ variable }}，比如{{ ansible_nodename }}直接写ansible_nodename即可
      当在各个模块中，需要加上{{ variable }}，否则不会为识别变量的值，会直接识别为变量名
+
+6、判断变量值是否为空
+      when: mirrors == ""
+
+7、判断变量是否定义
+      when: mirrors is defined
+      when: gluster_infra_fw_state is not defined
+
+8、shell模块必须要同时执行多个命令时
+      yum clean all && yum makecache
+      touch a;touch b
+
+9、yum模块安装多个软件包时，name后跟一个列表就可以同时安装多个软件
+      - name: yum install base
+      yum:
+      name: ['rsync',  'vim', 'bash-completion', 'net-tools', 'wget', 'chrony', 'telnet', 'sshpass']
+      state: present

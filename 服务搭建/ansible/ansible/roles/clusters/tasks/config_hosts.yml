@@ -1,4 +1,36 @@
+#备份原hosts文件
 - name: backup hosts file
   shell: "cp -rp /etc/hosts{,.bak-$(date +%Y-%m-%d-%H:%M:%S)}"
+#根据变量设置主机名
+- name: config hostname
+  shell: hostnamectl set-hostname {{ hostname }}
+  when: hostname is defined
+# 根据hostname变量在所有节点上添加所有节点的hosts解析,不删除原有的文件内容
+- name: touch host
+  file: 
+    path: clusters/tmp/hosts
+    state: touch
+  delegate_to: 127.0.0.1
+  when: hostname is defined
+- name: config custom hosts
+  lineinfile: 
+    dest: clusters/tmp/hosts 
+    line: "{{ inventory_hostname }} {{ hostname }}"
+  delegate_to: 127.0.0.1
+  when: hostname is defined
+- name: copy tmp hosts
+  copy: src=clusters/tmp/hosts dest=~/.hosts
+  when: hostname is defined
+- name: add host
+  shell: cat ~/.hosts | while read line;do  echo "$line" >>/etc/hosts ;done
+  when: hostname is defined
+- name: delete tmp hosts
+  file: path=~/.hosts state=absent
+  when: hostname is defined
+#根据ip顺序自动设置主机名
+- name: auto config hostname
+  shell: 
+#根据ip自动指定主机名为node{1..}写入hosts文件,会直接替换原/etc/hosts文件
 - name: config hosts
   template: src=hosts.j2 dest=/etc/hosts
+  when: hostname is not defined

@@ -1,6 +1,4 @@
-{% for ntp in ntp_server %}
-server {{ntp}} iburst
-{% endfor %}
+server {{ groups.clusters[0] }} iburst
 driftfile /var/lib/chrony/drift
 rtcsync
 makestep 1.0 -1

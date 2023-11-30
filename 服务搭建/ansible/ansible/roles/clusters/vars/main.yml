@@ -1,5 +1,1 @@
-pass: "root.2020"
-#clusters_node: "192.168.189.160"
-clusters_node: ["192.168.189.100","192.168.189.160"]
-ntp_server: [""]
-
+mirrors: ""

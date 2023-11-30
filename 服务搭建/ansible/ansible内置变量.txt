@@ -1,0 +1,51 @@
+
+192.168.189.160 | SUCCESS => {
+msg": {
+        "ansible_check_mode": false, 
+        "ansible_connection": "ssh", 
+        "ansible_diff_mode": false, 
+        "ansible_facts": {}, 
+        "ansible_forks": 5, 
+        "ansible_inventory_sources": [
+            "/etc/ansible/hosts"
+        ], 
+        "ansible_password": "root.2020", 
+        "ansible_playbook_python": "/usr/bin/python2", 
+        "ansible_user": "root", 
+        "ansible_verbosity": 0, 
+        "ansible_version": {
+            "full": "2.9.27", 
+            "major": 2, 
+            "minor": 9, 
+            "revision": 27, 
+            "string": "2.9.27"
+        }, 
+        "group_names": [	#当前主机所属的主机组
+            "clusters", 
+            "host"
+        ], 
+        "groups": {		#所有主机组列表
+            "all": [
+                "192.168.189.160", 
+                "192.168.189.220", 
+                "192.168.40.143"
+            ], 
+            "cloud": [
+                "192.168.40.143"
+            ], 
+            "clusters": [
+                "192.168.189.160", 
+                "192.168.189.220"
+            ], 
+            "host": [
+                "192.168.189.160"
+            ], 
+            "ungrouped": []
+        }, 
+        "inventory_dir": "/etc/ansible", 
+        "inventory_file": "/etc/ansible/hosts", 
+        "inventory_hostname": "192.168.189.160", 		#主机列表的ip
+        "inventory_hostname_short": "192", 
+        "playbook_dir": "/etc/ansible/roles/clusters/tasks", 
+    }
+}

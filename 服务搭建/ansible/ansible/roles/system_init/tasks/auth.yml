@@ -1,3 +1,4 @@
+#用于ansible_server端和各节点之间互信
 - name: Set authorized key taken from file
   authorized_key:
     user: root

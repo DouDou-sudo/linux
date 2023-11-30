@@ -1,8 +1,9 @@
+#该yml用于多节点之间互信
 - name: "create ssh believe sh to local"
-  template: src=ssh_believe.sh.j2 dest=/opt/ssh_believe_tmp.sh
+  template: src=ssh_believe.sh.j2 dest=clusters/tmp/ssh_believe_tmp.sh
   delegate_to: 127.0.0.1
 - name: "exec ssh_believe_tmp.sh to all"
-  script: /opt/ssh_believe_tmp.sh
+  script: clusters/tmp/ssh_believe_tmp.sh
 - name: "delete ssh_believe_tmp.sh"
   delegate_to: 127.0.0.1
-  file: path=/opt/ssh_believe_tmp.sh state=absent
+  file: path=clusters/tmp/ssh_believe_tmp.sh state=absent

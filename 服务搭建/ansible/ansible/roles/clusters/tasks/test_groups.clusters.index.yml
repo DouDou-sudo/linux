@@ -1,0 +1,4 @@
+- name: test
+  shell: echo "{{groups.clusters.index}}" >>/mnt/test
+  delegate_to: 127.0.0.1
+

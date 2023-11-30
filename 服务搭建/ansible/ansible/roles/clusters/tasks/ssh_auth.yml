@@ -1,4 +1,0 @@
-- name: copy ssh_believe sh to remote
-  copy: src=ssh_believe.sh dest=/opt/ mode=755
-- name: sh ssh_believe sh
-  shell: sh /opt/ssh_believe.sh

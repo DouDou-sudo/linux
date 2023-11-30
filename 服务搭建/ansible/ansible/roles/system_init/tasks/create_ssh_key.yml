@@ -1,6 +1,7 @@
+#在当前ansible_server端生成ssh密钥
 - name: create ssh key job
   shell: "[ -f /root/.ssh/id_rsa ] || ssh-keygen -f /root/.ssh/id_rsa -P ''"
   tags: create_ssh_key
-  run_once: true            
-  delegate_to: 127.0.0.1                              
-  ignore_errors: yes
+#  run_once: true            
+#  delegate_to: 127.0.0.1                              
+#  ignore_errors: yes

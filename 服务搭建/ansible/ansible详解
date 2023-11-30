@@ -406,7 +406,7 @@ remove #删除用户时，把用户相关目录也删除 yes|no
 ansible在使用sed进行替换时，经常会遇到需要转义的问题，而且ansible在遇到特殊符号进行替换时， 存在问题，无法正常进行替换 。其实在ansible自身提供了两个模块：lineinfile模块和replace模块，可以方便的进行替换
 一般在ansible当中去修改某个文件的单行进行替换的时候需要使用lineinfile模块
 regexp参数 ：使用正则表达式匹配对应的行，当替换文本时，如果有多行文本都能被匹配，则只有最后面被匹配到的那行文本才会被替换，当删除文本时，如果有多行文本都能被匹配，这么这些行都会被删除。
-#替换匹配的最后一行
+#替换匹配的最后一行，整行替换，不是替换指定的字符
 [root@k8smaster ~]# ansible test -m lineinfile -a 'path=/root/passwd regexp="root" line="bxw"'
 diff查看将oper...行替换为bxw
 [root@k8snode1 ~]# diff passwd passwd1 
@@ -416,6 +416,12 @@ diff查看将oper...行替换为bxw
 > operator:x:11:0:operator:/root:/sbin/nologin
 #删除行内容，匹配到的行全部删除
 [root@k8smaster ~]# ansible test -m lineinfile -a 'dest=/root/fstab state=absent regexp="^#"'
+path: 目标文件，相当于dest, destfile, name
+state: absent, 删除行；present添加行
+
+# 根据变量添加hosts解析
+- name: config custom hosts
+  lineinfile: dest=/etc/hosts line="{{ inventory_hostname }} {{ hostname }}"
 
 4.17 replace模块
 该模块有点类似于sed命令，主要也是基于正则进行匹配和替换，建议使用

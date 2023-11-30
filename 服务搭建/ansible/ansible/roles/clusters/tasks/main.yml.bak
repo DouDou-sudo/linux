@@ -1,0 +1,8 @@
+#- include: config_hosts.yml
+#- include: ssh_auth.yml
+#在当前role中引用其他role
+- name: Add system_inti role
+  import_role:
+    name: "system_init"
+- include: create_ssh_key.yml
+- include: create_ssh_believe_sh.yml
