@@ -44,3 +44,12 @@ dns_server: ["8.8.8.8","223.5.5.5"]
       yum:
       name: ['rsync',  'vim', 'bash-completion', 'net-tools', 'wget', 'chrony', 'telnet', 'sshpass']
       state: present
+
+10、当需要执行多个role时
+      ---
+      - name: clusters_init
+        hosts: clusters
+        gather_facts: false
+        roles:
+          - system_init
+          - clusters
