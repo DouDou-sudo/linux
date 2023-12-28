@@ -1,0 +1,16 @@
+如果没有令牌，可以通过在控制平面节点上运行以下命令来获取令牌：
+
+kubeadm token list
+默认情况下，令牌会在24小时后过期。如果要在当前令牌过期后将节点加入集群， 则可以通过在控制平面节点上运行以下命令来创建新令牌：
+
+kubeadm token create
+# 再查看
+kubeadm token list
+如果你没有 –discovery-token-ca-cert-hash 的值，则可以通过在控制平面节点上执行以下命令链来获取它：
+
+openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
+如果执行 kubeadm init 时没有记录下加入集群的命令，可以通过以下命令重新创建（推荐）一般不用上面的分别获取 token 和 ca-cert-hash 方式，执行以下命令一气呵成：
+
+[root@k8smaster ~]# kubeadm token create --print-join-command
+kubeadm join 192.168.189.200:6443 --token 42rcrt.1lxd5429vrhyr1qn     --discovery-token-ca-cert-hash sha256:83f0e2d0036499396b8d96c244352d638c1015687
+5949c8827051e7d0302eb61 
