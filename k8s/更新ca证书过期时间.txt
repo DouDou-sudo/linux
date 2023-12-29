@@ -1,0 +1,135 @@
+.crt：per格式的证书
+.der: der格式的证书
+.key：pem格式的私钥
+.pub：pem格式的公钥
+.req：申请证书时发送给CA认证机构的请求文件
+.csr：申请证书时发送给CA认证机构的请求文件 
+
+证书 = 公钥 + 申请者与颁发者信息 + 签名
+证书文件的后缀并不能作为证书是哪一种编码的判断依据，对于公私钥的文件后缀有时是key,pem....重要的是文件的内容格式
+证书分为2种类型，2种类型本质上没区别
+1、CA证书(CA certficate)
+2、终端实体证书，接受ca证书的最终实体
+
+1、生成ca的私钥
+[root@master pki]# openssl genrsa -out ca.key 2048
+Generating RSA private key, 2048 bit long modulus
+...................................+++
+...............+++
+e is 65537 (0x10001)
+[root@master pki]# ls
+ca.key
+
+2、生成ca证书请求文件，回车后需要输入一系列基本信息
+[root@master pki]# openssl req -new -key ca.key -out ca.csr
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [XX]:cn				#国家
+State or Province Name (full name) []:cn				#省/自治区
+Locality Name (eg, city) [Default City]:xa				#城市
+Organization Name (eg, company) [Default Company Ltd]:ky	#组织
+Organizational Unit Name (eg, section) []:ky			#组织单位
+Common Name (eg, your name or your server's hostname) []:ky	#通用名称
+Email Address []:
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:root.2020				#邀请密码
+An optional company name []:ky				#公司(可选)
+[root@master pki]# ls
+ca.csr  ca.key
+
+3、生成ca证书
+[root@master pki]# openssl x509 -req -days 3650 -in ca.csr -signkey ca.key -out ca.crt
+Signature ok
+subject=/C=cn/ST=cn/L=xa/O=ky/OU=ky/CN=ky
+Getting Private key
+[root@master pki]# ls
+ca.crt  ca.csr  ca.key
+
+将上面生成的ca.crt作为根证书，来签发一个新证书，密钥和申请的请求文件和上面一致
+[root@master pki]# openssl genrsa -out server.key 1024
+Generating RSA private key, 1024 bit long modulus
+.++++++
+..................................................................................++++++
+e is 65537 (0x10001)
+
+[root@master pki]# openssl req -new -key server.key -out server.csr
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [XX]:cn
+State or Province Name (full name) []:sx
+Locality Name (eg, city) [Default City]:xa
+Organization Name (eg, company) [Default Company Ltd]:
+Organizational Unit Name (eg, section) []:
+Common Name (eg, your name or your server's hostname) []:
+Email Address []:
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:
+An optional company name []:
+
+[root@master pki]# openssl x509 -req -days 300 -CA ca.crt -CAkey ca.key -CAserial ca.srl -CAcreateserial -in server.csr -out server.crt
+Signature ok
+subject=/C=cn/ST=sx/L=xa/O=Default Company Ltd
+Getting CA Private Key
+
+    -CA：指定CA证书的路径
+
+    -CAkey：指定 CA 证书的私钥路径
+
+    -CAserial：指定证书序列号文件的路径
+
+    -CAcreateserial：表示创建证书序列号文件（即上方提到的 serial 文件），创建的序列号文件默认名称为 -CA，指定的证书名称后加上 .srl 后缀
+[root@master pki]# ls
+ca.crt  ca.csr  ca.key  ca.srl  server.crt  server.csr  server.key
+证书校验，查看是否签发成功
+[root@master pki]# openssl verify -CAfile ca.crt server.crt 
+server.crt: OK
+
+
+
+1、查看证书是否过期，openssl x509 -in *.crt -noout -text | grep -i not
+[root@master pki]# pwd
+/etc/kubernetes/pki
+[root@master pki]# openssl x509 -in ca.crt -noout -text | grep -i not
+            Not Before: Dec 28 09:40:14 2023 GMT
+            Not After : Dec 25 09:40:14 2033 GMT
+[root@master pki]# openssl x509 -in apiserver.crt -noout -text | grep -i not
+            Not Before: Dec 28 09:40:14 2023 GMT
+            Not After : Dec 27 09:40:14 2024 GMT
+kubeadm alpha certs check-expiration
+
+2、更新证书前备份集群的证书和配置
+kubeadm config view > kubeadm-cluster.yaml 
+cp -rp /etc/kubernetes/ /etc/kubernetes_bak
+cp -rp /var/lib/etcd /var/lib/etcd.bak
+
+3、更新证书
+kubeadm alpha certs renew all 没有更新成功。。。
+[root@master pki]# openssl x509 -in ca.crt -noout -text | grep -i not
+            Not Before: Dec 28 09:40:14 2023 GMT
+            Not After : Dec 25 09:40:14 2033 GMT
+[root@master pki]# openssl x509 -in apiserver.crt -noout -text | grep -i not
+            Not Before: Dec 28 09:40:14 2023 GMT
+            Not After : Dec 27 09:40:14 2024 GMT
+
+4、重启master的所有组件
+docker ps | grep -E 'k8s_kube-apiserver|k8s_kube-controller-manager|k8s_kube-scheduler|k8s_etcd_etcd' | awk '{print $1}' | xargs docker restart
+
+注意事项:
+更新证书只需在master上更新，node节点上的kubelet证书默认自动轮换更新，无需关心过期问题
+执行k8s版本升级也会自动更新证书
+更新证书可能会导致短暂的服务中断
+更新证书前，做好关机数据备份
