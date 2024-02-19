@@ -1,0 +1,50 @@
+[2024-01-10 15:46:51][PID:863519] job_start
+  cluster:
+    id:     1078f7cc-cc52-4fa5-b73b-8efb3ac13b58
+    health: HEALTH_WARN
+            Some pool(s) have the nodeep-scrub flag(s) set
+            Degraded data redundancy: 41022/47961036 objects degraded (0.086%), 241 pgs degraded, 242 pgs undersized
+ 
+  services:
+    mon: 3 daemons, quorum a,b,c (age 12d)
+    mgr: a(active, since 2w), standbys: b, c
+    osd: 576 osds: 576 up (since 12m), 576 in (since 6m); 221 remapped pgs
+ 
+  data:
+    pools:   2 pools, 32832 pgs
+    objects: 15.99M objects, 42 TiB
+    usage:   129 TiB used, 1.2 PiB / 1.3 PiB avail
+    pgs:     0.009% pgs not active
+             41022/47961036 objects degraded (0.086%)
+             32587 active+clean
+             150   active+recovery_wait+undersized+degraded+remapped
+             74    active+undersized+degraded+remapped+backfill_wait
+             15    active+recovering+undersized+degraded+remapped
+             3     peering
+             2     active+undersized+degraded+remapped+backfilling
+             1     active+undersized+remapped
+ 
+  io:
+    client:   39 MiB/s rd, 20 MiB/s wr, 1.85k op/s rd, 1.42k op/s wr
+    recovery: 23 MiB/s, 8 objects/s
+ 
+
+[2024-01-10 15:52:08][PID:890938] job_start
+  cluster:
+    id:     1078f7cc-cc52-4fa5-b73b-8efb3ac13b58
+    health: HEALTH_OK
+            Some pool(s) have the nodeep-scrub flag(s) set
+ 
+  services:
+    mon: 3 daemons, quorum a,b,c (age 12d)
+    mgr: a(active, since 2w), standbys: b, c
+    osd: 576 osds: 576 up (since 18m), 576 in (since 11m)
+ 
+  data:
+    pools:   2 pools, 32832 pgs
+    objects: 15.99M objects, 42 TiB
+    usage:   129 TiB used, 1.2 PiB / 1.3 PiB avail
+    pgs:     32832 active+clean
+ 
+  io:
+    client:   240 MiB/s rd, 157 MiB/s wr, 10.86k op/s rd, 8.53k op/s wr

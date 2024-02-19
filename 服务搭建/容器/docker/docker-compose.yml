@@ -1,0 +1,64 @@
+version: "3"
+services:
+  
+  mysql-server:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE:zabbix
+      MYSQL_USER:zabbix
+      MYSQL_PASSWORD:zabbix_pwd
+      MYSQL_ROOT_PASSWORD:123456
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - mysql_logs:/var/log/mysql
+      - mysql_conf:/etc/mysql
+    restart: always
+    container_name: mysql-server
+#    expose:
+#      - "3306"
+  
+  zabbix-server-mysql:
+    image: zabbix/zabbix-server-mysql:6.2-alpine-latest
+    enviroment:
+      DB_SERVER_HOST:mysql-server
+      MYSQL_DATABASE:zabbix
+      MYSQL_USER:zabbix
+      MYSQL_PASSWORD:zabbix_pwd
+      MYSQL_ROOT_PASSWORD:123456
+    ports:
+      - "10051:10051"
+    volumes:
+      - zabbix_server:/etc/zabbix
+    restart: always
+    container_name: zabbix-server-mysql
+    links:
+      - mysql-server:mysql
+    depends_on:
+      - mysql-server
+
+  zabbix-web-nginx-mysql:
+    image: zabbix/zabbix-web-nginx-mysql:alpine-6.2-latest
+    enviroment:
+      PHP_TZ:'Asia/Shanghai'
+      ZBX_SERVER_HOST:zabbix-server-mysql
+      DB_SERVER_HOST:mysql-server
+      MYSQL_DATABASE:zabbix
+      MYSQL_USER:zabbix
+      MYSQL_PASSWORD:zabbix_pwd
+      MYSQL_ROOT_PASSWORD:123456
+    ports:
+      - "80:8080"
+    restart: always
+    container_name: zabbix-web-nginx-mysql
+    links:
+      - mysql-server:mysql
+      - zabbix-server-mysql:zabbix-server
+    depends_on:
+      - mysql-server
+      - zabbix-server-mysql
+
+volumes:
+  mysql_data:
+  mysql_logs:
+  mysql_conf:
+  zabbix_server:

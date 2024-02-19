@@ -74,7 +74,7 @@ ID  CLASS WEIGHT  TYPE NAME             STATUS REWEIGHT PRI-AFF
 
 #让ID为3的osd down 掉,此时该 osd 不接受读写请求,但 osd 还是存活的，即对应down in状态
  
-[root@node1 ~]# ceph osd down 0
+[root@node1 ~]# ceph osd down 3
  
 [root@node1 ~]# ceph osd tree
 ID  CLASS WEIGHT  TYPE NAME             STATUS REWEIGHT PRI-AFF 

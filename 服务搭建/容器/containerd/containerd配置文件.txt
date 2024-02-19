@@ -1,0 +1,32 @@
+containerd启动后默认没有配置文件，执行以下导出
+# 导出默认配置，config.toml这个文件默认是不存在的
+containerd config default > /etc/containerd/config.toml
+
+修改配置文件
+修改pause镜像
+sed -i "s#k8s.gcr.io/pause#registry.aliyuncs.com/google_containers/pause#g"       /etc/containerd/config.toml
+修改cgroup为systemd
+sed -i 's#SystemdCgroup = false#SystemdCgroup = true#g' /etc/containerd/config.toml
+
+    [plugins."io.containerd.grpc.v1.cri".registry]
+      [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
+#添加公有源，下面2行都必须有，否则重启containerd时会报错containerd: (155, 2): Can't convert [http://...]([]interface {}) to a slice
+	[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+	endpoint = ["http://registry.aliyuncs.com/google_containers","https://registry-1.docker.io"]
+#添加私有源
+        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."192.168.66.4"]
+          endpoint = ["https://192.168.66.4:443"]
+
+      [plugins."io.containerd.grpc.v1.cri".registry.configs]
+
+        [plugins."io.containerd.grpc.v1.cri".registry.configs."192.168.66.4".tls]
+          insecure_skip_verify = true
+#如果使用https，添加证书路径
+#        ca_file = "/opt/certs/ca.crt"
+#双向认证
+#        cert_file = "/opt/certs/harbor-ksd.kingsd.top.cert"
+#        key_file = "/opt/certs/harbor-ksd.kingsd.top.key"
+#私有源认证
+        [plugins."io.containerd.grpc.v1.cri".registry.configs."192.168.66.4".auth]
+          username = "admin"
+          password = "Harbor12345"

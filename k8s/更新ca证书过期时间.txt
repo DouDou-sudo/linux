@@ -52,7 +52,7 @@ Getting Private key
 [root@master pki]# ls
 ca.crt  ca.csr  ca.key
 
-将上面生成的ca.crt作为根证书，来签发一个新证书，密钥和申请的请求文件和上面一致
+4、将上面生成的ca.crt作为根证书，来签发一个新证书，密钥和申请的请求文件和上面一致
 [root@master pki]# openssl genrsa -out server.key 1024
 Generating RSA private key, 1024 bit long modulus
 .++++++
@@ -127,6 +127,12 @@ kubeadm alpha certs renew all 没有更新成功。。。
 
 4、重启master的所有组件
 docker ps | grep -E 'k8s_kube-apiserver|k8s_kube-controller-manager|k8s_kube-scheduler|k8s_etcd_etcd' | awk '{print $1}' | xargs docker restart
+
+在K8s中，为了防止证书过期，建议定期对证书进行更新。可以使用以下指令来更新证书：
+
+kubeadm alpha certs renew all
+
+这个命令将更新所有证书，并自动更新kubeconfig文件和各种配置文件。 
 
 注意事项:
 更新证书只需在master上更新，node节点上的kubelet证书默认自动轮换更新，无需关心过期问题

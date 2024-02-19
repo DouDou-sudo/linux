@@ -3,6 +3,12 @@ lsblk -no name,serial,mountpoint
 less /var/log/messages | grep -i err
 less /var/log/messages | grep -i sector
 
+坏盘相关日志关键字输出，/var/log/messages
+kernel: print_req_error: I/O error,dev nvme4n1,sector 0
+kernel: Buffer I/O error on dev nvme4n1,logical block 0,async page read
+kernel: Dev nvme4n1: unable to read RDB block 0
+kernel: nvme4n1: unable to read partition table
+
 lsblk 【options】
 -a : 包含所有设备，包括空设备；
 

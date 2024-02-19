@@ -1,0 +1,28 @@
+--privileged参数作用：
+1.使cintainer内的root拥有真正的root权限
+2.可以看到主机上的设备，并且可以mount
+3.允许在docker内启动docker
+
+可以看到主机的设备信息和挂载情况
+[root@d2f41589e612 /]# lsblk
+NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda      8:0    0   20G  0 disk 
+|-sda1   8:1    0    1G  0 part 
+`-sda2   8:2    0   19G  0 part 
+[root@master ~]# docker run -it --privileged=true centos bash
+[root@d2f41589e612 /]# df -h
+Filesystem               Size  Used Avail Use% Mounted on
+overlay                   17G  8.8G  8.3G  52% /
+tmpfs                     64M     0   64M   0% /dev
+tmpfs                    910M     0  910M   0% /sys/fs/cgroup
+shm                       64M     0   64M   0% /dev/shm
+/dev/mapper/centos-root   17G  8.8G  8.3G  52% /etc/hosts
+在主机上查看
+[root@master ~]# df -h
+Filesystem               Size  Used Avail Use% Mounted on
+devtmpfs                 898M     0  898M   0% /dev
+tmpfs                    910M     0  910M   0% /dev/shm
+tmpfs                    910M   12M  899M   2% /run
+tmpfs                    910M     0  910M   0% /sys/fs/cgroup
+/dev/mapper/centos-root   17G  8.8G  8.3G  52% /
+/dev/sda1               1014M  151M  864M  15% /boot

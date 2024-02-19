@@ -1,0 +1,43 @@
+停止containerd服务
+systemctl stop containerd
+停掉服务以后，ctr和crictl命令都不能使用了，只能查看进程
+[root@master bin]# ps -efH 
+root       1679      1  0 09:26 ?        00:00:05   /usr/bin/containerd-shim-runc-v2 -namespace k8s.io -id 594be2ef4d11687d8aead90964ea47fe54c316311b240bedc67c80ff87f9700f -address /var/run/containerd/containe
+65535      1783   1679  0 09:26 ?        00:00:00     /pause
+root       1892   1679  1 09:26 ?        00:04:55     etcd --advertise-client-urls=https://192.168.189.200:2379 --cert-file=/etc/kubernetes/pki/etcd/server.crt --client-cert-auth=true --data-dir=/var/lib/etcd 
+root       1685      1  0 09:26 ?        00:00:03   /usr/bin/containerd-shim-runc-v2 -namespace k8s.io -id 01654381901fd670f1f7296d427623169aeb6b9dc33b22687ddc83d2492a83cc -address /var/run/containerd/containe
+65535      1764   1685  0 09:26 ?        00:00:00     /pause
+root       1904   1685  1 09:26 ?        00:06:27     kube-controller-manager --allocate-node-cidrs=true --authentication-kubeconfig=/etc/kubernetes/controller-manager.conf --authorization-kubeconfig=/etc/kube
+root       1688      1  0 09:26 ?        00:00:05   /usr/bin/containerd-shim-runc-v2 -namespace k8s.io -id 760fb0d07e9799d28851b4ab459a41cdd8833eff8b872f7cb828b67d79280b2f -address /var/run/containerd/containe
+65535      1772   1688  0 09:26 ?        00:00:00     /pause
+root       1891   1688  0 09:26 ?        00:00:58     kube-scheduler --authentication-kubeconfig=/etc/kubernetes/scheduler.conf --authorization-kubeconfig=/etc/kubernetes/scheduler.conf --bind-address=127.0.0.
+root       1692      1  0 09:26 ?        00:00:05   /usr/bin/containerd-shim-runc-v2 -namespace k8s.io -id 56ce03f6c0a1024040680d6d552d459d0c9be0ce02a5ea01beda91d9d4b721be -address /var/run/containerd/containe
+65535      1762   1692  0 09:26 ?        00:00:00     /pause
+root       1882   1692  4 09:26 ?        00:18:40     kube-apiserver --advertise-address=192.168.189.200 --allow-privileged=true --authorization-mode=Node,RBAC --client-ca-file=/etc/kubernetes/pki/ca.crt --ena
+
+
+启动containerd服务
+[root@master bin]# systemctl start containerd
+[root@master bin]# ps -efH 
+root       1679      1  0 09:26 ?        00:00:05   /usr/bin/containerd-shim-runc-v2 -namespace k8s.io -id 594be2ef4d11687d8aead90964ea47fe54c316311b240bedc67c80ff87f9700f -address /var/run/containerd/containe
+65535      1783   1679  0 09:26 ?        00:00:00     /pause
+root       1892   1679  1 09:26 ?        00:04:56     etcd --advertise-client-urls=https://192.168.189.200:2379 --cert-file=/etc/kubernetes/pki/etcd/server.crt --client-cert-auth=true --data-dir=/var/lib/etcd 
+root       1685      1  0 09:26 ?        00:00:03   /usr/bin/containerd-shim-runc-v2 -namespace k8s.io -id 01654381901fd670f1f7296d427623169aeb6b9dc33b22687ddc83d2492a83cc -address /var/run/containerd/containe
+65535      1764   1685  0 09:26 ?        00:00:00     /pause
+root       1904   1685  1 09:26 ?        00:06:29     kube-controller-manager --allocate-node-cidrs=true --authentication-kubeconfig=/etc/kubernetes/controller-manager.conf --authorization-kubeconfig=/etc/kube
+root       1688      1  0 09:26 ?        00:00:05   /usr/bin/containerd-shim-runc-v2 -namespace k8s.io -id 760fb0d07e9799d28851b4ab459a41cdd8833eff8b872f7cb828b67d79280b2f -address /var/run/containerd/containe
+65535      1772   1688  0 09:26 ?        00:00:00     /pause
+root       1891   1688  0 09:26 ?        00:00:59     kube-scheduler --authentication-kubeconfig=/etc/kubernetes/scheduler.conf --authorization-kubeconfig=/etc/kubernetes/scheduler.conf --bind-address=127.0.0.
+root       1692      1  0 09:26 ?        00:00:05   /usr/bin/containerd-shim-runc-v2 -namespace k8s.io -id 56ce03f6c0a1024040680d6d552d459d0c9be0ce02a5ea01beda91d9d4b721be -address /var/run/containerd/containe
+65535      1762   1692  0 09:26 ?        00:00:00     /pause
+root       1882   1692  4 09:26 ?        00:18:45     kube-apiserver --advertise-address=192.168.189.200 --allow-privileged=true --authorization-mode=Node,RBAC --client-ca-file=/etc/kubernetes/pki/ca.crt --ena
+root       8022      1  3 16:31 ?        00:00:00   /usr/bin/containerd
+
+查看CREATED
+[root@master bin]# crictl ps
+CONTAINER           IMAGE               CREATED             STATE               NAME                      ATTEMPT             POD ID              POD
+ce861c71cfa24       18688a72645c5       7 hours ago         Running             kube-scheduler            6                   760fb0d07e979       kube-scheduler-master
+80b37535ee841       aebe758cef4cd       7 hours ago         Running             etcd                      4                   594be2ef4d116       etcd-master
+5997a0bc1ef01       b4ea7e648530d       7 hours ago         Running             kube-controller-manager   6                   01654381901fd       kube-controller-manager-master
+159ea92fdbe81       e9f4b425f9192       7 hours ago         Running             kube-apiserver            4                   56ce03f6c0a10       kube-apiserver-master
+

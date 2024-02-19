@@ -1,0 +1,74 @@
+version: "3"
+services:
+  
+  mysql-server:
+    image: mysql:8.0
+    command:
+      - --character-set-server=utf8
+      - --collation-server=utf8_bin
+      - --default-authentication-plugin=mysql_native_password
+    environment:
+      - MYSQL_DATABASE=zabbix
+      - MYSQL_USER=zabbix
+      - MYSQL_PASSWORD=zabbix_pwd
+      - MYSQL_ROOT_PASSWORD=123456
+    volumes:
+      - type: volume
+        source: mysql_data
+        target: /var/lib/mysql
+      - type: volume
+        source: mysql_conf
+        target: /etc/mysql
+      - type: volume
+        source: mysql_logs
+        target: /var/log/mysql
+    restart: always
+    container_name: mysql-server  
+    
+  zabbix-server-mysql:
+    image: zabbix/zabbix-server-mysql:6.2-alpine-latest
+    enviroment:
+      - DB_SERVER_HOST=mysql-server
+      - MYSQL_DATABASE=zabbix
+      - MYSQL_USER=zabbix
+      - MYSQL_PASSWORD=zabbix_pwd
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "10051:10051"
+    volumes:
+      - type: volume
+        source: zabbix_server
+        target: /etc/zabbix
+    restart: always
+    container_name: zabbix-server-mysql
+    links:
+      - mysql-server:mysql
+    depends_on:
+      - mysql-server
+
+  zabbix-web-nginx-mysql:
+    image: zabbix/zabbix-web-nginx-mysql:alpine-6.2-latest
+    enviroment:
+      - PHP_TZ=Asia/Shanghai
+      - ZBX_SERVER_HOST=zabbix-server-mysql
+      - DB_SERVER_HOST=mysql-server
+      - MYSQL_DATABASE=zabbix
+      - MYSQL_USER=zabbix
+      - MYSQL_PASSWORD=zabbix_pwd
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "80:8080"
+    restart: always
+    container_name: zabbix-web-nginx-mysql
+    links:
+      - mysql-server:mysql
+      - zabbix-server-mysql:zabbix-server
+    depends_on:
+      - mysql-server
+      - zabbix-server-mysql
+
+volumes:
+  mysql_data:
+  mysql_logs:
+  mysql_conf:
+  zabbix_server:

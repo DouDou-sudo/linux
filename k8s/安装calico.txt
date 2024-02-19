@@ -1,0 +1,86 @@
+一、使用 Kubernetes API 数据存储安装 Calico，不超过 50 个节点
+1、下载 Kubernetes API 数据存储的 Calico 网络清单。
+
+curl https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml -O
+
+
+2、如果您使用的是 pod CIDR ，请跳到下一步。 如果您在 kubeadm 中使用不同的 pod CIDR，则无需进行任何更改 — Calico 将根据运行配置自动检测 CIDR。 对于其他平台，请确保取消对清单中 CALICO_IPV4POOL_CIDR 变量的注释，并将其设置为与所选容器 CIDR 相同的值。192.168.0.0/16
+
+3、根据需要自定义清单。
+
+4、使用以下命令应用清单。
+
+kubectl apply -f calico.yaml
+
+二、用 Kubernetes API 数据存储安装 Calico，超过 50 个节点
+1、下载 Kubernetes API 数据存储的 Calico 网络清单。
+
+curl https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico-typha.yaml -o calico.yaml
+
+
+2、如果您使用的是 pod CIDR ，请跳到下一步。 如果您在 kubeadm 中使用不同的 pod CIDR，则无需进行任何更改 — Calico 将根据运行配置自动检测 CIDR。 对于其他平台，请确保取消对清单中 CALICO_IPV4POOL_CIDR 变量的注释，并将其设置为与所选容器 CIDR 相同的值。192.168.0.0/16
+
+3、将副本计数修改为命名的 .Deploymentcalico-typha
+
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: calico-typha
+  ...
+spec:
+  ...
+  replicas: <number of replicas>
+
+我们建议每 200 个节点至少有一个副本，并且不超过 20 个副本。在生产中，我们建议至少使用三个副本来减少 滚动升级和故障的影响。副本数应 始终小于节点数，否则滚动升级将停止。 此外，只有当 Typha 实例少于 有节点。
+
+注意
+如果设置并设置 Typha 部署副本 数到 0，菲利克斯不会首发。typha_service_name
+
+4、如果需要，可以自定义清单。
+
+5、应用清单。
+
+kubectl apply -f calico.yaml
+
+
+
+四、安装calicoctl作为kubectl插件
+
+cd /usr/local/bin/
+
+使用以下命令下载二进制文件。calicoctl
+
+curl -L https://github.com/projectcalico/calico/releases/download/v3.27.0/calicoctl-linux-amd64 -o kubectl-calico
+
+
+将文件设置为可执行文件。
+
+chmod +x kubectl-calico
+
+
+
+
+1、NetworkManager 操作默认网络中接口的路由表 命名空间，其中 Calico veth 对被锚定以连接到容器。 这可能会干扰 Calico 代理正确路由的能力。
+在 创建以下配置文件以防止 NetworkManager 干扰接口：/etc/NetworkManager/conf.d/calico.conf
+[keyfile]
+unmanaged-devices=interface-name:cali*;interface-name:tunl*;interface-name:vxlan.calico;interface-name:vxlan-v6.calico;interface-name:wireguard.cali;interface-name:wg-v6.cali
+
+2、运行 sudo calicoctl 时出错
+如果使用 for 命令，请记住，环境变量不会传输到环境中。您必须使用标志运行以包含环境变量：sudosudosudo-E
+
+sudo -E calicoctl node diags
+
+或者，您可以为如下命令设置环境变量：sudo
+
+sudo ETCD_ENDPOINTS=http://172.25.0.1:2379 calicoctl node run
+
+3、Linux conntrack 表空间不足
+Linux 系统上的一个常见问题是 conntrack 表中的空间不足，这可能会导致 iptables 性能不佳。这可以 如果在给定主机上运行大量工作负载，或者工作负载创建大量 TCP 连接或双向 UDP 流，则会发生这种情况。为避免此问题，我们建议使用以下命令增加 conntrack 表大小：
+
+sysctl -w net.netfilter.nf_conntrack_max=1000000
+echo "net.netfilter.nf_conntrack_max=1000000" >> /etc/sysctl.conf
+
+4、错误：calico/node 未就绪：BIRD 未就绪：BGP 未与 10.0.0.1 建立
+在大多数情况下，Kubernetes 中的这种“未就绪”状态错误意味着集群中的特定对等节点无法访问。检查环境中是否允许两个对等体之间的 BGP 连接。
+
+如果为节点到节点网格配置了非活动节点资源，也会发生此错误。要解决此问题，请停用过时的节点。

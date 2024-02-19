@@ -41,15 +41,3 @@ yum install ceph-deploy -y
 
 #校验版本
 ceph-deploy --version
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,21 +1,50 @@
 Shell脚本制作rpm包
 1、安装rpmbuild包
 yum install rpm-build
+
 2、将要打包的文件拷贝到/root/rpmbuild/BUILD目录
 system_memory_monitor.sh和memory日志转存文件
+
 3、创建spec文件
 cd /root/rpmbuild/SPECS
 vim sys_tem.spec内容如下
-Name:		sys_tem_monitor	
-Version:	1   
-Release:	1%{?dist}  
-Summary:	jiankong   
-Group:		System Environment/Libraries
-License:	GPLv2+
-%description
-%prep
+Name:	sys_tem_monitor			#软件包的名称
+Version:	0.1.2   				#软件版本
+Release:	25	  			#发布序列号，标明第几次打包  
+Summary:	jiankong   		#软件包的内容概要
+Group:		System Environment/Libraries	#软件分组
+License:	GPLv2+				#软件授权方式，通常是GPL
+%description				#定义rpm包的描述信息
+%prep					#编译前执行的脚本
 echo -e "\033[1;41;33m pre install NOTHING\033[0mprep"
-%build
+%build					#开始构建rpm包
+echo -e "\033[1;41;33m pre install NOTHING\033[0mprep"
+%install					#软件安装到对应的目录下
+mkdir -p %{buildroot}/usr/sbin
+mkdir -p %{buildroot}/etc/logrotate.d
+install -m 744 system_memory_monitor.sh  %{buildroot}/usr/sbin/system_memory_monitor.sh
+install -m 744 memory  %{buildroot}/etc/logrotate.d/memory
+%post 					#rpm包安装后执行的脚本
+sh /usr/sbin/system_memory_monitor.sh &
+echo "/usr/sbin/system_memory_monitor.sh &" >> /etc/rc.local
+%files					#定义rpm package包含哪些文件或目录
+/usr/sbin/system_memory_monitor.sh
+/etc/logrotate.d/memory
+%doc
+%postun					#rpm包卸载后执行的脚本
+%changelog				#记录变更日志
+
+spec内容介绍：
+Name:	sys_tem_monitor	  
+Version:	1 					
+Release:	1%{?dist}				 
+Summary:	jiankong				
+Group:		System Environment/Libraries		
+License:	GPLv2+                                    
+%description           
+%prep				
+echo -e "\033[1;41;33m pre install NOTHING\033[0mprep"
+%build    
 echo -e "\033[1;41;33m pre install NOTHING\033[0mprep"
 %install
 mkdir -p %{buildroot}/usr/sbin
@@ -25,43 +54,55 @@ install -m 744 memory  %{buildroot}/etc/logrotate.d/memory
 %post 
 sh /usr/sbin/system_memory_monitor.sh &
 echo "/usr/sbin/system_memory_monitor.sh &" >> /etc/rc.local
-%files
+%files  
 /usr/sbin/system_memory_monitor.sh
 /etc/logrotate.d/memory
 %doc
 %postun
 %changelog
-spec内容介绍：
-Name:		sys_tem_monitor	  //包名字
-Version:	1 					//包版本
-Release:	1%{?dist}				//发布序列号，标明第几次打包  
-Summary:	jiankong				//软件包内容概要
-Group:		System Environment/Libraries		//软件包分组
-License:	GPLv2+                                    
-%description           //定义rpm包的描述信息
-%prep				//编译的时候执行的脚本
-echo -e "\033[1;41;33m pre install NOTHING\033[0mprep"
-%build    
-echo -e "\033[1;41;33m pre install NOTHING\033[0mprep"
-%install   //编译的时候把软件包放在哪里（把system_memory_monitor.sh放到/usr/sbin/，把memory放到/etc/logrotate.d目录）
-mkdir -p %{buildroot}/usr/sbin
-mkdir -p %{buildroot}/etc/logrotate.d
-install -m 744 system_memory_monitor.sh  %{buildroot}/usr/sbin/system_memory_monitor.sh
-install -m 744 memory  %{buildroot}/etc/logrotate.d/memory
-%post //安装rpm包的时候执行的脚本
-sh /usr/sbin/system_memory_monitor.sh &
-echo "/usr/sbin/system_memory_monitor.sh &" >> /etc/rc.local
-%files  //定义rpm包安装时创建的相关目录及文件
-/usr/sbin/system_memory_monitor.sh
-/etc/logrotate.d/memory
-%doc
-%postun
-%changelog
+
 4、编译spec文件
 rpmbuild -ba sys_tem.spec
 5在/root/rpmbuild/RPMS/x86_64/目录下面有rpm包生成
 ls /root/rpmbuild/RPMS/x86_64/sys_tem_monitor-1-1.ky3.x86_64.rpm
 
+查看已安装的rpm包的src相关信息
+rpm -qi yum-utils | grep -i "source rpm"
+Source RPM  : yum-utils-1.1.31-54.el7_8.src.rpm
+查看未安装的rpm包的src相关信息
+[root@node1 mnt]# rpm -qip yum-utils-1.1.31-54.el7_8.noarch.rpm | grep -i "source rpm"
 
+rpmbuild -bb xxx.spec	#只生成二进制格式的rpm包，在RPM下
+rpmbuild -bs xxx.spec	#只生成src格式的rpm包，在SRPM下
+rpmbuild -bp xxx.spec	#只生成完整的源文件，在BUILD下
+rpmbuild -ba xxx.spec	#完全打包，生成上面3个的包在各自对应的目录下
+--rebuild：编译 SRPM 包生成 RPM 二进制包； 
+--recompile：编译 SRPM 包，直接安装，不会生成RPM二进制包。
+
+安装src.rpm包
+1、使用--rebuild将SRPM包编译生成rpm包
+rpmbuild --rebuild xxx.src.rpm
+完成后会在/root/rpmbuild/RPMS下生成rpm包
+2、使用--recompile直接编译安装，不会生成rpm包
+/root/rpmbuild/下也会自动生成对应文件
+3、使用rpmbuild的-ba选项生成rpm包
+1）安装SRPM包，会生成/root/rpmbuild/目录，其实就是将src.rpm包解压到/root/rpmbuild/目录下和直接解压一样
+rpm -ivh xxx.src.rpm
+----解压SRPM包
+rpm2cpio apache-1.3.27-20030611.src.rpm | cpio -idmv
+解压在当前文件夹，除了src.rpm都是解压出来的文件
+[root@node1 apache]# ls
+apache-1.3.27-20030611.src.rpm	apache.patch                     mod_auth_ldap.tar.gz        mod_layout-3.2.tar.gz     mod_ssl-2.8.14-1.3.27.tar.gz
+apache.pl                        mod_auth_pam.tar.gz         mod_macro-1.1.2.tar.gz    mod_throttle312.tgz
+apache_1.3.27.tar.gz            apache.spec                      mod_dav-1.0.3-1.3.6.tar.gz  mod_perl-1.27.tar.gz      php-3.0.18.tar.gz
+apache.base                     apache.vhost                     mod_fastcgi-2.4.0.tar.gz    mod_relocate-1.0.tar.gz   php-4.3.2.tar.gz
+apache.conf                     mod_access_referer-1.0.2.tar.gz  mod_gzip.c                  mod_roaming-1.0.2.tar.gz  rc.apache
+
+其中的apache_1.3.27.tar.gz解压出来，可以发现这个.tar.gz就是源码文件
+[root@node1 apache]# mkdir apache
+[root@node1 apache]# tar xfz apache_1.3.27.tar.gz -C apache
+[root@node1 apache]# ls apache/apache_1.3.27/
+ABOUT_APACHE  cgi-bin  config.layout  htdocs  INSTALL  logs           README            README-WIN.TXT  WARNING-WIN.TXT
+Announcement  conf     configure      icons   LICENSE  Makefile.tmpl  README.configure  src
 
 

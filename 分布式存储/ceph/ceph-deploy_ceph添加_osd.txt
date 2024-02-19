@@ -56,11 +56,3 @@ ceph-disk zap /dev/sdb
 
 ceph osd tree
 ceph -s
-
-
-
-
-
-
-
-
