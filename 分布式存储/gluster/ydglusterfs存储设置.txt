@@ -6,9 +6,9 @@ cluster.metadata-self-heal off			#是否启用metadata的自我修复
 cluster.data-self-heal off			#是否启用data的自我修复
 cluster.heal-timeout 60			#自动愈合的检测间隔，默认600s
 performance.md-cache-pass-through true         x86_64
-default-soft-limit 100%
-soft-timeout 1800
-hard-timeout 60
+default-soft-limit 100%			#配额的默认软限制，gluster v quota volume
+soft-timeout 1800				#软超时是配额服务器端转换器在使用量低于软限制时检查卷使用率的频率。当磁盘使用率小于软限制时，软超时生效。gluster v quota volume
+hard-timeout 60				#硬超时是配额服务器端转换器在使用量超过软限制时检查卷使用率的频率。当磁盘使用量介于软限制和硬限制之间时，硬超时生效。gluster v quota volume
 
 变更后设置参数
 cluster.heal-timeout 600
@@ -20,3 +20,41 @@ performance.md-cache-pass-through true
 soft-timeout 60
 hard-timeout 5
 default-soft-limit 80%
+
+容量型参数
+sudo gluster v set $VOL cluster.min-free-disk                   10%
+sudo gluster v set $VOL cluster.min-free-inodes                 5%
+sudo gluster v set $VOL cluster.eager-lock                      off
+sudo gluster v set $VOL cluster.full-lock                       no
+sudo gluster v set $VOL diagnostics.fop-audit                   on
+sudo gluster v set $VOL performance.md-cache-timeout            10
+sudo gluster v set $VOL network.ping-timeout                    20
+sudo gluster v set $VOL client.event-threads                    8
+sudo gluster v set $VOL client.tcp-user-timeout                 0
+sudo gluster v set $VOL network.inode-lru-limit                 1048576
+sudo gluster v set $VOL performance.write-behind                off
+sudo gluster v set $VOL performance.read-ahead                  off
+sudo gluster v set $VOL performance.readdir-ahead               off
+sudo gluster v set $VOL performance.io-cache                    disable
+sudo gluster v set $VOL performance.quick-read                  off
+sudo gluster v set $VOL performance.open-behind                 off
+sudo gluster v set $VOL performance.nl-cache                    off
+sudo gluster v set $VOL performance.stat-prefetch               on
+sudo gluster v set $VOL performance.client-io-threads           off
+sudo gluster v set $VOL performance.force-readdirp              true
+sudo gluster v set $VOL performance.cache-invalidation          false
+sudo gluster v set $VOL features.quota                          on
+sudo gluster v set $VOL features.inode-quota                    on
+sudo gluster v set $VOL features.worm                           off
+sudo gluster v set $VOL features.worm-file-level                off
+sudo gluster v set $VOL cluster.server-quorum-type              none
+sudo gluster v set $VOL cluster.server-quorum-ratio             51%
+sudo gluster v set $VOL disperse.background-heals               8
+sudo gluster v set $VOL disperse.heal-wait-qlength              128
+sudo gluster v set $VOL cluster.heal-timeout                    600
+sudo gluster v set $VOL performance.parallel-readdir            off
+sudo gluster v set $VOL performance.nl-cache-positive-entry     false
+sudo gluster v set $VOL performance.nl-cache-limit              10MB
+sudo gluster v set $VOL performance.nl-cache-timeout            60
+sudo gluster v set $VOL performance.qos                         off
+sudo gluster v set $VOL performance.qos-inotify-thread          off

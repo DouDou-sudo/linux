@@ -324,7 +324,7 @@ volume delete: test-replica4: success
 ```
 #### 5、扩容/缩容volume
 ###### 1)缩容
-缩容，remove-brick之前会自动均衡数据
+缩容，remove-brick之后会自动均衡数据
 ```
 gluster v remove-brick <VOLNAME> [replica <COUNT>] <BRICK> ... <start|stop|status|commit|force>  
 ```
@@ -404,6 +404,8 @@ Brick2: glusterfs-node2:/glusterfs/replica/brick1
 **扩容完后最好均衡下数据，见第7节**
 如果是复制卷或者条带卷，则每次添加的Brick数必须是replica的整数倍。
 #### 6、替换brick
+**替换前如果故障brick或源brick有进程，需要先kill掉再进行替换**
+**使用一个新的brick替换旧的brick，2个brick路径不能一致，使用replace**
 >on distribute only volumes仅哈希卷不允许迁移替换
 ```
 gluster volume replace-brick <VOLNAME> <SOURCE-BRICK> <NEW-BRICK> {commit force}
@@ -412,6 +414,26 @@ gluster volume replace-brick <VOLNAME> <SOURCE-BRICK> <NEW-BRICK> {commit force}
 ```
 gluster volume replace-brick replica2 192.168.189.132:/gluster1/brick1 192.168.189.132:/gluster/brick1 commit force
 迁移完成后，源brick就不会再存储新写入的数据
+```
+当dest-brick和src-brick路径一致时，使用replace会failed，此时应使用reset-brick
+```
+$ gluster v replace-brick replica2 glusterfs-node1:/glusterfs/replica/brick3 glusterfs-node1:/glusterfs/replica/brick3 commit force
+volume replace-brick: failed: Brick: glusterfs-node1:/glusterfs/replica/brick3 not available. Brick may be containing or be contained by an existing brick
+```
+**当硬盘坏了后，替换硬盘后并仍将新硬盘挂载在原有brick目录下，需要使用reset-brick**
+```
+gluster volume reset-brick <VOLNAME> <SOURCE-BRICK> {{start} | {<NEW-BRICK> commit force}}
+gluster volume reset-brick VOLNAME HOSTNAME:BRICKPATH start #终止指定brick的进程，开始reset
+gluster volume reset-brick <VOLNAME> <SOURCE-BRICK> {<NEW-BRICK> commit force} #进程被kill后，使用相同brick-path替换src-brick时执行
+```
+```
+$ gluster v reset-brick replica2 glusterfs-node1:/glusterfs/replica/brick3 glusterfs-node1:/glusterfs/replica/brick3 commit force
+volume reset-brick: success: reset-brick commit force operation successful
+```
+当src-brick和dest-brick不一致时，使用reset-brick会failed，并提示使用replace-brick
+```
+[root@glusterfs-node1 replica]# gluster v reset-brick replica2 glusterfs-node1:/glusterfs/replica/brick1 glusterfs-node1:/glusterfs/replica/brick3 commit force
+volume reset-brick: failed: When destination brick is new, please use gluster volume replace-brick <volname> <src-brick> <dst-brick> commit force
 ```
 #### 7、均衡volume
 >一般add-brick扩容后才需要均衡卷
@@ -454,6 +476,24 @@ Brick2: glusterfs-node2:/glusterfs/replica/brick1
 [root@glusterfs-node1 ~]# gluster volume rebalance haxi start
 volume rebalance: haxi: success: Rebalance on haxi has been started successfully. Use rebalance status command to check status of the rebalance process.
 ID: 7c67dbcf-48d1-45ee-ad64-c122f7018bb5
+```
+```
+正在均衡
+# gluster volume rebalance test-volume status
+                                  Node  Rebalanced-files  size  scanned       status
+                             ---------  ----------------  ----  -------  -----------
+  617c923e-6450-4065-8e33-865e28d9428f               416  1463      312  in progress
+均衡完成
+ # gluster volume rebalance test-volume status
+                                  Node  Rebalanced-files  size  scanned       status
+                             ---------  ----------------  ----  -------  -----------
+  617c923e-6450-4065-8e33-865e28d9428f               502  1873      334   completed
+暂停均衡
+  # gluster volume rebalance test-volume stop
+                                  Node  Rebalanced-files  size  scanned       status
+                             ---------  ----------------  ----  -------  -----------
+  617c923e-6450-4065-8e33-865e28d9428f               59   590      244       stopped
+  Stopped rebalance process on volume test-volume
 ```
 >rebalance后
 ```
@@ -606,6 +646,12 @@ gluster volume set senyintvolume performance.write-behind-window-size 1024MB
 10. cluster.entry-self-heal,cluster.metadata-self-heal,cluster.data-self-heal，对entry，metadata，data是否启用自我修复
 11. cluster.heal-timeout，自动愈合的检测间隔，默认600s
 12. cluster.stripe-block-size，条带卷中每个条带的大小
+13. gluster volume geo-replication <MASTER> <SLAVE> start | status | stop 跨地域复制，异地容灾
+14. gluster volume profile <VOLNAME> start | info | stop IO信息查看
+   Top命令允许你查看Brick的性能，例如：read,write, file open calls, file read calls, file write calls, directory opencalls, and directory real calls。所有的查看都可以设置 top数，默认100。
+15. gluster volume top <VOLNAME> open[brick <BRICK>] [list-cnt <COUNT>] 其中，open可以替换为read, write, opendir, readdir等。
+16. gluster volume top <VOLNAME> read-perf [bs <BLOCK-SIZE> count <COUNT>] [brick <BRICK>] [list-cnt <COUNT>] 查看每个 Brick 的读性能，其中，read-perf可以替换为write-perf等
+    
 #### 10、gluster相关日志
 >相关日志，在`/var/log/glusterfs/`目录下，可根据需要查看；
 如`/var/log/glusterfs/brick/`下是各brick创建的日志；
@@ -847,7 +893,10 @@ There are no active volume tasks
 
 * 此时任一brick异常或者任一节点down机都不会影响client端读写，此时有高可用能力，但是易脑裂，可以在双复制一节点坏盘或者down机时临时处理，让client端可正常读写
 * 如果cluster.quorum-type是fixed且cluster.quorum-count为2，此时任一brick异常或者任一节点down机都会影响client端不能正常读写，此时没有高可用能力
-  
+> 当cluster.quorum-type是none
+* 此时任一brick异常或者任一节点down机都不会影响client端读写，此时有高可用能力
+
+
 客户端不能读写时报错
 ```
 [root@ceph-node1 ~]# cd /replica 

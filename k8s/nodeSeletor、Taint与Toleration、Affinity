@@ -95,9 +95,9 @@ node/k8snode1 untainted
     node.cloudprovider.kubernetes.io/uninitialized：如果Kubelet启动时指定了一个外部的cloudprovider，它将给当前节点添加一个Taint将其标记为不可用。在cloud-controller-manager的一个controller初始化这个节点后，Kubelet将删除这个Taint。
 
 2.2 容忍Toleration
-容忍作用与Pod资源配置在tolerations字段，用于容忍配置在node节点的Taint污点，可以让Pod部署在有污点的node节点。\
+容忍作用与Pod资源配置在tolerations字段，用于容忍配置在node节点的Taint污点，可以让Pod部署在有污点的node节点。
 
-k8s中部署pod会自动添加一些内置的容忍，容忍的默认时间的300秒，表示在node节点出现了内置污点后，会容忍3000秒的时间之后会进行迁移
+k8s中部署pod会自动添加一些内置的容忍，容忍的默认时间的300秒，表示在node节点出现了内置污点后，会容忍300秒的时间之后会进行迁移
 Tolerations:     node.kubernetes.io/not-ready:NoExecute for 300s
                  node.kubernetes.io/unreachable:NoExecute for 300s
 查看kube-proxy的Tolerations

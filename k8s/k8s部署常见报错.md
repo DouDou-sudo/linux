@@ -213,3 +213,80 @@ created by github.com/coreos/etcd/cmd/vendor/github.com/coreos/bbolt.(*DB).freep
 [root@k8smaster ~]# mv /var/lib/etcd/member /var/lib/etcd/member.bak
 [root@k8smaster ~]# systemctl daemon-reload
 [root@k8smaster ~]# systemctl restart kubelet
+
+##### 十一、健康检查发现controller-manager、scheduler状态Unhealthy，查看master组件状态时出现错误
+[root@master ~]# kubectl get cs
+NAME                 STATUS      MESSAGE                                                                                     ERROR
+scheduler            Unhealthy   Get http://127.0.0.1:10251/healthz: dial tcp 127.0.0.1:10251: connect: connection refused   
+controller-manager   Unhealthy   Get http://127.0.0.1:10252/healthz: dial tcp 127.0.0.1:10252: connect: connection refused   
+etcd-0               Healthy     {"health":"true"}  
+修改/etc/kubernetes/manifests/kube-controller-manager.yaml、/etc/kubernetes/manifests/kube-scheduler.yaml文件
+[root@master manifests]# cat kube-controller-manager.yaml | grep port
+    - --port=10252
+        port: 10257
+[root@master manifests]# cat kube-scheduler.yaml | grep port
+    - --port=10251
+        port: 10259
+修改完成后，重新apply即可，再次检查健康状态
+[root@master manifests]# kubectl apply -f kube-scheduler.yaml 
+pod/kube-scheduler created
+[root@master manifests]# kubectl apply -f kube-controller-manager.yaml 
+pod/kube-controller-manager created
+[root@master manifests]# kubectl get cs
+NAME                 STATUS    MESSAGE             ERROR
+scheduler            Healthy   ok                  
+controller-manager   Healthy   ok                  
+etcd-0               Healthy   {"health":"true"}   
+
+##### 十二、查看kube-controller-manager状态为CrashLoopBackOff
+[root@master ~]# kubectl get pods -n kube-system
+kube-controller-manager                 0/1     CrashLoopBackOff    12         38m
+使用如下命令查看日志报错，找不到/etc/kubernetes/pki/front-proxy-ca.crt文件
+[root@master ~]# kubectl logs -n kube-system kube-controller-manager
+I0822 10:34:23.104970       1 serving.go:312] Generated self-signed cert in-memory
+unable to create request header authentication config: open /etc/kubernetes/pki/front-proxy-ca.crt: no such file or directory
+使用如下命令查看kube-controller-manager运行在了node节点
+[root@master ~]# kubectl get pod -n kube-system -o wide
+kube-controller-manager                 0/1     CrashLoopBackOff    13         43m     192.168.189.202   node2    <none>           <none>
+此时，master运行到了其他的node节点上，故目录下没有相应的文件，删掉，指定运行在master主机上即可
+[root@master manifests]# kubectl delete endpoints -n kube-system kube-controller-manager
+endpoints "kube-controller-manager" deleted
+指定address地址
+删除这个pod
+[root@master manifests]# kubectl delete -f kube-controller-manager.yaml 
+pod "kube-controller-manager" deleted
+再启动这个pod
+[root@master manifests]# kubectl apply -f kube-controller-manager.yaml 
+pod/kube-controller-manager created
+检查仍然找不到/etc/kubernetes/pki/front-proxy-ca.crt文件
+[root@master manifests]# kubectl logs kube-controller-manager -n kube-system
+I0822 11:57:57.489290       1 serving.go:312] Generated self-signed cert in-memory
+unable to create request header authentication config: open /etc/kubernetes/pki/front-proxy-ca.crt: no such file or directory
+查看kube-apiserver-master 还是运行在node2节点上？？？
+[root@master manifests]# kubectl get pod -n kube-system -o wide
+kube-controller-manager                 0/1     CrashLoopBackOff    3          83s     192.168.189.202   node2    <none>           <none>
+分析kube-controller-manager启动参数，leader-elect设置为true，此为高可用场景下多个kube-controller-manager实例竞争选举哪个实例为leader角色的开关，开启
+时kube-controller-manger实例启动时会连接kube-api竞争创建名为kube-controller-manager的endpoint，创建成功的kube-controller-manger实例为leader，其他
+实例为backup，同时leader实例需要定期更新此endpoint，维持leader地位。
+此环境为非高可用环境，修改leader-elect为false避免kube-controller-manager定期去连接kube-api更新endpoint，理论也可以避免renew超时退出问题
+[root@master manifests]# cat kube-scheduler.yaml | grep leader
+    - --leader-elect=true
+[root@master manifests]# cat kube-controller-manager.yaml | grep leader
+    - --leader-elect=false
+##### 十三、设置cgroup为systemd导致docker重启失败
+因为/lib/systemd/system/docker.service 和daemon.json有冲突导致
+vim /lib/systemd/system/docker.service文件将如下行删除即可
+--exec-opt native.cgroupdriver=cgroupfs \
+systemctl daemon-reload
+systemctl restart docker
+
+##### 十四、kubeadm安装k8s找不到bridge
+[root@node1 ~]# sysctl net.bridge.bridge-nf-call-iptables=1
+sysctl: cannot stat /proc/sys/net/bridge/bridge-nf-call-iptables: No such file or directory
+需要先加载模块
+[root@node1 net]# modprobe br_netfilter
+再执行
+[root@node1 net]# sysctl net.bridge.bridge-nf-call-ip6tables=1
+net.bridge.bridge-nf-call-ip6tables = 1
+[root@node1 net]# sysctl net.bridge.bridge-nf-call-iptables=1
+net.bridge.bridge-nf-call-iptables = 1

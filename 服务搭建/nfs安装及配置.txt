@@ -20,11 +20,12 @@ Centos7
   chkconfig rpcbind on
   chkconfig nfs on
 5、配置
+---------------注意共享目录的权限------------------
 vim /etc/exports
-/data/bbs 192.168.18.100(rw,sync)
-			本机ip	rw可读可写	sync实时同步
+/data/bbs 192.168.18.0/24(rw,sync)
+	可挂载的客户端ip，*为任何客户端都可挂载	rw可读可写	sync实时同步
 /data/aas 192.168.18.100(ro,sync)
-					ro只读
+		ro只读
 6、修改完配置，重新加载nfs服务
 /etc/init.d/nfs reload
 7、执行命令查看共享目录

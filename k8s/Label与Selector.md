@@ -29,8 +29,8 @@ kubectl label deployments.apps nginx-1 app-
 
 #删除某一类型所有资源的标签
 kubectl label deployments.apps app- --all
-修改标签
 
+修改标签
 kubectl label deployments.apps nginx-1 app=nginx-1 --overwrite
 
 查看资源标签
@@ -45,8 +45,35 @@ kubectl get可以打印资源列表，并且可以使用-l参数利用label进�
     in:包含
     notin:不包含
 ```
-#一个条件
+-l: 匹配kv对
+-L: 只匹配k
 
+HOSTNAME为指定的key，下面为对应的value
+[root@master yaml]# kubectl get node -Lkubernetes.io/hostname
+NAME     STATUS   ROLES           AGE   VERSION   HOSTNAME
+master   Ready    control-plane   62d   v1.24.1   master
+node1    Ready    <none>          62d   v1.24.1   node1
+node2    Ready    control-plane   61d   v1.24.1   node2
+[root@master yaml]# kubectl get node 
+NAME     STATUS   ROLES           AGE   VERSION
+master   Ready    control-plane   62d   v1.24.1
+node1    Ready    <none>          62d   v1.24.1
+node2    Ready    control-plane   61d   v1.24.1
+
+当有一个以上的L时，会打印所有指定资源的labels，即使为空也会显示为空，并会输出key列
+[root@master yaml]# kubectl get pods -Lapp -Lcontroller-revision-hash -A 
+NAMESPACE      NAME                             READY   STATUS    RESTARTS        AGE    APP       CONTROLLER-REVISION-HASH
+dev1           webapp                           1/1     Running   0               58m    webapp    
+kube-flannel   kube-flannel-ds-d86gj            1/1     Running   12 (7h6m ago)   60d    flannel   5d454f6775
+kube-flannel   kube-flannel-ds-fglgm            1/1     Running   13 (7h6m ago)   60d    flannel   5d454f6775
+kube-flannel   kube-flannel-ds-w5tl5            1/1     Running   14 (7h6m ago)   60d    flannel   5d454f6775
+
+当有l时，就只会输出匹配到l指定的kv对的资源，l指定的kv对不会在输出中打印
+[root@master yaml]# kubectl get pods -lapp=webapp -Lcontroller-revision-hash -A 
+NAMESPACE   NAME     READY   STATUS    RESTARTS   AGE   CONTROLLER-REVISION-HASH
+dev1        webapp   1/1     Running   0          61m   
+
+一个条件
 kubectl get po -l app=nginx
 kubectl get po -l app!=nginx
 
@@ -69,3 +96,11 @@ NAME                               READY   STATUS    RESTARTS   AGE
 nginx-deployment-bb4d88ddf-fk28t   1/1     Running   0          77m
 nginx-deployment-bb4d88ddf-xp8v2   1/1     Running   0          77m
 nginx-deployment-bb4d88ddf-xt255   1/1     Running   0          78m
+
+1.4 yaml中匹配labels
+只有标签与选择算符相匹配的卷能够绑定到申领上。 选择算符包含两个字段：
+
+    matchLabels - 卷必须包含带有此值的标签
+    matchExpressions - 通过设定键（key）、值列表和操作符（operator） 来构造的需求。合法的操作符有 In、NotIn、Exists 和 DoesNotExist。
+
+来自 matchLabels 和 matchExpressions 的所有需求都按逻辑与的方式组合在一起。 这些需求都必须被满足才被视为匹配

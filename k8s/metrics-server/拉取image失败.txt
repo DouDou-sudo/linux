@@ -1,0 +1,70 @@
+执行kubectl top node命令时报错
+[root@master kubernetes-metrics-server]# kubectl top node
+Error from server (ServiceUnavailable): the server is currently unable to handle the request (get nodes.metrics.k8s.io)
+需要在集群上部署一个metrics-server，依次执行以下命令
+git clone https://github.com/kodekloudhub/kubernetes-metrics-server.git  
+cd kubernetes-metrics-server/
+kubectl apply -f .
+kubectl get pods -A -w
+kube-system    metrics-server-57864648-nhplk     0/1     ImagePullBackOff    0               2m26s
+
+kubectl describe pods -n kube-system  metrics-server-747474767d-wb7ch
+  Normal   Pulling    28s   kubelet            Pulling image "k8s.gcr.io/metrics-server/metrics-server:v0.5.2"
+  Warning  Failed     7s    kubelet            Failed to pull image "k8s.gcr.io/metrics-server/metrics-server:v0.5.2": rpc error: code = Unknown desc =
+ failed to pull and unpack image "k8s.gcr.io/metrics-server/metrics-server:v0.5.2": failed to resolve reference "k8s.gcr.io/metrics-server/metrics-server:v0.5.2": failed to do request: Head "https://k8s.gcr.io/v2/metrics-server/metrics-server/manifests/v0.5.2": dial tcp 108.177.125.82:443: connect: connection refused  Warning  Failed     7s    kubelet            Error: ErrImagePull
+  Normal   BackOff    6s    kubelet            Back-off pulling image "k8s.gcr.io/metrics-server/metrics-server:v0.5.2"
+  Warning  Failed     6s    kubelet            Error: ImagePullBackOff
+
+[root@node2 kubernetes-metrics-server]# cat metrics-server-deployment.yaml
+        image: k8s.gcr.io/metrics-server/metrics-server:v0.5.2
+拉取镜像失败，k8s.gcr.io需要科学上网
+手动拉取镜像
+docker pull registry.aliyuncs.com/google_containers/metrics-server:v0.5.2
+修改tag
+docker tag registry.aliyuncs.com/google_containers/metrics-server:v0.5.2 k8s.gcr.io/metrics-server/metrics-server:v0.5.2
+删除残余image
+docker rmi registry.aliyuncs.com/google_containers/metrics-server:v0.5.2
+[root@master kubernetes-metrics-server]# docker images
+k8s.gcr.io/metrics-server/metrics-server                          v0.5.2    f73640fb5061   2 years ago     64.3MB
+删除deploy
+[root@master kubernetes-metrics-server]# kubectl get deploy -n kube-system
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+coredns          2/2     2            2           51d
+metrics-server   0/1     1            0           14m
+[root@master kubernetes-metrics-server]# kubectl delete deploy metrics-server -n kube-system
+deployment.apps "metrics-server" deleted
+[root@master kubernetes-metrics-server]# kubectl get deploy -n kube-system
+NAME      READY   UP-TO-DATE   AVAILABLE   AGE
+coredns   2/2     2            2           51d
+重新apply
+kubectl apply -f .
+查看events，依然是拉取镜像失败
+kubectl describe pods -n kube-system  metrics-server
+ ImagePullBackOff
+k8s的1.24.1版本使用的runtime为containerd
+使用crictl查看image，发现看不到拉取的k8s.gcr.io/metrics-server/metrics-server:v0.5.2镜像
+使用crictl重新pull image
+crictl pull registry.aliyuncs.com/google_containers/metrics-server:v0.5.2
+修改metrics-server-deployment.yaml文件的image为阿里云的image
+        image: registry.aliyuncs.com/google_containers/metrics-server:v0.5.2
+重新apply，发现还是有 ImagePullBackOff的报错
+查看cat metrics-server-deployment.yaml文件，发现imagePullPolicy为Always，修改为IfNotPresent
+        image: k8s.gcr.io/metrics-server/metrics-server:v0.5.2
+        imagePullPolicy: Always
+再重新apply
+kubectl get pods -A -w
+kube-system    metrics-server-5cbb6747c5-jh7hr   0/1     CrashLoopBackOff   1 (4s ago)       6s
+kube-system    metrics-server-5cbb6747c5-jh7hr   0/1     Error              2 (18s ago)      20s
+kubectl describe pods metrics-server-5cbb6747c5-jh7hr -n kube-system
+Events:
+  Type     Reason     Age                From               Message
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  32s                default-scheduler  Successfully assigned kube-system/metrics-server-5cbb6747c5-jh7hr to node1
+  Normal   Pulled     13s (x3 over 32s)  kubelet            Container image "registry.aliyuncs.com/google_containers/metrics-server:v0.5.2" already pre
+sent on machine  Normal   Created    13s (x3 over 32s)  kubelet            Created container metrics-server
+  Normal   Started    13s (x3 over 32s)  kubelet            Started container metrics-server
+  Warning  BackOff    1s (x4 over 29s)   kubelet            Back-off restarting failed container
+不再报拉取镜像的错了，但是状态为CrashLoopBackOff   
+[root@master kubernetes-metrics-server]# kubectl logs -f  metrics-server-5cbb6747c5-jh7hr -n kube-system
+Error: failed to create listener: failed to listen on 0.0.0.0:443: listen tcp 0.0.0.0:443: bind: permission denied
+
